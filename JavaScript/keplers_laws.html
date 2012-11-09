@@ -1,0 +1,418 @@
+<!-- Hosted version http://pastehtml.com/view/c06ceb3bi.html -->
+<html>
+<header>
+<style type="text/css">
+    canvas {
+        background-color: black;
+        border-radius: 4px;
+    }
+    .drawing-area {
+        display: inline-block;
+    }
+    .input-area {
+        display: inline-block;
+        width: 600px;
+        height: 600px;
+        position: absolute;
+        top: 0px;
+        padding-left: 32px;
+    }
+    .input-area p {
+        margin-top: 4px;
+        margin-bottom: 4px;
+        text-align: center;
+    }
+    .input-area .info {
+        position: absolute;
+        bottom: 0px;
+    }
+    .input-area .parameters {
+        display: inline-block;
+        width: 200px;
+        height: 100px;
+        padding: 16px;
+        border: 1px solid;
+        border-radius: 15px;
+        background-color: #eeeeee;
+    }
+</style>
+<script type="text/javascript">
+
+    if (!Array.prototype.remove) {
+        Array.prototype.remove = function(e) {
+            var indexOfElement = this.indexOf(e);
+            if (indexOfElement >= 0) {
+                this.splice(indexOfElement, 1);
+                return e;
+            };
+        };    
+    };
+
+    function selectedRadioGroupValue(radioGroup) {
+        for (var i = 0; i < radioGroup.length; i++) {
+            if (radioGroup[i].checked) {
+                return radioGroup[i].getAttribute("value");
+            };
+        };
+        return null;
+    };
+
+    //Experiment constants
+    var massInputs = {
+        "small-incoming-body": {
+            mainMass: 1000,
+            incomingMass: 5
+        },
+        "same-incoming-body": {
+            mainMass: 100,
+            incomingMass: 100
+        },
+        "large-incoming-body": {
+            mainMass: 5,
+            incomingMass: 100
+        }
+    };
+
+    var velocityInputs = {
+        "low-velocity": -1,
+        "medium-velocity": -6,
+        "high-velocity": -50
+    };    
+    var universeSize = 600;
+    var initialAreaSize = universeSize / 2;
+    var initialNumberOfBodies = 1000;
+    var timeInBetweenUpdates = 100; //milliseconds
+
+    var defaultIncomingMass = "small-incoming-body";
+    var defaultIncomingVelocity = "medium-velocity";
+    
+    //Bodies that will participate in the experiment
+    var bodies = [];
+
+    //Bound changeable variable
+    var util = {};
+    (function() {
+        var minimumDefault = Math.pow(2, -10);
+        var maximumDefault = Math.pow(2, 10);
+
+        function ChangeableBoundVariable(initialValue, minimum, maximum) {
+            this.initialValue = initialValue;
+            this.value = initialValue;
+            this.minimum = minimum || minimumDefault;
+            this.maximum = maximum || maximumDefault;
+        }
+
+        ChangeableBoundVariable.prototype.increase = function() {
+            this.value *= 2;
+            if (this.value >= this.maximum) {
+                this.value = this.maximum;
+            };
+        };
+
+        ChangeableBoundVariable.prototype.decrease = function() {
+            this.value /= 2;
+            if (this.value <= this.minimum) {
+                this.value = this.minimum;
+            };
+        };
+
+        ChangeableBoundVariable.prototype.reset = function() {
+            this.value = this.initialValue;
+        };
+
+        util.ChangeableBoundVariable = ChangeableBoundVariable;
+    })();
+    
+    /*
+     * Laws of Physics that govern how physical characteristics change in the Universe.
+     */
+    var PhysicsLaws = {};
+    (function() {
+
+        var maximumTime = Math.pow(2, 10);
+        var minimumTime = Math.pow(2, -10);
+
+        var dimensions = ["x", "y"];
+        
+        //Gravitational constant
+        var G = 10;
+
+        //Time increment in the Universe
+        PhysicsLaws.t = new util.ChangeableBoundVariable(1);
+
+        function computeDistanceSquared(body1, body2) {
+            var distance = 0;
+            dimensions.forEach(function (dimension) {
+                distance += Math.pow(body1[dimension] - body2[dimension], 2);
+            });                      
+            return distance;
+        };
+
+        function computeDistance(body1, body2) {
+            return Math.sqrt(computeDistanceSquared(body1, body2));
+        };
+        
+        function computeGravityForceFromBody2ForBody1(body1, body2) {
+            var distanceSquared = computeDistanceSquared(body1, body2);
+            var forceAbsoluteValue = G * body1.mass * body2.mass / distanceSquared;
+            var force = {};
+
+            dimensions.forEach(function (dimension) {
+                var forceProjectionAbsoluteValue = forceAbsoluteValue * Math.abs(body2[dimension] - body1[dimension]) / Math.sqrt(distanceSquared);
+                var forceProjection = (body2[dimension] - body1[dimension]) / Math.abs(body2[dimension] - body1[dimension]) * forceProjectionAbsoluteValue;
+
+                force[dimension] = forceProjection;
+            });
+            return force;    
+        };
+
+        //Gravity force is the vector sum of the gravity forces from each of the remaining bodies
+        function computeGravityForceForBody(body, allBodies) {
+            var gravityForce = null;
+            var gravityForceSum = {};
+            dimensions.forEach(function (dimension) {
+                gravityForceSum[dimension] = 0; 
+            });
+            for (var i = 0; i < allBodies.length; i++) {
+                if (body != allBodies[i]) {                  
+                    gravityForce = computeGravityForceFromBody2ForBody1(body, allBodies[i]);
+                    dimensions.forEach(function (dimension) {
+                        gravityForceSum[dimension] += gravityForce[dimension]; 
+                    });
+                }
+            };
+            return gravityForceSum;
+        };
+
+        function move(body) {
+            dimensions.forEach(function (dimension) {
+                body[dimension] = body[dimension] + body.velocity[dimension] * PhysicsLaws.t.value;
+            });
+        };
+
+        function applyForceTo(body, force) {
+            dimensions.forEach(function (dimension) {
+                body.velocity[dimension] = body.velocity[dimension] + (force[dimension]/body.mass) * PhysicsLaws.t.value;
+            });
+        };
+        
+        function updatePhysicalCharactersticsOf(body, allBodies) {
+            move(body);
+            applyForceTo(body, computeGravityForceForBody(body, allBodies));
+        };
+
+        function collideTwoBodies(body1, body2, allBodies) {
+            var newMass = body2.mass + body1.mass;
+            var newVelocity = {};
+            var newCoordinates = {};
+            dimensions.forEach(function (dimension) {
+                newVelocity[dimension] = (body2.mass * body2.velocity[dimension] + body1.mass * body1.velocity[dimension]) / (body2.mass + body1.mass);
+                newCoordinates[dimension] = (body2.mass * body2[dimension] + body1.mass * body1[dimension]) / (body2.mass + body1.mass);    
+              });          
+            var newBody = new Body(body1.name + body2.name, newCoordinates.x, newCoordinates.y, newMass, newVelocity);
+
+            allBodies.remove(body1);
+            allBodies.remove(body2);
+            allBodies.push(newBody);
+        };
+
+        function checkForBodyCollision(bodies) {
+            var commonRadius = null;
+            var collisionHappened = false;
+            for (var i = 0; (i < bodies.length) && !collisionHappened; i++) {
+                for (var j = i + 1; (j < bodies.length) && !collisionHappened; j++) {                  
+                    //Checking for collision and colliding the bodies
+                    commonRadius = bodies[j].radius + bodies[i].radius;
+                    if (computeDistance(bodies[j], bodies[i]) <= commonRadius) {
+                        collideTwoBodies(bodies[i], bodies[j], bodies);
+                        collisionHappened = true;
+                    };
+                }
+            };
+            if (collisionHappened) {
+                checkForBodyCollision(bodies);
+            };
+          };
+
+          PhysicsLaws.updatePhysicalWorld = function(bodies) {
+            for (var k = 0; k < bodies.length; k++) {
+                updatePhysicalCharactersticsOf(bodies[k], bodies);
+            };
+            checkForBodyCollision(bodies);
+          };
+    })();
+
+    var Display = {};
+    (function(){
+
+        var context = null;
+
+        Display.scale = new util.ChangeableBoundVariable(1);
+        
+        Display.init = function() {
+            var canvas = document.getElementById("drawingArea"); 
+            canvas.style.width = universeSize;
+            canvas.style.height = universeSize;
+            if (canvas.getContext) {
+                context = canvas.getContext("2d");
+            } else {
+                document.write('You need Firefox 1.5+ to view this example.');
+            };
+        };
+        
+        function showBody(body) {
+            var scaledX = body.x / Display.scale.value;
+            var scaledY = body.y / Display.scale.value;
+            var scaledRadius = Math.max(body.radius / Display.scale.value, 1);
+            drawCircle(context, scaledX + initialAreaSize, scaledY + initialAreaSize, scaledRadius);
+        };
+
+        function drawCircle(context, x, y, radius) {
+            context.fillStyle = "white";
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI*2);
+            context.closePath();
+            context.fill();
+        };
+
+        function drawCoordinateLines() {
+            context.strokeStyle = "red"; // red
+            context.lineWidth   = 1;
+
+            context.beginPath();
+            context.moveTo(universeSize/2, 0);
+            context.lineTo(universeSize/2, universeSize);
+            context.closePath();
+            context.stroke();
+              
+            context.beginPath();
+            context.moveTo(0, universeSize/2);
+            context.lineTo(universeSize, universeSize/2);
+            context.closePath();
+            context.stroke();
+        };
+        
+        Display.show = function() {
+            context.clearRect(0, 0, universeSize, universeSize);
+            for (var i = 0; i < bodies.length; i++) {
+                showBody(bodies[i]);
+            };
+            drawCoordinateLines();
+        };
+    })();
+
+
+    function Body(name, x, y, mass, velocity) {
+        this.name = name;
+
+        //Setting physical characteristics of a physical body
+        this.mass = mass;
+        this.x = x;
+        this.y = y;
+        this.radius = Math.sqrt(mass);
+        this.velocity = velocity;
+    };
+
+    function update() {          
+        PhysicsLaws.updatePhysicalWorld(bodies);
+        Display.show();
+        setTimeout(update, timeInBetweenUpdates);
+    };
+
+    function createBodies(mainBodyMass, incomingBodyMass, incomingBodyVelocity) {
+        bodies = [];        
+        bodies.push(new Body("main-body", 0, 0, mainBodyMass, {x: 0, y: 0}));
+        bodies.push(new Body("incoming-body", universeSize/4, universeSize/2, incomingBodyMass, {x: 0, y: incomingBodyVelocity}));
+    };
+
+    function startNewExperiment() {
+        var selectedMass = selectedRadioGroupValue(document.querySelectorAll("input[name=experiment-mass]"));
+        var selectedVelocity = selectedRadioGroupValue(document.querySelectorAll("input[name=experiment-velocity]"));
+
+        bodies = [];
+        PhysicsLaws.t.reset();
+        Display.scale.reset();
+        //A small timeout to allow the user to notice the changes
+        setTimeout(function() {
+            createBodies(massInputs[selectedMass].mainMass, massInputs[selectedMass].incomingMass, velocityInputs[selectedVelocity]);
+        }, 200);
+    };
+
+    function main() {
+        makeDefaultSelection();
+        registerListeners();
+
+        Display.init();
+        startNewExperiment();
+        Display.show();
+
+        setTimeout(update, timeInBetweenUpdates);
+    };
+
+    function makeDefaultSelection() {
+        [document.querySelector("input[value=" + defaultIncomingMass + "]"),
+         document.querySelector("input[value=" + defaultIncomingVelocity + "]")].forEach(function (input) {
+            input.checked = true;
+            input.setAttribute("checked", "true"); 
+        });
+    };
+    
+    function registerListeners() {
+        window.addEventListener("keydown", keyboardListener, false);
+        document.querySelector("form.input-area").addEventListener("change", formChangeListener, false);
+    };
+    
+    function formChangeListener(event) {
+        startNewExperiment();
+    };
+
+    function keyboardListener(event){
+        //'z'
+        if (90 == event.keyCode) {
+            Display.scale.increase();
+        };
+        //'x'
+        if (88 == event.keyCode) {
+            Display.scale.decrease();
+        };
+        //'c'
+        if (67 == event.keyCode) {
+            PhysicsLaws.t.increase();
+        };
+        //'v'
+        if (86 == event.keyCode) {
+            PhysicsLaws.t.decrease();
+        };
+    };
+
+    window.addEventListener("load", main, false);
+</script>
+<style>
+
+</style>
+</header>
+<body>
+    <div class="drawing-area">
+      <canvas id="drawingArea" width="600" height="600"></canvas>
+    </div>
+    <form class="input-area">
+        <h2>Kepler's Laws of Planetary Motion</h2>
+        <div class="parameters">
+            <p>Mass</p>
+            <input type="radio" name="experiment-mass" value="small-incoming-body" />Small<br/>
+            <input type="radio" name="experiment-mass" value="same-incoming-body" />Same<br/>
+            <input type="radio" name="experiment-mass" value="large-incoming-body" />Large<br/>    
+        </div>
+        <div class="parameters">
+            <p>Velocity</p>
+            <input type="radio" name="experiment-velocity" value="low-velocity" />Low<br/>
+            <input type="radio" name="experiment-velocity" value="medium-velocity" />Medium<br/>
+            <input type="radio" name="experiment-velocity" value="high-velocity" />High<br/>    
+        </div>
+        <div class="info">
+            <a href="http://en.wikipedia.org/wiki/Kepler's_laws_of_planetary_motion">About the laws</a>
+            <p>To increase/decrease the scale use 'z'/'x'. To increase/decrease the speed of time use 'c'/'v'.</p>
+        </div>
+    </form>
+</body>
+</html>

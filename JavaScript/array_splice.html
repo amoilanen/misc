@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Array.splice Implementation</title>
+    <link rel="stylesheet" type="text/css" href="http://github.com/jquery/qunit/raw/master/qunit/qunit.css" />
+    <script type="text/javascript" src="http://github.com/jquery/qunit/raw/master/qunit/qunit.js"></script>
+    <script type="text/javascript">
+        if (!Array.prototype.splice2) {
+            Array.prototype.splice2 = function(index, howmany) {
+                if (index < 0) {
+                    index = this.length + index;
+                };
+                if (!howmany || howmany < 0) {
+                    howmany = 0;
+                };
+                var    selection = this.slice(index, index + howmany);
+                this.copyFrom(
+                    this.slice(0, index)
+                    .concat(Array.prototype.slice.apply(arguments, [2]))
+                    .concat(this.slice(index + howmany)));
+                return selection;
+            };
+        };
+    
+        if (!Array.prototype.copyFrom) {
+            Array.prototype.copyFrom = function(source) {
+                for (var i = 0; i < source.length; i++) {
+                    this[i] = source[i];
+                };
+                this.length = source.length;
+                return this;
+            };
+        };
+    </script>
+    <script type="text/javascript">
+
+        module("Testing Array.prototype.splice()");
+
+        function check(arrays, index, howmany) {
+            var replacement = Array.prototype.slice.apply(arguments, [3]);        
+            var argumentsDescription = "[" + arrays.original + "], " + index + ", " + howmany;
+            var args = replacement.slice(0);
+            args.unshift(howmany, index);
+            
+            [{name: "splice()", func: Array.prototype.splice}, 
+             {name: "splice2()", func: Array.prototype.splice2}].forEach(function (spliceFunction) {
+                var arrayToSplice = arrays.original.slice(0);
+
+                deepEqual(spliceFunction.func.apply(arrayToSplice, args), arrays.spliceResult, 
+                        spliceFunction.name + " splice result, " + argumentsDescription);
+                deepEqual(arrayToSplice, arrays.splicedOriginal,
+                        spliceFunction.name + "changed original array " + argumentsDescription);
+            });
+        };
+
+        test("There is only first 'index', 'howmany' is undefined", function() {
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 0);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, -1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [],
+                   splicedOriginal: [1, 2, 3]
+                  }, 10);
+        });
+
+        test("Combinations of 'index' and 'howmany' parameters", function() {
+            check({original: [1, 2, 3], 
+                   spliceResult: [2], 
+                   splicedOriginal: [1, 3]
+                  }, 1, 1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [1], 
+                   splicedOriginal: [2, 3]
+                  }, 0, 1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [3], 
+                   splicedOriginal: [1, 2]
+                  }, -1, 1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 10, 1);
+                  
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 1, 0);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 0, 0);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, -1, 0);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 10, 0);
+            
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 1, -1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 0, -1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, -1, -1);
+            check({original: [1, 2, 3], 
+                   spliceResult: [], 
+                   splicedOriginal: [1, 2, 3]
+                  }, 10, -1);
+            
+            check({original: [1, 2, 3], 
+                   spliceResult: [2, 3], 
+                   splicedOriginal: [1]
+                  }, 1, 20);
+            check({original: [1, 2, 3], 
+                   spliceResult: [1, 2, 3], 
+                   splicedOriginal: []
+                  }, 0, 20);
+            check({original: [1, 2, 3], 
+                   spliceResult: [3], 
+                   splicedOriginal: [1, 2]
+                  }, -1, 20);
+            check({original: [1, 2, 3], 
+                   spliceResult: [],
+                   splicedOriginal: [1, 2, 3]
+                  }, 10, 20);
+        });
+        
+        test("There are replacement elements", function() {
+            check({original: [1, 2, 3], 
+                   spliceResult: [2],
+                   splicedOriginal: [1, 4, 3]
+                  }, 1, 1, 4);
+            check({original: [1, 2, 3], 
+                   spliceResult: [2], 
+                   splicedOriginal: [1, 4, 5, 6, 7, 8, 3]
+                  }, 1, 1, 4, 5, 6, 7, 8);            
+        });
+    </script>
+</head>
+<body>
+    <h1 id="qunit-header">Array.splice Implementation</h1>
+    <h2 id="qunit-banner"></h2>
+    <div id="qunit-testrunner-toolbar"></div>
+    <h2 id="qunit-userAgent"></h2>
+    <ol id="qunit-tests"></ol>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!-- Hosted at http://pastehtml.com/view/bwy9fiv68.html -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+    <title>Monte-Carlo Method</title>
+    <style type="text/css">
+        .figure-container {
+            background-color: gray;
+            margin-bottom: 16px;
+        }
+        .figure {
+            background-color: black;
+        }
+    </style>
+    <script type="text/javascript" src="http://dygraphs.com/dygraph-combined.js"></script>
+    <script type="text/javascript">
+       var figureContainerWidth = 400;
+       var figureContainerHeight = 200;
+       var figureContainerArea = figureContainerWidth * figureContainerHeight;
+       var figureWidth = 100;
+       var figureHeight = 100;
+       var figureArea = figureWidth * figureHeight;
+       var maximumNumberOfThrowings = 1000;
+       
+       function setElementDimensions(selector, options) {
+           var element = document.querySelector(selector);
+
+           element.style.width = options.width + "px";
+           element.style.height = options.height + "px";
+       };
+       
+       function setDimensions() {
+           setElementDimensions(".figure-container", {width: figureContainerWidth, height: figureContainerHeight});
+           setElementDimensions(".figure", {width: figureWidth, height: figureHeight});
+       };
+
+       /*
+        * Determining the area of the figure with the Monte-Carlo method http://en.wikipedia.org/wiki/Monte_Carlo_method
+        */
+       function belongsToFigure(point) {
+           return point.x <= figureWidth && point.y <= figureHeight;
+       };
+
+       function randomPoint(maxX, maxY) {
+           return {
+               x: Math.floor(Math.random() * maxX),
+               y: Math.floor(Math.random() * maxY)
+           }
+       };
+       
+       function randomlyThrownPointBelongsToFigure() {
+           return belongsToFigure(randomPoint(figureContainerWidth, figureContainerHeight));
+       };
+       
+       function estimateArea(numberOfExperiments) {
+           var belongsToFigure = 0;
+          
+           for (var i = 0; i < numberOfExperiments; i++) {
+               if (randomlyThrownPointBelongsToFigure()) {
+                   belongsToFigure++;
+               }
+           };
+           return figureContainerArea * (belongsToFigure / numberOfExperiments);
+       };
+       
+       function collectMeasurements() {
+           var measurements = {};
+
+           for (var i = 1; i <= maximumNumberOfThrowings; i++) {
+               measurements[i] = estimateArea(i);
+           };
+           return measurements;
+       };
+       
+       function drawMeasurements(measurements) {
+           var chartSettings = {
+              labels: [ "x", "Computed Area", "Monte-Carlo Estimation"],
+              valueRange: [5000,15000]
+           };
+           var chartData = [];
+           
+           for (measurement in measurements) {
+               chartData.push([measurement, figureArea, measurements[measurement]])  
+           };
+           new Dygraph(document.querySelector(".chart-container"), chartData, chartSettings);
+       };
+       
+       function onLoad() {
+           setDimensions();
+           drawMeasurements(collectMeasurements());
+       };
+      window.addEventListener("load", onLoad, false);
+    </script>
+ </head>
+<body>
+    <p>Determining the area of the black square by <a href="http://en.wikipedia.org/wiki/Monte_Carlo_method">the Monte-Carlo method</a>
+       The chart shows how the area estimation depends on the number of random throwings of a point.
+    </p>
+    <div class="figure-container">
+        <div class="figure"></div>
+    </div>
+    <div class="chart-container"></div>
+</body>
+</html>

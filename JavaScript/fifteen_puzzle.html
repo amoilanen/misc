@@ -1,0 +1,308 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <!-- Hosted at http://pastehtml.com/view/c50vk1exq.html -->
+ <head>
+    <meta charset="UTF-8">
+    <title>15 puzzle</title>
+    <style type="text/css">
+        .field {
+            width: 80%;
+            height: 80%;
+            max-width: 500px;
+            max-height: 500px;
+            border: 1px solid gray;
+            margin: auto;
+            display: table;
+        }
+        .row {
+            display: table-row;
+        }
+        .cell {
+            display: table-cell;
+            text-align: center;
+            width: 20%;
+            height: 20%;
+            max-width: 125px;
+            max-height: 125px;
+            box-model: border-box;
+            vertical-align: middle;
+            border: 2px solid gray;
+            background-image: linear-gradient(-45deg, white, gray);
+            background-image: -moz-linear-gradient(-45deg, white, gray);
+            background-image: -webkit-linear-gradient(-45deg, white, gray);
+            background-color: gray;
+            font-size: 2em;
+        }
+        .cell[draggable] {
+            cursor: move;
+            border: 2px dotted gray;
+        }
+        .ordered .cell {
+            background-image: none;
+            background-color: white;
+        }
+        .cell:after {
+            content: attr(value);
+        }
+        .cell[value=""] {
+            background-image: none;
+            background-color: #eee;
+        }
+        .controls {
+            padding-top: 8px;
+            text-align: center;
+        }
+        button {
+            padding: 2px;
+            width: 20%;
+            max-width: 200px;
+            min-width: 100px;
+            border: solid 2px gray;
+            font: bold;
+            font-size: 3em;
+            color: #2E2E2E;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 4px;
+            -moz-border-radius: 4px;
+            -webkit-border-radius: 4px;
+            background-color: #ccc;
+            background-image: linear-gradient(-45deg, white, #ccc);
+            background-image: -moz-linear-gradient(-45deg, white, #ccc);
+            background-image: -webkit-linear-gradient(-45deg, white, #ccc);
+        }
+        button:active {
+            color: black;
+            transform: translate(1px, 1px);
+            -moz-transform: translate(1px, 1px);
+            -webkit-transform: translate(1px, 1px);
+        }
+        button:hover {
+            color: black;
+            -moz-box-shadow: 1px 1px 1px #ccc;
+            -webkit-box-shadow: 1px 1px 1px #ccc;
+            box-shadow: 1px 1px 1px #ccc;
+            background-color: #aaa;
+            background-image: linear-gradient(-45deg, white, #aaa);
+            background-image: -moz-linear-gradient(-45deg, white, #aaa);
+            background-image: -webkit-linear-gradient(-45deg, white, #aaa);
+        }
+    </style>
+    <script type="text/javascript" src="http://prototypejs.org/assets/2009/8/31/prototype.js"></script>
+    <script type="text/javascript">
+
+        (function(host) {
+        
+            function Game() {
+            };
+
+            Game.prototype.finished = false;
+            
+            Game.prototype.start = function() {
+                this.finished = false;
+                this.shuffleCells();
+                Board.renderReadyForNewGame();
+            };
+        
+            Game.prototype.shuffleCells = function() {                
+                this.randomSequence(16).map(function (value) {
+                    return value > 0 ? value.toString() : "";
+                }).forEach(function (value, index) {
+                    $$(".cell[number='" + index + "']")[0].setAttribute("value", value);
+                });
+            };
+        
+            Game.prototype.randomSequence = function(length) {
+                var randomIndex = -1;
+                var sequence = [];
+                var shuffled = [];
+                for (var i = 0; i < length; i++) {
+                    sequence.push(i);
+                };
+                for (var i = 0; i < length; i++) {
+                    randomIndex = Math.floor(Math.random() * sequence.length);
+                    shuffled.push(sequence[randomIndex]);
+                    sequence.splice(randomIndex, 1)
+                };
+                //For debugging
+                //return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15];
+                return shuffled;
+            };
+        
+            Game.prototype.checkForGameFinish = function() {
+                if (this.checkOrdered()) {
+                    this.finished = true;
+                };
+                return this.finished;
+            };
+        
+            Game.prototype.checkOrdered = function() {   
+                return $$(".cell").every(function (cell) {
+                    return ("" === cell.getAttribute("value")) 
+                        || ((parseInt(cell.getAttribute("value")) - 1) === parseInt(cell.getAttribute("number")));  
+                });
+            };
+            
+            host.Game = new Game();
+        })(window);
+        
+        (function(host) {
+        
+            function Board() {
+            };
+
+            Board.Geometry = {
+                cell2position: function(cell) {
+                    var cellNumber = cell.getAttribute("number");
+            
+                    var column =  cellNumber % 4;
+                    var row = Math.floor(cellNumber / 4);
+            
+                    return {row: row, column: column};
+                },
+                position2cell: function(position) {
+                    if (position.row < 0 || position.row > 3 || position.column < 0 || position.column > 3) {
+                        return null;
+                    };
+                    var cellNumber = position.row * 4 + position.column;
+                    return ((cellNumber >= 0) && (cellNumber <= 15)) 
+                        ? $$(".cell[number='" + cellNumber + "']")[0]
+                        : null;
+                }
+            };
+
+            Board.prototype.initializeListeners = function() {
+                Event.observe($$("button[name=start]")[0], "click", function() {
+                    Game.start();
+                });
+            };
+
+            Board.prototype.updateField = function() {
+                this.makeAllCellsUndraggable();
+                this.makeCellsAroundEmptyCellDraggable();    
+                if (Game.checkForGameFinish()) {
+                   this.renderFieldForGameFinish();
+                };
+            };
+
+            Board.prototype.renderReadyForNewGame = function() {
+                $$(".field")[0].removeClassName("ordered");
+                this.updateField();
+            };
+
+            Board.prototype.renderFieldForGameFinish = function() {
+                $$(".field")[0].addClassName("ordered");
+                this.makeAllCellsUndraggable();
+            };
+
+            Board.prototype.makeAllCellsUndraggable = function() {
+                $$(".cell[draggable='true']").forEach(function (cell) {
+                    cell.removeAttribute("draggable");
+                });
+            };
+
+            Board.prototype.makeCellsAroundEmptyCellDraggable = function() {
+                var emptyCellPosition = Board.Geometry.cell2position($$('.cell[value=""]')[0]);
+
+                this.makeDraggable(emptyCellPosition.row - 1, emptyCellPosition.column);
+                this.makeDraggable(emptyCellPosition.row + 1, emptyCellPosition.column);
+                this.makeDraggable(emptyCellPosition.row, emptyCellPosition.column - 1);
+                this.makeDraggable(emptyCellPosition.row, emptyCellPosition.column + 1);
+            };
+            
+            Board.prototype.makeDraggable = function(row, column) {
+                var adjacentCell = Board.Geometry.position2cell({row: row, column: column});
+
+                adjacentCell && adjacentCell.setAttribute("draggable", "true");
+            };
+
+            host.Board = new Board();
+        })(window);
+        
+        (function(host) {
+
+            var draggedCellNumber = undefined;
+        
+            function DragAndDrop() {
+            };
+            
+            DragAndDrop.prototype.initializeListeners = function () {
+                Event.observe(window, "dragstart", handleDragStart);
+                Event.observe(window, "dragover", handleDragOver);
+                Event.observe(window, "drop", handleDrop);
+            };
+
+            function handleDragStart(e) {
+                e.dataTransfer.setData("number", e.target.getAttribute("number"));
+                draggedCellNumber = e.target.getAttribute("number");
+            };
+
+            function handleDragOver(e) {
+                //Dropping is allowed only onto the empty cell
+                var dropAllowed = ("" == e.target.getAttribute("value")) && !Game.finished;
+
+                e.dataTransfer.dropEffect = dropAllowed ? 'move' : 'none';
+                e.preventDefault();
+                return dropAllowed;
+            };
+        
+            function handleDrop(e) {
+                var droppedCellNumber = e.dataTransfer.getData("number") || draggedCellNumber;
+                var droppedCell = $$(".cell[number='" + droppedCellNumber + "']")[0];
+                var targetCell = e.target;
+
+                var droppedValue = droppedCell.getAttribute("value");
+                droppedCell.setAttribute("value", targetCell.getAttribute("value"));
+                targetCell.setAttribute("value", droppedValue);
+                e.preventDefault;
+
+                Board.updateField();
+            };
+
+            host.DragAndDrop = new DragAndDrop();
+        })(window);
+        
+        function onLoad() {
+            DragAndDrop.initializeListeners();
+            Board.initializeListeners();
+            Game.start();
+        };
+        
+        Event.observe(window, "load", onLoad);
+    </script>
+ </head>
+<body>
+    <div class="container">
+        <div class="field">
+            <div class="row">
+                <div class="cell" number="0"></div>
+                <div class="cell" number="1"></div>
+                <div class="cell" number="2"></div>
+                <div class="cell" number="3"></div>
+            </div>
+            <div class="row">
+                <div class="cell" number="4"></div>
+                <div class="cell" number="5"></div>
+                <div class="cell" number="6"></div>
+                <div class="cell" number="7"></div>
+            </div>
+            <div class="row">
+                <div class="cell" number="8"></div>
+                <div class="cell" number="9"></div>
+                <div class="cell" number="10"></div>
+                <div class="cell" number="11"></div>
+            </div>
+            <div class="row">
+                <div class="cell" number="12"></div>
+                <div class="cell" number="13"></div>
+                <div class="cell" number="14"></div>
+                <div class="cell" number="15"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button name="start">
+                &#x21BB;
+            </button>
+        </div>
+    </div>
+</body>
+</html>

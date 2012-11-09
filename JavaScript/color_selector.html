@@ -1,0 +1,77 @@
+<!-- Hosted at http://pastehtml.com/view/bvmdpxu1r.html -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+    <title>Color Tool</title>
+    <style type="text/css">
+        .colors-container {
+            width: 400px;
+            height: 200px;
+            padding: 16px;
+            border: 1px solid;
+            border-radius: 15px;
+            background-color: #eeeeee;
+        }
+        .tool-title {
+            text-align: center;
+            font-size: 2em;
+        }
+        .color-selector,.tool-title {
+            height: 50px;
+            margin-bottom: 4px;
+            margin-left: 20%;
+            margin-right: 20%;
+        }
+        .color-selector > input {
+            width : 100px;
+        }
+        .color-demo {
+            width: 40px;
+            height: 40px;
+            border: 1px solid;
+            border-radius: 5px;
+            background-color: white;
+            display: inline-block;
+            vertical-align: bottom;
+        }
+    </style>
+    <script type="text/javascript">
+      function initializeSelector(selector) {
+          var inputField = selector.querySelector(".color-input"); 
+          var demoField = selector.querySelector(".color-demo");
+
+          demoField.style.backgroundColor = inputField.value;
+          inputField.addEventListener("keyup", function(event) {
+              demoField.style.backgroundColor = inputField.value; 
+          });
+      };
+
+       function initialize() {
+          var selectors = document.querySelectorAll(".color-selector");
+          for (var i = 0; i < selectors.length; i++) {
+              initializeSelector(selectors[i]);
+          };
+       };
+      window.addEventListener("load", initialize, false);
+    </script>
+ </head>
+<body>
+    <div class="colors-container">
+        <div class="tool-title">Color Selector</div>
+        <div class="color-selector">
+            <label for="color1">Color 1</label>
+            <input id="color1" type="text" class="color-input" value="#123456"></input>
+            <div class="color-demo"></div>
+        </div>
+        <div class="color-selector">
+            <label for="color2">Color 2</label>
+            <input id="color2" type="text" class="color-input" value="#000000"></input>
+            <div class="color-demo"></div>
+        </div>
+        <div class="color-selector">
+            <label for="color3">Color 3</label>
+            <input id="color3" type="text" class="color-input" value="#654321"></input>
+            <div class="color-demo"></div>
+        </div>
+    </div>
+</body>
+</html>

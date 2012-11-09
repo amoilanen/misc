@@ -1,0 +1,77 @@
+<html>
+<head>
+<style>
+#loadingStatus.loading {
+  padding-left: 30px;
+  height: 40px; line-height: 40px;
+  background: no-repeat left transparent;
+  background-image: url("http://www.andrewdavidson.com/articles/spinning-wait-icons/wait30trans.gif");
+  font-style: italic;
+}
+#loadingStatus.loaded {
+  display: none;
+}
+#linksFeed {
+  list-style-type: none;
+}
+span.time {
+  color: silver;
+  font-size: 90%;
+  font-weight: normal;
+  padding-left: 1em;
+}
+ul {
+  width: 50em;
+}
+a.url {
+  font-style: italic;
+}
+</style>
+<script type="text/javascript" src="http://prototypejs.org/assets/2009/8/31/prototype.js">
+</script>
+<script>
+var linkItemTemplate = new Template('<li><a class="url" href="#{url}">#{title}</a><span class="time">#{time}</span></li>');
+var dateTemplate = new Template('#{month}/#{day}/#{year}');
+
+function deliciousCallback(json) {
+  var feed = $('linksFeed');
+
+  json.sort(function compare(a, b){
+    return Date.parse(b.dt) - Date.parse(a.dt);
+  });
+  json.each(function(link) {
+    feed.insert(linkItemTemplate.evaluate({
+      url: link.u, title: link.d, time: formatDate(link.dt)
+    }));
+  });
+  hideLoadingStatus();
+}
+
+function formatDate(dateString) {
+  var date = new Date(dateString)
+  return dateTemplate.evaluate({year: date.getFullYear(), month: date.getMonth(), day: date.getDate()});
+}
+
+function updateFeed() {
+  var url = 'http://feeds.delicious.com/v2/json/popular';
+  document.documentElement.firstChild.appendChild(
+    new Element('script', { type: 'text/javascript',
+      src: url + '?callback=deliciousCallback&r=' + Math.random() }));
+}
+
+function hideLoadingStatus() {
+  $('loadingStatus').className = 'loaded';
+}
+
+document.observe('dom:loaded', function() {
+  updateFeed();
+});
+</script>
+</head>
+<body>
+<h1>Popular links from <a href="http://www.delicious.com/">Delicious</a></h1>
+<p id="loadingStatus" class="loading">Loading...</p>
+<ul id="linksFeed">
+</ul>
+</body>
+</html>
