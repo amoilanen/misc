@@ -1,0 +1,61 @@
+<html>
+<head>
+  <style type="text/css">
+        table.google-visualization-table-table,
+        #google-visualization-geomap-embed-0 {
+              width: 100% !important; 
+        }
+        #google-visualization-geomap-embed-0 {
+              height: 50%;
+        }
+  </style>
+  <title>Fronteers 2013 Attendees</title>
+  <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+  <script type='text/javascript'>
+      var geomapData = @geomapData@,
+          tableData = @tableData@,
+          total = @total@;
+
+      google.load('visualization', '1', {'packages': ['geomap', 'table']});
+      google.setOnLoadCallback(function() {
+          renderMap(geomapData);
+          renderTable(tableData);
+      });
+
+      function renderMap(data) {
+          var data = google.visualization.arrayToDataTable([['Country', 'Popularity']].concat(data)),
+              container = document.getElementById('map_canvas'),
+              geomap = new google.visualization.GeoMap(container),
+              options = {};
+
+          options['dataMode'] = 'regions';
+          geomap.draw(data, options);
+      };
+
+      function getTotal(countries) {
+          return countries.reduce(function(previous, current){
+              return previous + current[1];
+          }, 0);
+      };
+
+      function renderTable(rows) {
+          var data = new google.visualization.DataTable(),
+              table = new google.visualization.Table(document.getElementById('table_div'));
+
+          data.addColumn('string', 'Country');
+          data.addColumn('number', 'Number of Attendees');
+          data.addColumn('number', 'Percent from Total');
+
+          data.addRows(rows);
+          data.addRow(['Total', total, {v: 100, f: "100%"}]);
+
+          table.draw(data, {showRowNumber: false});
+      };
+  </script>
+</head>
+
+<body>
+  <div id='map_canvas'></div>
+  <div id='table_div'></div>
+</body>
+</html>
