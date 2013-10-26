@@ -1,0 +1,103 @@
+<html>
+<head>
+    <style type="text/css">
+        div {
+            font-size: 2em;
+        }
+        #timeclock {
+            width: 360px;
+            height: 100px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-left: -165px;
+            margin-top: -50px;
+            background-color: #73A3BA;
+            border-radius: 4px;
+            box-shadow: 10px 10px 5px #888888;
+        }
+        .cell {
+            width: 80px;
+            height: 80px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            margin-left: 6px;
+            margin-right: 6px; 
+            background-color: #ADD9ED;
+            display: inline-block;
+            border-radius: 4px;
+            border: 2px solid #7D9BA3;
+        }
+        .separator {
+            display: inline-block;
+            height: 80px;
+            width: 20px;
+            font-weight: bold;
+        }
+        .cell, 
+        .separator {
+            text-align: center;
+            vertical-align: middle;
+            line-height: 80px; 
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+        var SOCKET_SERVER_URL = 'http://localhost:8080';
+
+        (function(module) {
+
+            var timeParts = ["hours", "minutes", "seconds"]
+
+            function Clock() {
+                timeParts.forEach(function (timePart) {
+                    self[timePart] = null;
+                });
+            };
+
+            Clock.prototype.init = function(view) {
+                var self = this;
+                
+                timeParts.forEach(function (timePart) {
+                    self[timePart] = view.getElementById(timePart);
+                });
+            };
+
+            Clock.prototype.renderTimeNumber = function(number) {
+                return number < 10 ? "0" + number : number.toString();
+            };
+
+            Clock.prototype.connectToServer = function(url) {
+                var self = this,
+                    socket = io.connect(url);
+
+                socket.on('time-tick', function (time) {
+                    timeParts.forEach(function (timePart) {
+                        self[timePart].innerHTML = self.renderTimeNumber(time[timePart]);
+                    });
+                });
+            };
+
+            module.Clock = Clock;
+        })(window);
+
+        
+        window.addEventListener("load", function (event) {
+            var clock = new Clock();
+
+            clock.init(document);
+            clock.connectToServer(SOCKET_SERVER_URL);
+        }, false);
+    </script>
+</head>
+<body>
+    <div id="timeclock">
+        <div class="cell" id="hours">--</div>
+        <div class="separator">:</div>
+        <div class="cell" id="minutes">--</div>
+        <div class="separator">:</div>
+        <div class="cell" id="seconds">--</div>
+    </div>
+</body>
+</html>
