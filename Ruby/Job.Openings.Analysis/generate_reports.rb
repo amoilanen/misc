@@ -31,12 +31,12 @@ end
 
 #TODO: Generate the reports so that they can be viewed in a browser
 puts "Top locations:"
-p top_locations.take(2)
+p top_locations.take(10)
 puts "Top skills:"
-skills = top_skills.take(2)
+skills = top_skills.take(10)
 p skills
 
 skills.each do |skill|
   puts "Skill '#{skill[0]}'"
-  p top_locations_for_skill(skill[0])
+  p top_locations_for_skill(skill[0]).take(10)
 end

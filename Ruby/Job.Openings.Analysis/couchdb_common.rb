@@ -8,6 +8,7 @@ class JobOpening < CouchRest::Model::Base
   use_database "job_openings"
 
   property :title
+  property :employer
   property :location
   property :skills
 
@@ -47,9 +48,10 @@ class JobOpening < CouchRest::Model::Base
   end
 end
 
-def store(location, skills)
+def store(title, employer, location, skills)
   opening = JobOpening.new({
-    :title => "job opening",
+    :title => title,
+    :employer => employer,
     :location => location,
     :skills => skills
   })
