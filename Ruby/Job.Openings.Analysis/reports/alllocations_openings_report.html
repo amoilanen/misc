@@ -1,0 +1,67 @@
+<head>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="http://code.highcharts.com/highcharts.js"></script>
+  <script src="http://code.highcharts.com/modules/exporting.js"></script>
+  <script>
+      $(function () {
+        $('#container').highcharts({
+            chart: {
+                type: 'bar'
+            },
+            title: {
+                text: 'Job openings'
+            },
+            subtitle: {
+                text: 'Source: stackoverflow.com'
+            },
+            xAxis: {
+                categories: ["London","New York","Seattle","Berlin","San Francisco","Amsterdam","Hamburg","Chicago","Stockholm","Boston","Cupertino","Cambridge","Munich","Toronto","Kirkland","Paris","Cape Town","Copenhagen","Brighton","M","Cologne","Los Angeles","Portland","Greater London","Frankfurt","Manchester","Bristol","Budapest","Palo Alto","Dublin","Gothenburg","Austin","Rotterdam","Helsinki","Sofia","Atlanta","Warsaw","Oxford","Dubai","Lodz","San Diego","Utrecht","Sydney","Philadelphia","Zurich","Mississauga","Montreal","Krakow","Houston","Maidstone","Redlands","Boulder","Dorking","Edinburgh","Tallinn","Arlington","Warrington","Reading","Newcastle upon Tyne","Dallas","Las Vegas","Melbourne","Minneapolis","Karlsruhe","Lausanne","Raleigh","San Luis Obispo","Sevres","Dresden","Singapore","Berkeley","Belfast","Durham","Surrey","Barcelona","Geneva","Washington","Gateshead","Eindhoven","Espoo","Zephyr Cove","Wroclaw","Windsor","Wiesbaden","West Palm Beach","West Bridgford","Alkmaar","Alpharetta","Waltham","Vienna","Union Square","The Hague","Bangkok","St","Solingen","Bellevue","Bluffton","Grenoble","San Jose","San Bruno","Salt Lake City","Redwood City","Hannover","Bournemouth","Phoenix","Pasadena","Parkville","Denver","Orlando","Nottingham","Herndon","Nieuwegein","Netanya","Needham","Mountain View","Minsk","Malmo","Hong Kong","Delft","Lyon","Huntsville","Indianapolis","Littleton","Lille","Istanbul","Leeds","Jersey City","K","Turku","Dayton","King of Prussia","Davie","Danville","La Defense","Langenfeld","Danderyd","Croydon","Lawrenceville","Leamington","Ledbury","Jeffersonville","Leicester","Leidschendam","Irvine","Limassol","Ipswich","Crawley","Columbus","Los Altos","Cleveland","Lund","Luxembourg","Hull","Lysaker","Cincinnati","Chester","Malm","Holzminden","Chelmsford","Marietta","Marina del Rey","Marseille","Marshall","Marzling","Mclean","Charlotte","Menlo Park","Miami","Milton Keynes","Chandler","Holborn","Mission Viejo","Cardiff","Molndal","Campinas","Moorestown","Mount Kisco","Hoffman Estates","Munchengladbach","Butzbach","N","Naarden","Nanterre","Nantes","Nashville","Natick","Histon","Hildesheim","Burton upon Trent","Newark","Burlingame","Newport Beach","Newton","Herzliya","Norton","Norwich","Herford","Oberhausen","Old Palo Alto","Oosterhout","Henstedt","Ormond Beach","Oslo","Overland Park","Brussels","Paderborn","Palaiseau","Bruchsal","Broomfield","Helsingborg","Heidelberg","Petaling Jaya","Petaluma","Bridgnorth","Hayes","Pittsburgh","Pompano Beach","Bremen","Poznan","Prague","Providence","Pullman","Pyrmont","Brasov","Boxtel","Hauts","Hamilton Square","Richfield","Ried im Innkreis District","Roanoke","Roseville","Bourg","Saarlouis","Sacramento","Salisbury","Hamilton","Derby","Boise","Boca Raton","Groningen","Greenwood Village","San Marcos","Santa Ana","Santa Clara","Santa Monica","Blue Bell","Birmingham","Shanghai","Sheffield","Shoreditch","Bielsko County","Slough","Dundee","Solihull","Grapevine","South Brunswick","Southfield","Edam","Staines","Stavanger","Bath","Sunnyvale","Basel","Swansea","Barcelone","T","Goleta","Taunton","Tel Aviv","Telgte","Teltow","Tewksbury","Edmonton","Tilburg","Ann Arbor","Troy","Kansas City","Gdynia","Amersfoort","Velizy","Gatineau","Villeurbanne","Vilnius","Vlaardingen","El Segundo","Gainesville","Fulda","Adelheidsdorf","Waterloo","Fremont","Freiburg im Breisgau","Westlake Village","Westminster","Wetzlar","Wichita","Essen","Wil","Fort Collins","Winona","Wolfsburg","Farnborough","Yeadon","Z","Eugene","Adelaide"],
+                title: {
+                    text: null
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Job listings',
+                    align: 'high'
+                },
+                labels: {
+                    overflow: 'justify'
+                }
+            },
+            tooltip: {
+                valueSuffix: ''
+            },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true
+                    }
+                }
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'top',
+                x: -40,
+                y: 100,
+                floating: true,
+                borderWidth: 1,
+                backgroundColor: '#FFFFFF',
+                shadow: true
+            },
+            credits: {
+                enabled: false
+            },
+            series: [{
+                name: "openings",
+                data: [139,106,76,56,55,37,32,24,21,18,16,15,14,13,12,11,10,10,9,9,9,8,8,8,8,8,8,8,7,7,7,7,7,6,6,6,6,6,6,6,6,6,6,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            }]
+        });
+    });
+  </script>
+</head>
+<body>
+    <div id="container" />
+</body>
