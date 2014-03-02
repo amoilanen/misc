@@ -7,7 +7,7 @@ def top_locations
   JobOpening.by_location.reduce.group_level(1).rows.sort do |x, y|
     y.value <=> x.value
   end.map do |x|
-    [URI.decode(x["key"]), x["value"]]
+    [x["key"], x["value"]]
   end
 end
 
@@ -15,7 +15,7 @@ def top_skills
   JobOpening.by_skill.reduce.group_level(1).rows.sort do |x, y|
     y.value <=> x.value
   end.map do |x|
-    [URI.decode(x["key"]), x["value"]]
+    [x["key"], x["value"]]
   end
 end
 
@@ -25,7 +25,7 @@ def top_locations_for_skill(skill)
   locations_and_count = skills_and_locations.rows.select do |row|
     row["key"][0] == skill
   end.map do |s|
-    [URI.decode(s["key"][1]), s["value"]]
+    [s["key"][1], s["value"]]
   end.sort do |x, y|
     y[1] <=> x[1]
   end
@@ -33,10 +33,10 @@ end
 
 $google_maps_entries_per_layer_limit = 100
 
-def generate_data_for_google_maps(legend, map_data)
-  slices =  map_data.each_slice($google_maps_entries_per_layer_limit).to_a
+def generate_data_for_google_maps(name, map_data)
+  slices = map_data.each_slice($google_maps_entries_per_layer_limit).to_a
   slices.each.with_index(0) do |slice, idx|
-    File.open(legend + "_google_maps_#{idx}.csv", 'w') do |f|
+    File.open("#{name}_google_maps_#{idx}.csv", 'w') do |f|
     f.puts 'Location, Openings'
       slice.each do |location|
         f.puts location[0].to_s + "," + location[1].to_s
