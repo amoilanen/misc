@@ -40,11 +40,12 @@ def readTrackInformationFromFile(trackList)
   end
 end
 
-def getHTML(url)
-  resp = Net::HTTP.start('www.amazon.com') do |http|
-    http.get(url)
+def get(uri)
+  response = Net::HTTP.get_response(URI.parse(uri))
+  if response.code == "301"
+    response = Net::HTTP.get_response(URI.parse(response.header['location']))
   end
-  resp.body
+  response.body
 end
 
 def prepareSearchTerms(searchTerms)
@@ -54,14 +55,15 @@ end
 def findFirstProductURL(searchTerms)
     searchTerms = prepareSearchTerms(searchTerms)
     searchUrl = "/s/ref=nb_sb_noss?url=search-alias%3Dpopular&field-keywords=#{searchTerms}&x=0&y=0"
-    pageHTML = getHTML(searchUrl)
-    foundLink = pageHTML.scan(/<a class="title" href="http:\/\/www.amazon.com(.*?)"/)[0]
+    pageHTML = get("http://www.amazon.com" + searchUrl)
+    foundLink = pageHTML.match(/<div class="productImage">.*?href="(.*?)".*?<\/div>/m)
     raise "Unknown record, cannot find anything for \"#{searchTerms}\"" if foundLink.nil?
-    foundLink[0]
+    p foundLink[1]
+    foundLink[1]
 end
 
 def tracksFromProduct(productURL)
-  pageHTML = getHTML(productURL)
+  pageHTML = get(productURL)
   tracks = []
   pageHTML.scan(/<td class="titleCol">.*?<a href=".*?">(.*)<\/a><\/td>/).each do |match|
     tracks << match[0]
