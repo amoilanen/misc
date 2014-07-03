@@ -1,0 +1,14 @@
+- Line code coverage does not guarantee anything
+- Avoid false confidence in tests
+- Don't be decieved by beatiful code coverage metric values
+- A lot depends on the quality of tests
+- Scenario coverage is more difficult to estimate
+- Always possible to add a new test for discovered new input
+- Often difficult to cover all the inputs
+- Some leap of faith in the code is still needed
+- No exact recipe when we have written enough tests, not too many not too few
+- Write just enough tests so that the code works in scenarios for which you feel it may be broken
+and may scenarios
+- For strictly proving that your code is correct a whole different approach is needed, in some cases it is really needed
+- Avoid introducing extra scenarios into testing by not being speculatively generic
+- Maybe fine for external libraries, but for own code think twice, again a gut feeling, no exact recipe
