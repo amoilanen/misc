@@ -1,31 +1,31 @@
 var code = require("./code");
-var getInfo = code.getInfo;
-var getInfoBroken = code.getInfoBroken;
-var getInfoCautious = code.getInfoCautious;
+var getValues = code.getValues;
+var getValuesBroken = code.getValuesBroken;
+var getValuesCautious = code.getValuesCautious;
 var sets = require("./generator").sets;
 
 //Full line coverage, tests pass, implementation is largely correct
-describe("getInfo - full line coverage", function() {
+describe("getValues - full line coverage", function() {
 
   it("should provide values for requested keys", function() {
-    expect(getInfo(["key1", "key2", "key3"])).toEqual(["value1", "value2", "value3"]);
+    expect(getValues(["key1", "key2", "key3"])).toEqual(["value1", "value2", "value3"]);
   });
 });
 
 //Full line coverage, tests pass, but the implementation is broken
-describe("getInfoBroken - full line coverage", function() {
+describe("getValuesBroken - full line coverage", function() {
 
   it("should provide values for requested keys", function() {
-    expect(getInfoBroken(["key1", "key2", "key3"])).toEqual(["value1", "value2", "value3"]);
+    expect(getValuesBroken(["key1", "key2", "key3"])).toEqual(["value1", "value2", "value3"]);
   });
 
   //Fails! "Expected [ 'value1', 'value2', 'value3' ] to equal [ 'value1' ]."
   xit("should provide values for requested single key", function() {
-    expect(getInfoBroken(["key1"])).toEqual(["value1"]);
+    expect(getValuesBroken(["key1"])).toEqual(["value1"]);
   });
 });
 
-describe("getInfo - full 'happy-path' scenario coverage", function() {
+describe("getValues - full 'happy-path' scenario coverage", function() {
 
   sets(["key1", "key2", "key3"]).forEach(function(testInput) {
     var testCaseName = "should provide values for '" + testInput.join(",") + "'";
@@ -34,17 +34,17 @@ describe("getInfo - full 'happy-path' scenario coverage", function() {
       var expectedOutput = testInput.map(function(key) {
         return key.replace("key", "value");
       });
-      expect(getInfo(testInput)).toEqual(expectedOutput);
+      expect(getValues(testInput)).toEqual(expectedOutput);
     });
   });
 
   //Fails! "TypeError: Cannot call method 'map' of null"
   xit("should handle invalid input properly", function() {
-    expect(getInfo(null)).toEqual([]);
+    expect(getValues(null)).toEqual([]);
   });
 });
 
-describe("getInfoCautious - full 'happy-path' scenario coverage plus some corner cases, defensive style", function() {
+describe("getValuesCautious - full 'happy-path' scenario coverage plus some corner cases, defensive style", function() {
 
   sets(["key1", "key2", "key3"]).forEach(function(testInput) {
     var testCaseName = "should provide values for '" + testInput.join(",") + "'";
@@ -53,15 +53,15 @@ describe("getInfoCautious - full 'happy-path' scenario coverage plus some corner
       var expectedOutput = testInput.map(function(key) {
         return key.replace("key", "value");
       });
-      expect(getInfoCautious(testInput)).toEqual(expectedOutput);
+      expect(getValuesCautious(testInput)).toEqual(expectedOutput);
     });
   });
 
   it("should handle invalid input properly", function() {
-    expect(getInfoCautious(null)).toEqual([]);
+    expect(getValuesCautious(null)).toEqual([]);
   });
 
   it("should return no value when unknown key is used", function() {
-    expect(getInfoCautious(["key1", "unknown", "key3"])).toEqual(["value1", undefined, "value3"]);
+    expect(getValuesCautious(["key1", "unknown", "key3"])).toEqual(["value1", undefined, "value3"]);
   });
 });
