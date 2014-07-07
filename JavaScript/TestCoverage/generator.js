@@ -1,16 +1,16 @@
 (function(host) {
 
-  function generateSets(keys, partialSets) {
+  function generateSets(elements, partialSets) {
     partialSets = partialSets || [[]];
-    if (keys.length == 0) {
+    if (elements.length == 0) {
       return partialSets;
     } else {
-      var key = keys.shift();
+      var element = elements.shift();
       var sets = partialSets.concat(partialSets.map(function(set) {
-        return set.concat(key);
+        return set.concat(element);
       }));
 
-      return generateSets(keys, sets);
+      return generateSets(elements, sets);
     }
   }
 

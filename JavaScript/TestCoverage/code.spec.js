@@ -62,6 +62,6 @@ describe("getInfoCautious - full 'happy-path' scenario coverage plus some corner
   });
 
   it("should return no value when unknown key is used", function() {
-    expect(getInfoCautious(["key1", "unknown", "key3"])).toEqual(["value1", "value3"]);
+    expect(getInfoCautious(["key1", "unknown", "key3"])).toEqual(["value1", undefined, "value3"]);
   });
 });
