@@ -1,29 +1,47 @@
 /*
- * Generating a script with Coursera download links for downloading with wget.
+ * Bulk downloading Coursera videos with wget.
+ *
+ * Note that for using wget you should be authenticated to the Coursera web site
+ * and be enrolled to the course for which you are downloading videos.
+ *
+ * How to download Coursera videos:
+ *
+ * 1. Open course page where video lectures are available on the Coursera site
+ * 2. Open the developer console of your browser
+ * 3. Copy/paste this script to the developer console, then execute it
+ * 4. Copy the generated script from the shown popup and save it in a file
+ * 5. Export cookies from your browser for wget, for example, for Firefox use the following add-on
+ *    https://addons.mozilla.org/en-US/firefox/addon/export-cookies/
+ *    Save cookies in the text file cookies.txt in the same directory as the generated script file
+ * 6. Execute the generated script, files will be downloaded to the current folder
  */
+(function() {
+  var counter = 0;
 
-function findLinks() {
-  return [].slice.call(document.querySelectorAll("a[title=\"Video (MP4)\"]"), 0);
-}
+  function findLinks() {
+    return [].slice.call(document.querySelectorAll("a[title=\"Video (MP4)\"]"), 0);
+  }
 
-function getTitle(link) {
-  var titleContainer = link.querySelector("div");
-  var titleHtml = titleContainer.innerHTML;
-  var match = titleHtml.match(/Video \(MP4\) for (.*)/);
+  function getTitle(link) {
+    var titleContainer = link.querySelector("div");
+    var titleHtml = titleContainer.innerHTML;
+    var match = titleHtml.match(/Video \(MP4\) for (.*)/);
 
-  return match[1];
-}
+    counter++;
+    return counter + " " + match[1] + ".mp4";
+  }
 
-function getUrl(link) {
-  return link.getAttribute("href");
-}
+  function getUrl(link) {
+    return link.getAttribute("href");
+  }
 
-function wgetCommandLine(title, url) {
-  return "wget -O \"" + title + "\" " + url;
-}
+  function wgetCommandLine(title, url) {
+    return "wget --load-cookies cookies.txt -O \"" + title + "\" " + url;
+  }
 
-var commandLines = findLinks().map(function(link) {
-  return wgetCommandLine(getTitle(link), getUrl(link));
-});
+  var commandLines = findLinks().map(function(link) {
+    return wgetCommandLine(getTitle(link), getUrl(link));
+  });
 
-console.log(commandLines.join("\n"));
+  alert(commandLines.join("\n"));
+})();
