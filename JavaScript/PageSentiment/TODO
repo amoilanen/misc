@@ -1,0 +1,4 @@
+- On click highlight each paragraph with a color that will indicate its emotion
+- On next click remove the highlights
+- Show a smile icon on top of each paragraph depending on the emotion expressed
+- Show the overall emotion of the page by changing the icon
