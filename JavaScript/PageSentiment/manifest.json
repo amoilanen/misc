@@ -4,11 +4,17 @@
   "description": "Highlights the page paragraphs and text to indicate their emotion",
   "version": "0.9",
   "permissions": [
-    "https://secure.flickr.com/"
+    "tabs"
   ],
   "browser_action": {
     "default_icon": "icons/extension_icon.png"
   },
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*", "file://*/*"],
+    "js": ["content.js"],
+    "css": ["sentiment.css"],
+    "run_at": "document_end"
+  }],
   "background": {
     "persistent": false,
     "page": "sentiment.html"

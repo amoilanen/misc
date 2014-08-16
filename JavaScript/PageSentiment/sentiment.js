@@ -3,8 +3,7 @@ var isActive = false;
 function toggle() {
   isActive = !isActive;
   renderExtensionAction();
-
-  //TODO: Do the actual highlighting and analysis here
+  sendMessage(isActive ? "show.sentiment" : "hide.sentiment");
 }
 
 function renderExtensionAction() {
@@ -13,6 +12,13 @@ function renderExtensionAction() {
 
   chrome.browserAction.setTitle({title: title});
   chrome.browserAction.setBadgeText({text: badgeText});
+}
+
+function sendMessage(msg, responseCallback) {
+  responseCallback = responseCallback || function(response) {};
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    chrome.tabs.sendMessage(tabs[0].id, {message: msg}, responseCallback);
+  });
 }
 
 function init() {

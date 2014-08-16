@@ -1,0 +1,96 @@
+.with-sentiment-added {
+  background-position: 100% 0;
+  background-size: 20px 20px;
+  min-height: 20px;
+  min-width: 20px;
+  background-repeat: no-repeat;
+}
+
+.with-sentiment-added.neutral {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/neutral.png');
+}
+
+.with-sentiment-added.angry-1 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/angry_1.png');
+  background-color: #ffe6e6;
+}
+
+.with-sentiment-added.angry-2 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/angry_2.png');
+  background-color: #ffbfbf;
+}
+
+.with-sentiment-added.angry-3 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/angry_3.png');
+  background-color: #ff8080;
+}
+
+.with-sentiment-added.angry-4 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/angry_4.png');
+  background-color: #ff4040;
+}
+
+.with-sentiment-added.happy-1 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/happy_1.png');
+  background-color: #e7fdae;
+}
+
+.with-sentiment-added.happy-2 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/happy_2.png');
+  background-color: #e1fd9a;
+}
+
+.with-sentiment-added.happy-3 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/happy_3.png');
+  background-color: #dafd80;
+}
+
+.with-sentiment-added.happy-4 {
+  background-image: url('https://raw.githubusercontent.com/antivanov/misc/master/JavaScript/PageSentiment/icons/emotions/happy_4.png');
+  background-color: #d0fd5f;
+}
+
+.with-sentiment-added.neutral::after {
+  content: "[emotionless]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.angry-1::after {
+  content: "[cautious]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.angry-2::after {
+  content: "[unhappy]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.angry-3::after {
+  content: "[angry]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.angry-4::after {
+  content: "[hostile]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.happy-1::after {
+  content: "[positive]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.happy-2::after {
+  content: "[satisfied]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.happy-3::after {
+  content: "[happy]";
+  opacity: 0.2;
+}
+
+.with-sentiment-added.happy-4::after {
+  content: "[exuberant]";
+  opacity: 0.2;
+}
