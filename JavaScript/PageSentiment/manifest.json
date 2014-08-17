@@ -18,5 +18,8 @@
   "background": {
     "persistent": false,
     "page": "sentiment.html"
-  }
+  },
+  "web_accessible_resources": [
+    "afinn-111.json"
+  ]
 }

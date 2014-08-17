@@ -10,25 +10,39 @@ var SENTIMENTS = [
   "angry-4"
 ];
 
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    console.log("Got message", request.message);
-    switch(request.message) {
-      case "show.sentiment":
-        showSentiment();
-        break;
-      case "hide.sentiment":
-        hideSentiment();
-        break;
-      default:
-        sendResponse("unknown.message");
-        break;
-    };
-    sendResponse("done");
-  }
-);
+var wordSentiment = {};
 
-function cacheWordSentiment() {
+function init() {
+  initListeners();
+  cacheWordSentiment('afinn-111.json');
+}
+
+function initListeners() {
+  chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+      switch(request.message) {
+        case "show.sentiment":
+          showSentiment();
+          break;
+        case "hide.sentiment":
+          hideSentiment();
+          break;
+        default:
+          sendResponse("unknown.message");
+          break;
+      };
+      sendResponse("done");
+    }
+  );
+}
+
+function cacheWordSentiment(jsonFile) {
+  var xhr = new XMLHttpRequest();
+  xhr.onload = function(event) {
+    wordSentiment = JSON.parse(xhr.response);
+  };
+  xhr.open("GET", chrome.extension.getURL(jsonFile));
+  xhr.send();
 }
 
   //TODO: Load the word sentiment data
@@ -38,6 +52,8 @@ function cacheWordSentiment() {
     //--Background color should change based on the sentiment
 function showSentiment() {
   console.log("showSentiment");
+  console.log("wordSentiment = ");
+  console.log(wordSentiment);
 
   //TODO: Also query for li, headers etc.?
   var elements = document.querySelectorAll("p");
@@ -57,3 +73,5 @@ function showSentiment() {
 function hideSentiment() {
   console.log("hideSentiment");
 }
+
+init();
