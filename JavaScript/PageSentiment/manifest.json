@@ -11,15 +11,15 @@
   },
   "content_scripts": [{
     "matches": ["http://*/*", "https://*/*", "file://*/*"],
-    "js": ["content.js"],
-    "css": ["sentiment.css"],
+    "js": ["js/package.js", "js/analyzer.js", "js/dom.js", "js/content.js"],
+    "css": ["css/sentiment.css"],
     "run_at": "document_end"
   }],
   "background": {
     "persistent": false,
-    "page": "sentiment.html"
+    "page": "html/menuaction.html"
   },
   "web_accessible_resources": [
-    "afinn-111.json"
+    "AFINN/afinn-111.json"
   ]
 }
