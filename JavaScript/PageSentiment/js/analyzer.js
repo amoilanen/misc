@@ -17,7 +17,7 @@
   }
 
   Analyzer.prototype.getSentiment = function(text) {
-    return this.wordSentiment[text] || 0;
+    return this.wordSentiment[text.trim()] || 0;
   };
 
   Analyzer.prototype.getSentimentCode = function(sentimentValue) {
