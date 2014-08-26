@@ -17,9 +17,7 @@
   }
 
   Analyzer.prototype.getSentiment = function(text) {
-
-    //TODO: Implement
-    return 0;
+    return this.wordSentiment[text] || 0;
   };
 
   Analyzer.prototype.getSentimentCode = function(sentimentValue) {
