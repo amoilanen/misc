@@ -7,14 +7,12 @@ var MESSAGES = {
   DONE: "done"
 };
 
-var wordSentiment = {};
 var domIntegration = null;
 
 function init() {
   initListeners();
-  getJson(SENTIMENT_JSON_FILE, function(sentimentData) {
-    wordSentiment = sentimentData;
-    domIntegration = new sentiment.DOMIntegration(wordSentiment, new sentiment.Analyzer());
+  getJson(SENTIMENT_JSON_FILE, function(wordSentiment) {
+    domIntegration = new sentiment.DOMIntegration(new sentiment.Analyzer(wordSentiment));
   });
 }
 

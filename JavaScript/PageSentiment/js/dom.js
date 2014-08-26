@@ -2,8 +2,7 @@
 
   var SENTIMENTS = package.Analyzer.SENTIMENTS;
 
-  function DOMIntegration(wordSentiment, analyzer) {
-    this.wordSentiment = wordSentiment;
+  function DOMIntegration(analyzer) {
     this.analyzer = analyzer;
   }
 
@@ -15,7 +14,7 @@
   DOMIntegration.prototype.showSentiment = function() {
     console.log("showSentiment");
     console.log("wordSentiment = ");
-    console.log(wordSentiment);
+    console.log(this.analyzer.wordSentiment);
 
     //TODO: Also query for li, headers etc.?
     var elements = document.querySelectorAll("p");

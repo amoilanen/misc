@@ -12,7 +12,8 @@
     "angry-4"
   ];
 
-  function Analyzer() {
+  function Analyzer(wordSentiment) {
+    this.wordSentiment = wordSentiment;
   }
 
   Analyzer.prototype.computeSentimentValue = function(text) {
