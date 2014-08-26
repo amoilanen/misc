@@ -1,0 +1,15 @@
+{
+  "name": "Page Sentiment",
+  "version": "0.0.1",
+  "description": "Chrome plugin for showing emotional sentiment of a web page",
+  "authors": [
+    "Anton Ivanov <anton.al.ivanov@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "bower_components"
+  ],
+  "devDependencies": {
+    "jasmine": "~2.0.0"
+  }
+}

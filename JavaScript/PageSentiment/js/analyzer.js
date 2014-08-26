@@ -16,13 +16,13 @@
     this.wordSentiment = wordSentiment;
   }
 
-  Analyzer.prototype.computeSentimentValue = function(text) {
+  Analyzer.prototype.getSentiment = function(text) {
 
     //TODO: Implement
     return 0;
   };
 
-  Analyzer.prototype.getSentimentString = function(sentimentValue) {
+  Analyzer.prototype.getSentimentCode = function(sentimentValue) {
 
     //TODO: Implement
     return "neutral";
