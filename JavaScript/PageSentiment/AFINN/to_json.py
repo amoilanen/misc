@@ -12,4 +12,4 @@ with open(sentiment_file_name) as f:
         sentiments[word] = int(sentiment)
 
 with open(sentiment_json_file_name, 'w') as f:
-  json.dump(sentiments, f, sort_keys=True, indent=2)
+    json.dump(sentiments, f, sort_keys=True, indent=2)
