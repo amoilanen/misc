@@ -116,25 +116,33 @@ describe("Analyzer sentiment", function() {
       expect(analyzer.getSentimentCode(0)).toEqual("neutral");
     });
 
-    it("should grade positive sentiment", function() {
+    it("should grade positive sentiment with exponential algorithm", function() {
       testSentimentCodes([
         [1, "happy-1"],
         [2, "happy-2"],
-        [3, "happy-3"],
-        [4, "happy-4"],
-        [5, "happy-4"],
-        [10, "happy-4"]
+        [3, "happy-2"],
+        [4, "happy-3"],
+        [5, "happy-3"],
+        [6, "happy-3"],
+        [7, "happy-3"],
+        [8, "happy-4"],
+        [10, "happy-4"],
+        [100, "happy-4"]
       ]);
     });
 
-    it("should grade negative sentiment", function() {
+    it("should grade negative sentiment with exponential algorithm", function() {
       testSentimentCodes([
         [-1, "angry-1"],
         [-2, "angry-2"],
-        [-3, "angry-3"],
-        [-4, "angry-4"],
-        [-5, "angry-4"],
-        [-10, "angry-4"]
+        [-3, "angry-2"],
+        [-4, "angry-3"],
+        [-5, "angry-3"],
+        [-6, "angry-3"],
+        [-7, "angry-3"],
+        [-8, "angry-4"],
+        [-10, "angry-4"],
+        [-100, "angry-4"]
       ]);
     });
   });
