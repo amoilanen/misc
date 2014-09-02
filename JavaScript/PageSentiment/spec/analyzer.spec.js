@@ -101,8 +101,43 @@ describe("Analyzer sentiment", function() {
     });
   });
 
-  //TODO: Depending on the sentiment value different sentiment codes
-  //TODO: Calibrate the sentiment codes based on some real data
+  describe("sentiment gradation", function() {
+
+    function testSentimentCodes(fixtures) {
+      fixtures.forEach(function(fixture) {
+        var sentiment = fixture[0];
+        var expected = fixture[1];
+
+        expect(analyzer.getSentimentCode(sentiment)).toEqual(expected);
+      });
+    };
+
+    it("should grade neutral sentiment", function() {
+      expect(analyzer.getSentimentCode(0)).toEqual("neutral");
+    });
+
+    it("should grade positive sentiment", function() {
+      testSentimentCodes([
+        [1, "happy-1"],
+        [2, "happy-2"],
+        [3, "happy-3"],
+        [4, "happy-4"],
+        [5, "happy-4"],
+        [10, "happy-4"]
+      ]);
+    });
+
+    it("should grade negative sentiment", function() {
+      testSentimentCodes([
+        [-1, "angry-1"],
+        [-2, "angry-2"],
+        [-3, "angry-3"],
+        [-4, "angry-4"],
+        [-5, "angry-4"],
+        [-10, "angry-4"]
+      ]);
+    });
+  });
 
   function merge(x, y) {
     var property;

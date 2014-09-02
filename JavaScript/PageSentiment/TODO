@@ -1,5 +1,6 @@
 - On click highlight each paragraph with a color that will indicate its emotion
 - On next click remove the highlights
+- Grade the sentiment codes based on some real data
 - Show a smile icon on top of each paragraph depending on the emotion expressed
 - Show the progress indicator for the analysis (with a number of percent completed)
 - Show the overall emotion of the page by changing the icon

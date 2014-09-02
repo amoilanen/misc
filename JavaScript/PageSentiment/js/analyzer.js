@@ -1,16 +1,7 @@
 (function(package) {
 
-  var SENTIMENTS = [
-    "neutral",
-    "happy-1",
-    "happy-2",
-    "happy-3",
-    "happy-4",
-    "angry-1",
-    "angry-2",
-    "angry-3",
-    "angry-4"
-  ];
+  var MIN_RECOGNIZED_SENTIMENT = -4;
+  var MAX_RECOGNIZED_SENTIMENT = 4;
 
   function Analyzer(wordSentiment) {
     this.wordSentiment = wordSentiment;
@@ -32,10 +23,11 @@
     }, 0);
   };
 
-  Analyzer.prototype.getSentimentCode = function(sentimentValue) {
-
-    //TODO: Implement
-    return "neutral";
+  Analyzer.prototype.getSentimentCode = function(sentiment) {
+    sentiment = Math.min(Math.max(sentiment, MIN_RECOGNIZED_SENTIMENT), MAX_RECOGNIZED_SENTIMENT);
+    return (sentiment > 0) ? "happy-" + sentiment : (
+        (sentiment < 0) ? "angry-" + Math.abs(sentiment) : "neutral"
+      );
   };
 
   package.Analyzer = Analyzer;
