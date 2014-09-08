@@ -1,0 +1,21 @@
+{
+  "name": "GmailMyTripsExperiment",
+  "version": "0.0.1",
+  "homepage": "https://github.com/antivanov/misc",
+  "authors": [
+    "anton <anton.al.ivanov@gmail.com>"
+  ],
+  "description": "Simple experiment to fetch and analyze booking info from Gmail",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "es6-promise": "~1.0.0"
+  }
+}
