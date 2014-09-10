@@ -63,6 +63,15 @@ function waitFor(page, cssSelector) {
    });
 };
 
+function delay(milliseconds) {
+  milliseconds = milliseconds || 0;
+  return new Promise(function(resolve, reject) {
+    setTimeout(function() {
+      resolve();
+    }, milliseconds);
+  });
+};
+
 open(page, 'https://accounts.google.com').then(function() {
   page.evaluate(function(email, password) {
     var emailInput = document.querySelector("#Email");
@@ -81,10 +90,29 @@ open(page, 'https://accounts.google.com').then(function() {
 }).then(function() {
   return waitFor(page, "button[aria-label]");
 }).then(function() {
+
+  //Searching for e-mails from "customer.service@booking.com"
+  page.evaluate(function() {
+    var searchInputs = [].slice.call(document.querySelectorAll("form input"));
+    var searchButton = document.querySelector("form button");
+
+    searchInputs.forEach(function(input) {
+      input.value = "customer.service@booking.com";
+    });
+    searchButton.click();
+  });
+
+  /*
+   * No easily identifiable elements on the page.
+   * Besides the span.v1 message but this is a generated class name => fragile.
+   */
+  return delay(2000);
+  //TODO: Wait for the url change, it is a good indication
+}).then(function() {
   page.render('mail.png');
   phantom.exit();
 });
 
-//TODO: Search for customer.service@booking.com
 //TODO: Iterate over all the e-mails that matched and extract the Booking information:
-//city, address, start date, end date
+//city, address, start date, end date. Output this information to the console
+//TODO: Re-factoring: extract common code that can be re-used in other PhantomJS scripts
