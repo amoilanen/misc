@@ -16,20 +16,14 @@ page.viewportSize = {
   height: 768
 };
 
-function whenElementAvailable(page, cssSelector, callback, errback) {
-
+function waitFor(page, condition, callback, errback) {
   var timeWaited = 0;
 
   function check() {
     if (timeWaited > MAX_WAIT_TIME_MS) {
-      errback && errback(new Error("Timed out waiting for '" + cssSelector + "'"));
+      errback && errback(new Error("Timed out waiting for condition " + condition.toString()));
     }
-
-    var isAvailable = page.evaluate(function(cssSelector) {
-      return document.querySelector(cssSelector) != null;
-    }, cssSelector);
-
-    if (isAvailable) {
+    if (condition(page)) {
       callback();
     } else {
       timeWaited += CHECK_INTERVAL_MS;
@@ -38,6 +32,31 @@ function whenElementAvailable(page, cssSelector, callback, errback) {
   }
 
   check();
+}
+
+function whenElementAvailable(page, cssSelector, callback, errback) {
+  waitFor(page, function(page) {
+    return page.evaluate(function(cssSelector) {
+      return document.querySelector(cssSelector) != null;
+    }, cssSelector);
+  }, callback, errback);
+}
+
+function whenUrlChanges(page, callback, errback) {
+
+  function getUrl(page) {
+    return page.evaluate(function() {
+      return document.URL;
+    });
+  }
+
+  var initialUrl = getUrl(page);
+
+  waitFor(page, function(page) {
+    var currentUrl = getUrl(page);
+
+    return currentUrl != initialUrl;
+  }, callback, errback);
 }
 
 //TODO: Make into methods on the created page
@@ -53,7 +72,7 @@ function open(page, url) {
   });
 }
 
-function waitFor(page, cssSelector) {
+function waitElement(page, cssSelector) {
    return new Promise(function(resolve, reject) {
      whenElementAvailable(page, cssSelector, function() {
        resolve(cssSelector);
@@ -61,7 +80,17 @@ function waitFor(page, cssSelector) {
        reject(error);
      });
    });
-};
+}
+
+function waitUrlChange(page) {
+   return new Promise(function(resolve, reject) {
+     whenUrlChanges(page, function() {
+       resolve();
+     }, function(error) {
+       reject(error);
+     });
+   });
+}
 
 function delay(milliseconds) {
   milliseconds = milliseconds || 0;
@@ -84,11 +113,11 @@ open(page, 'https://accounts.google.com').then(function() {
     signInButton.click();
   }, email, password);
 
-  return waitFor(page, "#nav-personalinfo");
+  return waitElement(page, "#nav-personalinfo");
 }).then(function() {
   return open(page, 'https://mail.google.com');
 }).then(function() {
-  return waitFor(page, "button[aria-label]");
+  return waitElement(page, "button[aria-label]");
 }).then(function() {
 
   //Searching for e-mails from "customer.service@booking.com"
@@ -102,17 +131,15 @@ open(page, 'https://accounts.google.com').then(function() {
     searchButton.click();
   });
 
-  /*
-   * No easily identifiable elements on the page.
-   * Besides the span.v1 message but this is a generated class name => fragile.
-   */
-  return delay(2000);
-  //TODO: Wait for the url change, it is a good indication
+  return waitUrlChange(page);
 }).then(function() {
+
+  //TODO: Iterate over all the e-mails that matched and extract the Booking information:
+  //city, address, start date, end date. Output this information to the console
   page.render('mail.png');
   phantom.exit();
 });
 
-//TODO: Iterate over all the e-mails that matched and extract the Booking information:
-//city, address, start date, end date. Output this information to the console
 //TODO: Re-factoring: extract common code that can be re-used in other PhantomJS scripts
+//Looks a lot like what Selenium does, but this is closer to JavaScript being executed on the page (more low-level) and gives more control over execution. May still be useful when we want to run some test spec against
+//a certain state of a certain page of a production app
