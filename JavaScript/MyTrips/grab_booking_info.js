@@ -134,12 +134,37 @@ open(page, 'https://accounts.google.com').then(function() {
   return waitUrlChange(page);
 }).then(function() {
 
-  //TODO: Iterate over all the e-mails that matched and extract the Booking information:
-  //city, address, start date, end date. Output this information to the console
-  page.render('mail.png');
-  phantom.exit();
+  var emailCount = page.evaluate(function() {
+    var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
+
+    return emails.length;
+  });
+
+  //for (var i = 0; i < emailCount; i++) {
+    page.evaluate(function() {
+      var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
+      var event = document.createEvent("MouseEvent");
+
+      event.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+      emails[0].dispatchEvent(event);
+    });
+  //}
+
+  console.log("In total " + emailCount + " e-mails on the page");
+
+  //TODO: Open each e-mail on the current page
+  //TODO: Analyze the content of such an email
+  //TODO: Open next page
+  //If no em-mails finish
+  //If there are e-mails, repeat
+  setTimeout(function() {
+    page.render('mail.png');
+    phantom.exit();
+  }, 2000);
 });
 
+//TODO: Iterate over all the e-mails that matched and extract the Booking information:
+//city, address, start date, end date. Output this information to the console
 //TODO: Re-factoring: extract common code that can be re-used in other PhantomJS scripts
 //Looks a lot like what Selenium does, but this is closer to JavaScript being executed on the page (more low-level) and gives more control over execution. May still be useful when we want to run some test spec against
 //a certain state of a certain page of a production app
