@@ -141,26 +141,67 @@ open(page, 'https://accounts.google.com').then(function() {
   });
 
   //for (var i = 0; i < emailCount; i++) {
-    page.evaluate(function() {
-      var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
-      var event = document.createEvent("MouseEvent");
+    var emailIndex = 0;
 
-      event.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-      emails[0].dispatchEvent(event);
+    return new Promise(function(resolve, reject) {
+      page.evaluate(function(emailIndex) {
+        var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
+        var event = document.createEvent("MouseEvent");
+
+        event.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+        emails[emailIndex].dispatchEvent(event);
+      }, emailIndex);
+      resolve();
+    }).then(function() {
+      return waitUrlChange(page);
+    }).then(function() {
+      var booking = page.evaluate(function() {
+
+        function getContent(domElement) {
+          return domElement.innerHTML.replace(/<.*?>/g, "").replace(/\n/g, " ");
+        }
+
+        var hotelLink = document.querySelector("a[title=Hotelinformatie]");
+        var hotel = getContent(hotelLink);
+
+        var details = [].slice.call(document.querySelectorAll("td[style=\"text-align:right;font-family:arial;color:#333;font-size:12px;line-height:17px;border-bottom:1px dotted #aaaaaa;padding-top:5px;padding-bottom:5px\"]")).slice(0, 3).map(function(domElement) {
+          return getContent(domElement);
+        });
+
+        var priceElement = document.querySelector("td[style=\"text-align:right;font-size:16px;line-height:21px;font-family:arial;color:#333;padding-top:5px;color:#003580;padding-left:5px\"]");
+        var price = getContent(priceElement);
+
+        return {
+          hotel: hotel,
+          stay: details[0],
+          startDate: details[1],
+          endDate: details[2],
+          price: price
+        };
+      });
+
+      console.log("booking = ", JSON.stringify(booking));
+
+      page.evaluate(function() {
+        window.history.back();
+      });
+      return waitUrlChange(page);
+    }).then(function() {
+      //TODO: Here navigate back
+      console.log("In total " + emailCount + " e-mails on the page");
+
+      //page.render('back.png');
+
+      phantom.exit();
     });
   //}
 
-  console.log("In total " + emailCount + " e-mails on the page");
-
   //TODO: Open each e-mail on the current page
   //TODO: Analyze the content of such an email
+
   //TODO: Open next page
   //If no em-mails finish
   //If there are e-mails, repeat
-  setTimeout(function() {
-    page.render('mail.png');
-    phantom.exit();
-  }, 2000);
 });
 
 //TODO: Iterate over all the e-mails that matched and extract the Booking information:
