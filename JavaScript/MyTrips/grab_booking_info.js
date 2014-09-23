@@ -101,49 +101,75 @@ function delay(milliseconds) {
   });
 };
 
-open(page, 'https://accounts.google.com').then(function() {
-  page.evaluate(function(email, password) {
-    var emailInput = document.querySelector("#Email");
-    var passwordInput = document.querySelector("#Passwd");
-    var signInButton = document.querySelector("#signIn");
+/*
+ * Functions for interacting with GMail
+ */
 
-    emailInput.setAttribute("value", email);
-    passwordInput.setAttribute("value", password);
+//TODO: Make this into a "class" to which page can be provided as a dependency
+var gmail = {
+  login: function(email, password) {
+    return open(page, 'https://accounts.google.com').then(function() {
+      this.page.evaluate(function(email, password) {
+        var emailInput = document.querySelector("#Email");
+        var passwordInput = document.querySelector("#Passwd");
+        var signInButton = document.querySelector("#signIn");
 
-    signInButton.click();
-  }, email, password);
+        emailInput.setAttribute("value", email);
+        passwordInput.setAttribute("value", password);
 
-  return waitElement(page, "#nav-personalinfo");
-}).then(function() {
-  return open(page, 'https://mail.google.com');
-}).then(function() {
-  return waitElement(page, "button[aria-label]");
-}).then(function() {
+        signInButton.click();
+      }, email, password);
 
-  //Searching for e-mails from "customer.service@booking.com"
-  page.evaluate(function() {
-    var searchInputs = [].slice.call(document.querySelectorAll("form input"));
-    var searchButton = document.querySelector("form button");
-
-    searchInputs.forEach(function(input) {
-      input.value = "customer.service@booking.com";
+      return waitElement(this.page, "#nav-personalinfo");
     });
-    searchButton.click();
-  });
+  },
+  openInbox: function() {
+    return open(this.page, 'https://mail.google.com').then(function() {
+      return waitElement(page, "button[aria-label]");
+    });
+  },
+  emailCount: function(senderEmail) {
+    return page.evaluate(function(senderEmail) {
+      var emails = document.querySelectorAll("td > div:nth-child(2) > span[email=\"" + senderEmail + "\"]");
 
-  return waitUrlChange(page);
+      return emails.length;
+    }, senderEmail);
+  },
+  searchForTerm: function(term) {
+    this.page.evaluate(function(term) {
+      var searchInputs = [].slice.call(document.querySelectorAll("form input"));
+      var searchButton = document.querySelector("form button");
+
+      searchInputs.forEach(function(input) {
+        input.value = term;
+      });
+      searchButton.click();
+    }, term);
+
+    return waitUrlChange(page);
+  }
+};
+gmail.page = page;
+
+/*
+ * Script that grabs the booking info from gmail.
+ */
+gmail.login(email, password).then(function() {
+  return gmail.openInbox();
+}).then(function() {
+  return gmail.searchForTerm('customer.service@booking.com');
 }).then(function() {
 
-  var emailCount = page.evaluate(function() {
-    var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
+  page.render('search_results.png');
 
-    return emails.length;
-  });
+  var emailCount = gmail.emailCount('customer.service@booking.com');
 
   //for (var i = 0; i < emailCount; i++) {
     var emailIndex = 0;
 
     return new Promise(function(resolve, reject) {
+
+      //TODO: Extract the function that does the actual e-mail selection
       page.evaluate(function(emailIndex) {
         var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
         var event = document.createEvent("MouseEvent");
@@ -155,6 +181,8 @@ open(page, 'https://accounts.google.com').then(function() {
     }).then(function() {
       return waitUrlChange(page);
     }).then(function() {
+
+      //TODO: Extract the function that extracts the booking info
       var booking = page.evaluate(function() {
 
         function getContent(domElement) {
@@ -182,6 +210,8 @@ open(page, 'https://accounts.google.com').then(function() {
 
       console.log("booking = ", JSON.stringify(booking));
 
+      page.render('single_email.png');
+
       page.evaluate(function() {
         window.history.back();
       });
@@ -190,7 +220,7 @@ open(page, 'https://accounts.google.com').then(function() {
       //TODO: Here navigate back
       console.log("In total " + emailCount + " e-mails on the page");
 
-      //page.render('back.png');
+      page.render('back.png');
 
       phantom.exit();
     });
