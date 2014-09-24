@@ -102,13 +102,23 @@ function delay(milliseconds) {
 };
 
 /*
+ * Functions that are extending the browser functionality of PhantomJS.
+ */
+function goBack(page) {
+  page.evaluate(function() {
+    window.history.back();
+  });
+  return waitUrlChange(page);
+}
+
+/*
  * Functions for interacting with GMail
  */
 
 //TODO: Make this into a "class" to which page can be provided as a dependency
 var gmail = {
   login: function(email, password) {
-    return open(page, 'https://accounts.google.com').then(function() {
+    return open(this.page, 'https://accounts.google.com').then(function() {
       this.page.evaluate(function(email, password) {
         var emailInput = document.querySelector("#Email");
         var passwordInput = document.querySelector("#Passwd");
@@ -124,16 +134,29 @@ var gmail = {
     });
   },
   openInbox: function() {
+    var self = this;
+
     return open(this.page, 'https://mail.google.com').then(function() {
-      return waitElement(page, "button[aria-label]");
+      return waitElement(self.page, "button[aria-label]");
     });
   },
   emailCount: function(senderEmail) {
-    return page.evaluate(function(senderEmail) {
+    return this.page.evaluate(function(senderEmail) {
       var emails = document.querySelectorAll("td > div:nth-child(2) > span[email=\"" + senderEmail + "\"]");
 
       return emails.length;
     }, senderEmail);
+  },
+  openEmail: function(index, senderEmail) {
+    this.page.evaluate(function(index, senderEmail) {
+      var emails = document.querySelectorAll("td > div:nth-child(2) > span[email=\"" + senderEmail + "\"]");
+
+      var event = document.createEvent("MouseEvent");
+      event.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+      emails[index].dispatchEvent(event);
+    }, index, senderEmail);
+
+    return waitUrlChange(this.page);
   },
   searchForTerm: function(term) {
     this.page.evaluate(function(term) {
@@ -146,10 +169,40 @@ var gmail = {
       searchButton.click();
     }, term);
 
-    return waitUrlChange(page);
+    return waitUrlChange(this.page);
   }
 };
 gmail.page = page;
+
+/*
+ * Utility functions for analyzing booking information from Booking.com
+ */
+function readBooking(page) {
+
+  return page.evaluate(function() {
+    function getContent(domElement) {
+      return domElement.innerHTML.replace(/<.*?>/g, "").replace(/\n/g, " ");
+    }
+
+    var hotelLink = document.querySelector("a[title=Hotelinformatie]");
+    var hotel = getContent(hotelLink);
+
+    var details = [].slice.call(document.querySelectorAll("td[style=\"text-align:right;font-family:arial;color:#333;font-size:12px;line-height:17px;border-bottom:1px dotted #aaaaaa;padding-top:5px;padding-bottom:5px\"]")).slice(0, 3).map(function(domElement) {
+      return getContent(domElement);
+    });
+
+    var priceElement = document.querySelector("td[style=\"text-align:right;font-size:16px;line-height:21px;font-family:arial;color:#333;padding-top:5px;color:#003580;padding-left:5px\"]");
+    var price = getContent(priceElement);
+
+    return {
+      hotel: hotel,
+      stay: details[0],
+      startDate: details[1],
+      endDate: details[2],
+      price: price
+    };
+  });
+}
 
 /*
  * Script that grabs the booking info from gmail.
@@ -167,55 +220,14 @@ gmail.login(email, password).then(function() {
   //for (var i = 0; i < emailCount; i++) {
     var emailIndex = 0;
 
-    return new Promise(function(resolve, reject) {
-
-      //TODO: Extract the function that does the actual e-mail selection
-      page.evaluate(function(emailIndex) {
-        var emails = document.querySelectorAll("td > div:nth-child(2) > span[name=\"Booking.com\"]");
-        var event = document.createEvent("MouseEvent");
-
-        event.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        emails[emailIndex].dispatchEvent(event);
-      }, emailIndex);
-      resolve();
-    }).then(function() {
-      return waitUrlChange(page);
-    }).then(function() {
-
-      //TODO: Extract the function that extracts the booking info
-      var booking = page.evaluate(function() {
-
-        function getContent(domElement) {
-          return domElement.innerHTML.replace(/<.*?>/g, "").replace(/\n/g, " ");
-        }
-
-        var hotelLink = document.querySelector("a[title=Hotelinformatie]");
-        var hotel = getContent(hotelLink);
-
-        var details = [].slice.call(document.querySelectorAll("td[style=\"text-align:right;font-family:arial;color:#333;font-size:12px;line-height:17px;border-bottom:1px dotted #aaaaaa;padding-top:5px;padding-bottom:5px\"]")).slice(0, 3).map(function(domElement) {
-          return getContent(domElement);
-        });
-
-        var priceElement = document.querySelector("td[style=\"text-align:right;font-size:16px;line-height:21px;font-family:arial;color:#333;padding-top:5px;color:#003580;padding-left:5px\"]");
-        var price = getContent(priceElement);
-
-        return {
-          hotel: hotel,
-          stay: details[0],
-          startDate: details[1],
-          endDate: details[2],
-          price: price
-        };
-      });
+    gmail.openEmail(emailIndex, 'customer.service@booking.com').then(function() {
+      var booking = readBooking(page);
 
       console.log("booking = ", JSON.stringify(booking));
 
       page.render('single_email.png');
 
-      page.evaluate(function() {
-        window.history.back();
-      });
-      return waitUrlChange(page);
+      goBack(page);
     }).then(function() {
       //TODO: Here navigate back
       console.log("In total " + emailCount + " e-mails on the page");
@@ -230,7 +242,7 @@ gmail.login(email, password).then(function() {
   //TODO: Analyze the content of such an email
 
   //TODO: Open next page
-  //If no em-mails finish
+  //If no e-mails finish
   //If there are e-mails, repeat
 });
 
