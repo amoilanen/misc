@@ -1,0 +1,4 @@
+- Draw pendulum - DONE
+- Pendulum moves but not according to physics laws
+- Implement physics laws for pendulum movement with hard-coded initial values
+- Initial values can be customized
