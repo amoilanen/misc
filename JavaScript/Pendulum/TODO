@@ -1,4 +1,5 @@
 - Draw pendulum - DONE
-- Pendulum moves but not according to physics laws
-- Implement physics laws for pendulum movement with hard-coded initial values
+- Pendulum moves but not according to physics laws - DONE
+- Implement physics laws for pendulum movement with hard-coded initial values - DONE
+- Re-factor the code: extract simulation parts, Physics parts etc.
 - Initial values can be customized
