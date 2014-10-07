@@ -1,17 +1,40 @@
 <!DOCTYPE html>
 <html>
-<header>
+<head>
   <title>Pendulum</title>
   <script src="pendulum.js"></script>
   <style>
+    body {
+      font: italic 400 16px courier;
+    }
+    .controls {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+    }
     #display {
-      border: 1px solid #000000;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 350px;
+      height: 350px;
+    }
+    label, input {
+      display: block;
+      margin-top: 4px;
+      width: 150px;
     }
   </style>
-</header>
+</head>
 <body>
 
 <canvas id="display"></canvas>
+<div class="controls">
+  <label>Initial angle</label>
+  <input type="text" id="alpha"></input>
+  <label>Friction</label>
+  <input type="text" id="beta"></input>
+</div>
 
 </body>
 </html>

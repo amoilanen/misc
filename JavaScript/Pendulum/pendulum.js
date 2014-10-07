@@ -1,10 +1,10 @@
-var canvasWidth = 400;
-var canvasHeight = 200;
+var canvasWidth = 350;
+var canvasHeight = 350;
 var animationIntervalMs = 20;
 
 var coordinatesZero = {
   x: canvasWidth / 2,
-  y: 0
+  y: canvasWidth / 2
 };
 
 var drawingContext;
@@ -20,7 +20,7 @@ var pendulumRadius = 10;
 var l = 150;
 
 //Initial angle of the pendulum
-var alpha = - 3 * Math.PI / 8;
+var alpha = - 99 * Math.PI / 100;
 
 //Resistance coefficient of the liquid
 var beta = 0.003;

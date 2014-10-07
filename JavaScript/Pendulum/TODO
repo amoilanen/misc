@@ -3,3 +3,4 @@
 - Implement physics laws for pendulum movement with hard-coded initial values - DONE
 - Re-factor the code: extract simulation parts, Physics parts etc.
 - Initial values can be customized
+  -- Pi value can be specified as 'pi'
