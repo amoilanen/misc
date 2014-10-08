@@ -2,6 +2,8 @@ var canvasWidth = 350;
 var canvasHeight = 350;
 var animationIntervalMs = 20;
 
+var animationInterval;
+
 var coordinatesZero = {
   x: canvasWidth / 2,
   y: canvasWidth / 2
@@ -9,21 +11,25 @@ var coordinatesZero = {
 
 var drawingContext;
 
+var parameters = {
+  'alpha': '- 99 * Math.PI / 100',
+  'beta': '0.003'
+};
+
 /*
  * Physical characteristics.
  */
-
 //Radius of the pendulum
 var pendulumRadius = 10;
 
 //Length of the string
 var l = 150;
 
-//Initial angle of the pendulum
-var alpha = - 99 * Math.PI / 100;
+//Angle of the pendulum
+var alpha = parameters.alpha;
 
-//Resistance coefficient of the liquid
-var beta = 0.003;
+//Resistance coefficient of the environment
+var beta = parameters.beta;
 
 //Time is discrete in our physical world, this is the increment between two adjacent time values
 var deltaT = 0.1;
@@ -79,13 +85,42 @@ function drawPendulum(alpha, l) {
 }
 
 function runSimulation() {
-  setInterval(function() {
+  alpha = eval(parameters.alpha);
+  beta = eval(parameters.beta);
+
+  if (animationInterval) {
+    clearInterval(animationInterval);
+  }
+  animationInterval = setInterval(function() {
     drawPendulum(alpha, l);
     updatePhysicalValues();
   }, animationIntervalMs);
 }
 
+function bindParameter(name) {
+  var inputElement = document.querySelector("#" + name);
+
+  inputElement.value = parameters[name];
+  inputElement.addEventListener("blur", function(event) {
+    parameters[name] = this.value;
+    runSimulation();
+  });
+  inputElement.addEventListener("keyup", function(event) {
+    //Enter
+    if (event.keyCode == 13) {
+      this.blur();
+    }
+  });
+}
+
+function bindParameters() {
+  for (var parameter in parameters) {
+    bindParameter(parameter);
+  }
+}
+
 function init() {
+  bindParameters();
   drawingContext = getDrawingContext();
   runSimulation();
 }
