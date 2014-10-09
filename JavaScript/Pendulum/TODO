@@ -4,3 +4,5 @@
 - Re-factor the code: extract simulation parts, Physics parts etc.
 - Initial values can be customized - DONE
   -- Pi value can be specified as 'pi'
+  -- Add validation for inputs
+  -- If friction is 100 then pendulum should not visibly move

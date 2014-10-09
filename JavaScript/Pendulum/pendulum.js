@@ -12,7 +12,7 @@ var coordinatesZero = {
 var drawingContext;
 
 var parameters = {
-  'alpha': '- 99 * Math.PI / 100',
+  'alpha': '- 2pi/3',
   'beta': '0.003'
 };
 
@@ -84,9 +84,20 @@ function drawPendulum(alpha, l) {
   drawingContext.stroke();
 }
 
+function parseRadialValue(value) {
+  value = value.replace(/(\d)pi/g, function(match, nextDigit) {
+    return nextDigit + " * pi";
+  }).replace(/pi/g, "Math.PI");
+  return parseValue(value);
+}
+
+function parseValue(value) {
+  return eval(value);
+}
+
 function runSimulation() {
-  alpha = eval(parameters.alpha);
-  beta = eval(parameters.beta);
+  alpha = parseRadialValue(parameters.alpha);
+  beta = parseValue(parameters.beta);
 
   if (animationInterval) {
     clearInterval(animationInterval);
