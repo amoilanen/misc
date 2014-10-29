@@ -1,7 +1,7 @@
 - Draw pendulum - DONE
 - Pendulum moves but not according to physics laws - DONE
 - Implement physics laws for pendulum movement with hard-coded initial values - DONE
-- Re-factor the code: extract simulation parts, Physics parts etc.
+- Re-factor the code: extract simulation parts, Physics parts etc. - DONE
 - Initial values can be customized - DONE
   -- Pi value can be specified as 'pi'
   -- Add validation for inputs
