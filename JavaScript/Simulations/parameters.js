@@ -8,6 +8,15 @@
     this.onParametersChange = null;
   }
 
+  Parameters.prototype.getParameterNames = function() {
+    var parameterNames = [];
+
+    for (var parameterName in this.values) {
+      parameterNames.push(parameterName);
+    }
+    return parameterNames;
+  };
+
   Parameters.prototype.bindParameter = function(parameterName) {
     var self = this;
     var inputElement = document.querySelector("#" + parameterName);
@@ -26,27 +35,21 @@
   };
 
   Parameters.prototype.bind = function(parameters, onParametersChange) {
-    this.values = parameters;
-    this.onParametersChange = onParametersChange;
+    var self = this;
 
-    for (var parameterName in parameters) {
-      this.bindParameter(parameterName);
-    }
+    this.values = parameters;
+    this.getParameterNames().forEach(function(parameterName) {
+      self.bindParameter(parameterName);
+    });
+    this.onParametersChange = onParametersChange;
   };
 
-  Parameters.prototype.evaluateAsRadial = function(parameterName) {
+  Parameters.prototype.evaluate = function(parameterName) {
     var value = this.values[parameterName];
 
     value = value.replace(/(\d)pi/g, function(match, nextDigit) {
       return nextDigit + " * pi";
     }).replace(/pi/g, "Math.PI");
-
-    return eval(value);
-  }
-
-  Parameters.prototype.evaluate = function(parameterName) {
-    var value = this.values[parameterName];
-
     return eval(value);
   }
 

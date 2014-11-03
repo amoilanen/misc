@@ -14,18 +14,12 @@
   Simulation.prototype.run = function() {
     var self = this;
 
-    this.physicalWorld.set('alpha', this.parameters.evaluateAsRadial('alpha'));
-    this.physicalWorld.set('beta', this.parameters.evaluate('beta'));
-
+    this.physicalWorld.updateParameters(this.parameters);
     if (this.animationInterval) {
       clearInterval(this.animationInterval);
     }
     this.animationInterval = setInterval(function() {
-      self.display.draw({
-        'alpha': self.physicalWorld.measure('alpha'),
-        'l': self.physicalWorld.measure('l'),
-        'pendulumRadius': self.physicalWorld.measure('pendulumRadius')
-      });
+      self.display.draw(self.physicalWorld);
       self.physicalWorld.update();
     }, this.animationIntervalMs);
   };
