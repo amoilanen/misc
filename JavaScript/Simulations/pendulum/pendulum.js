@@ -63,7 +63,7 @@
       y: this.coordinatesZero.y + coordinates.y
     };
 
-    this.drawingContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    this.clear();
     this.drawingContext.fillStyle = "black";
     this.drawingContext.beginPath();
     this.drawingContext.arc(displayCoordinates.x, displayCoordinates.y, features["pendulumRadius"], 0, 2 * Math.PI, false);

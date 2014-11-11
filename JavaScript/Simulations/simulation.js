@@ -14,6 +14,7 @@
   Simulation.prototype.run = function() {
     var self = this;
 
+    this.display.clear();
     this.physicalWorld.updateParameters(this.parameters);
     if (this.animationInterval) {
       clearInterval(this.animationInterval);

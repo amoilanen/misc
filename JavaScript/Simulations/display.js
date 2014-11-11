@@ -18,8 +18,12 @@
     var displayElement = document.querySelector(this.displayElementSelector);
 
     displayElement.width = this.canvasWidth;
-    displayElement.height = this.canvasWidth;
+    displayElement.height = this.canvasHeight;
     this.drawingContext = displayElement.getContext("2d");
+  };
+
+  Display.prototype.clear = function() {
+    this.drawingContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
   };
 
   //Subclasses should implement this method

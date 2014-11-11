@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pendulum</title>
+  <script src="../physics.js"></script>
+  <script src="../display.js"></script>
+  <script src="../parameters.js"></script>
+  <script src="../simulation.js"></script>
+  <script src="../main.js"></script>
+  <script src="projectile.js"></script>
+  <style>
+    body {
+      font: italic 400 16px courier;
+    }
+    .controls {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+    }
+    #display {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 800px;
+      height: 400px;
+      float: right;
+    }
+    label, input {
+      display: block;
+      margin-top: 4px;
+      width: 150px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="display"></canvas>
+<div class="controls">
+  <label>Wind speed</label>
+  <input type="text" id="Vwind"></input>
+  <label>Speed</label>
+  <input type="text" id="V"></input>
+  <label>Friction</label>
+  <input type="text" id="beta"></input>
+  <label>Angle</label>
+  <input type="text" id="alpha"></input>
+  <label>Mass</label>
+  <input type="text" id="m"></input>
+</div>
+
+</body>
+</html>
