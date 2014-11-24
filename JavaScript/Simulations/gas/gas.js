@@ -1,7 +1,5 @@
 (function(host) {
 
-  //TODO: Molecules fly unbound, do not collide with each other or with the box
-  //TODO: Molecules collide with the box and collisions are without energy loss
   //TODO: Molecules can collide with one another without energy loss
 
   //TODO: Compute the number of molecules hitting the walls of the box in unit of time (pressure P)
@@ -11,7 +9,7 @@
 
   /*
    * Ideal gas. The mass of a single molecule is so small compared to its speed that we can
-   * assume that the force of gravity is zero.
+   * assume that the force of gravity is zero and the forces of gravity in between molecules are negligible.
    */
   function IdealGasPhysicalWorld() {
     this.visibleFeatureNames = ['molecules'];
@@ -48,8 +46,10 @@
       molecules.push({
         x: Math.floor(Math.random() * this.box.x),
         y: Math.floor(Math.random() * this.box.y),
-        Vx: Math.floor(Math.random() * this.averageDimensionSpeed),
-        Vy: Math.floor(Math.random() * this.averageDimensionSpeed),
+        V: {
+          x: (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * this.averageDimensionSpeed),
+          y: (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * this.averageDimensionSpeed)
+        },
         r: this.moleculeRadius
       });
     }
@@ -60,8 +60,15 @@
     var self = this;
 
     this.molecules.forEach(function(molecule) {
-      molecule.x = molecule.x + molecule.Vx * self.deltaT;
-      molecule.y = molecule.y + molecule.Vy * self.deltaT;
+      molecule.x = molecule.x + molecule.V.x * self.deltaT;
+      molecule.y = molecule.y + molecule.V.y * self.deltaT;
+
+      if ((molecule.x > self.box.x) || (molecule.x < 0)) {
+        molecule.V.x = -molecule.V.x;
+      }
+      if ((molecule.y > self.box.y) || (molecule.y < 0)) {
+        molecule.V.y = -molecule.V.y;
+      }
     });
   };
 
@@ -80,12 +87,16 @@
 
     this.clear();
     molecules.forEach(function(molecule) {
-      self.drawingContext.fillStyle = "black";
-      self.drawingContext.beginPath();
-      self.drawingContext.arc(molecule.x, molecule.y, molecule.r, 0, 2 * Math.PI, false);
-      self.drawingContext.fill();
-      self.drawingContext.stroke();
+      self.drawMolecule(molecule);
     });
+  };
+
+  IdealGasDisplay.prototype.drawMolecule = function(molecule) {
+    this.drawingContext.fillStyle = "black";
+    this.drawingContext.beginPath();
+    this.drawingContext.arc(molecule.x, molecule.y, molecule.r, 0, 2 * Math.PI, false);
+    this.drawingContext.fill();
+    this.drawingContext.stroke();
   };
 
   Main.experiment(function() {
