@@ -65,9 +65,23 @@
     this.molecules.forEach(function(molecule) {
       if ((molecule.x > self.box.x) || (molecule.x < 0)) {
         molecule.V.x = -molecule.V.x;
+
+        //Rigid collision with the box
+        if (molecule.x > self.box.x) {
+          molecule.x = molecule.x - molecule.r / 8;
+        } else {
+          molecule.x = molecule.x + molecule.r / 8;
+        }
       }
       if ((molecule.y > self.box.y) || (molecule.y < 0)) {
         molecule.V.y = -molecule.V.y;
+
+        //Rigid collision with the box
+        if (molecule.y > self.box.y) {
+          molecule.y = molecule.y - molecule.r / 4;
+        } else {
+          molecule.y = molecule.y + molecule.r / 4;
+        }
       }
     });
     this.molecules.forEach(function(molecule1, idx1) {
@@ -80,6 +94,21 @@
 
           molecule1.V = molecule2.V;
           molecule2.V = molecule1V;
+
+          /*
+           * Interesting artefact observed in  the simulation.
+           * Some molecules statistically will get close speeds and
+           * become "glued" together for some time.
+           * In reality it probably means that molecules can get a chance to form a new
+           * molecule if chemical reaction is possible between them.
+           *
+           * Just making the collision here a bit more rigid, i.e. no chemical reaction 
+           * is possible.
+           */
+          molecule1.x = molecule1.x - (molecule2.x - molecule1.x) / 16;
+          molecule1.y = molecule1.y - (molecule2.y - molecule1.y) / 16;
+          molecule2.x = molecule2.x - (molecule1.x - molecule2.x) / 16;
+          molecule2.y = molecule2.y - (molecule1.y - molecule2.y) / 16;
         }
       });
     });
