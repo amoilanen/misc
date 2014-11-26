@@ -1,7 +1,5 @@
 (function(host) {
 
-  //TODO: Molecules can collide with one another without energy loss
-
   //TODO: Compute the number of molecules hitting the walls of the box in unit of time (pressure P)
 
   //TODO: Introduce a parameter that will regulate what part of energy is lost when hitting a wall
@@ -20,7 +18,7 @@
   IdealGasPhysicalWorld.prototype.init = function() {
 
     //Number of molecules in the box
-    this.numberOfMolecules = 10;
+    this.numberOfMolecules = 100;
 
     //Average speed of a molecule, real speed is in the interval [0, 2 * this.averageSpeed]
     this.averageDimensionSpeed = 15;
@@ -62,13 +60,28 @@
     this.molecules.forEach(function(molecule) {
       molecule.x = molecule.x + molecule.V.x * self.deltaT;
       molecule.y = molecule.y + molecule.V.y * self.deltaT;
+    });
 
+    this.molecules.forEach(function(molecule) {
       if ((molecule.x > self.box.x) || (molecule.x < 0)) {
         molecule.V.x = -molecule.V.x;
       }
       if ((molecule.y > self.box.y) || (molecule.y < 0)) {
         molecule.V.y = -molecule.V.y;
       }
+    });
+    this.molecules.forEach(function(molecule1, idx) {
+      self.molecules.slice(idx + 1).forEach(function(molecule2) {
+        var distance = Math.sqrt(Math.pow(molecule1.x - molecule2.x) + Math.pow(molecule1.y - molecule2.y));
+
+        //Collision, impulse and energy are preserved, masses of molecules are same
+        if (distance <= molecule1.r + molecule2.r) {
+          var molecule1V = molecule1.V;
+
+          molecule1.V = molecule2.V;
+          molecule2.V = molecule1V;
+        }
+      });
     });
   };
 
