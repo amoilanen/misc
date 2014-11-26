@@ -28,7 +28,7 @@
       y: 600
     };
 
-    this.moleculeRadius = 2;
+    this.moleculeRadius = 5;
 
     //Time is discrete in our physical world, this is the increment between two adjacent time values
     this.deltaT = 0.05;
@@ -70,9 +70,9 @@
         molecule.V.y = -molecule.V.y;
       }
     });
-    this.molecules.forEach(function(molecule1, idx) {
-      self.molecules.slice(idx + 1).forEach(function(molecule2) {
-        var distance = Math.sqrt(Math.pow(molecule1.x - molecule2.x) + Math.pow(molecule1.y - molecule2.y));
+    this.molecules.forEach(function(molecule1, idx1) {
+      self.molecules.slice(idx1 + 1).forEach(function(molecule2, idx2) {
+        var distance = Math.sqrt(Math.pow(molecule1.x - molecule2.x, 2) + Math.pow(molecule1.y - molecule2.y, 2));
 
         //Collision, impulse and energy are preserved, masses of molecules are same
         if (distance <= molecule1.r + molecule2.r) {
@@ -99,13 +99,13 @@
     var molecules = world.getVisibleFeatures().molecules;
 
     this.clear();
-    molecules.forEach(function(molecule) {
-      self.drawMolecule(molecule);
+    molecules.forEach(function(molecule, idx) {
+      self.drawMolecule(molecule, idx);
     });
   };
 
-  IdealGasDisplay.prototype.drawMolecule = function(molecule) {
-    this.drawingContext.fillStyle = "black";
+  IdealGasDisplay.prototype.drawMolecule = function(molecule, idx) {
+    this.drawingContext.fillStyle = ["black", "white", "gray"][idx % 3];
     this.drawingContext.beginPath();
     this.drawingContext.arc(molecule.x, molecule.y, molecule.r, 0, 2 * Math.PI, false);
     this.drawingContext.fill();
