@@ -5,6 +5,14 @@
   //TODO: Introduce a parameter that will regulate what part of energy is lost when hitting a wall
   //TODO: Compute the average kinetic energy of the moving molecules (temperature)
 
+  function integerRandom(value) {
+    return Math.floor(Math.random() * value);
+  }
+
+  function signedIntegerRandom(value) {
+    return (Math.random() < 0.5 ? -1 : 1) * integerRandom(value);
+  }
+
   /*
    * Ideal gas. The mass of a single molecule is so small compared to its speed that we can
    * assume that the force of gravity is zero and the forces of gravity in between molecules are negligible.
@@ -42,11 +50,11 @@
 
     for (var i = 0; i < this.numberOfMolecules; i++) {
       molecules.push({
-        x: Math.floor(Math.random() * this.box.x),
-        y: Math.floor(Math.random() * this.box.y),
+        x: integerRandom(this.box.x),
+        y: integerRandom(this.box.y),
         V: {
-          x: (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * this.averageDimensionSpeed),
-          y: (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * this.averageDimensionSpeed)
+          x: signedIntegerRandom(this.averageDimensionSpeed),
+          y: signedIntegerRandom(this.averageDimensionSpeed)
         },
         r: this.moleculeRadius
       });
@@ -54,64 +62,88 @@
     return molecules;
   };
 
-  IdealGasPhysicalWorld.prototype.update = function() {
+  IdealGasPhysicalWorld.prototype.moveMolecules = function() {
     var self = this;
 
     this.molecules.forEach(function(molecule) {
       molecule.x = molecule.x + molecule.V.x * self.deltaT;
       molecule.y = molecule.y + molecule.V.y * self.deltaT;
     });
+  };
+
+  IdealGasPhysicalWorld.prototype.collideWithBorder = function(molecule, dim) {
+    molecule.V[dim] = -molecule.V[dim];
+
+    //Adding rigidity
+    if (molecule[dim] > this.box[dim]) {
+      molecule[dim] = molecule[dim] - molecule.r / 8;
+    } else if (molecule[dim] < 0) {
+      molecule[dim] = molecule[dim] + molecule.r / 8;
+    }
+  };
+
+  IdealGasPhysicalWorld.prototype.hasBorderCollision = function(molecule, dim) {
+    return (molecule[dim] > this.box[dim]) || (molecule[dim] < 0);
+  };
+
+  IdealGasPhysicalWorld.prototype.handleCollisionWithBorder = function() {
+    var self = this;
 
     this.molecules.forEach(function(molecule) {
-      if ((molecule.x > self.box.x) || (molecule.x < 0)) {
-        molecule.V.x = -molecule.V.x;
-
-        //Rigid collision with the box
-        if (molecule.x > self.box.x) {
-          molecule.x = molecule.x - molecule.r / 8;
-        } else {
-          molecule.x = molecule.x + molecule.r / 8;
-        }
-      }
-      if ((molecule.y > self.box.y) || (molecule.y < 0)) {
-        molecule.V.y = -molecule.V.y;
-
-        //Rigid collision with the box
-        if (molecule.y > self.box.y) {
-          molecule.y = molecule.y - molecule.r / 4;
-        } else {
-          molecule.y = molecule.y + molecule.r / 4;
-        }
-      }
-    });
-    this.molecules.forEach(function(molecule1, idx1) {
-      self.molecules.slice(idx1 + 1).forEach(function(molecule2, idx2) {
-        var distance = Math.sqrt(Math.pow(molecule1.x - molecule2.x, 2) + Math.pow(molecule1.y - molecule2.y, 2));
-
-        //Collision, impulse and energy are preserved, masses of molecules are same
-        if (distance <= molecule1.r + molecule2.r) {
-          var molecule1V = molecule1.V;
-
-          molecule1.V = molecule2.V;
-          molecule2.V = molecule1V;
-
-          /*
-           * Interesting artefact observed in  the simulation.
-           * Some molecules statistically will get close speeds and
-           * become "glued" together for some time.
-           * In reality it probably means that molecules can get a chance to form a new
-           * molecule if chemical reaction is possible between them.
-           *
-           * Just making the collision here a bit more rigid, i.e. no chemical reaction 
-           * is possible.
-           */
-          molecule1.x = molecule1.x - (molecule2.x - molecule1.x) / 16;
-          molecule1.y = molecule1.y - (molecule2.y - molecule1.y) / 16;
-          molecule2.x = molecule2.x - (molecule1.x - molecule2.x) / 16;
-          molecule2.y = molecule2.y - (molecule1.y - molecule2.y) / 16;
+      ['x', 'y'].forEach(function(dim) {
+        if (self.hasBorderCollision(molecule, dim)) {
+          self.collideWithBorder(molecule, dim);
         }
       });
     });
+  };
+
+  IdealGasPhysicalWorld.prototype.collide = function(molecule1, molecule2) {
+
+    //Collision, impulse and energy are preserved, masses of molecules are same
+    var molecule1V = molecule1.V;
+
+    molecule1.V = molecule2.V;
+    molecule2.V = molecule1V;
+
+    /*
+     * Interesting artefact observed in  the simulation.
+     * Some molecules statistically will get close speeds and
+     * become "glued" together for some time.
+     * In reality it probably means that molecules can get a chance to form a new
+     * molecule if chemical reaction is possible between them.
+     *
+     * Just making the collision here a bit more rigid, i.e. no chemical reaction 
+     * is possible.
+     */
+    molecule1.x = molecule1.x - (molecule2.x - molecule1.x) / 16;
+    molecule1.y = molecule1.y - (molecule2.y - molecule1.y) / 16;
+    molecule2.x = molecule2.x - (molecule1.x - molecule2.x) / 16;
+    molecule2.y = molecule2.y - (molecule1.y - molecule2.y) / 16;
+  };
+
+  IdealGasPhysicalWorld.prototype.haveCollision = function(molecule1, molecule2) {
+    var distance = Math.sqrt(Math.pow(molecule1.x - molecule2.x, 2) + Math.pow(molecule1.y - molecule2.y, 2));
+
+    return distance <= molecule1.r + molecule2.r;
+  };
+
+  IdealGasPhysicalWorld.prototype.handleCollisionBetweenMolecules = function() {
+    var self = this;
+
+    this.molecules.forEach(function(molecule1, idx1) {
+      self.molecules.slice(idx1 + 1).forEach(function(molecule2, idx2) {
+        if (self.haveCollision(molecule1, molecule2)) {
+          self.collide(molecule1, molecule2);
+        }
+      });
+    });
+  };
+
+  IdealGasPhysicalWorld.prototype.update = function() {
+    this.moveMolecules();
+    this.handleCollisionWithBorder();
+    this.handleCollisionBetweenMolecules();
   };
 
   /*
