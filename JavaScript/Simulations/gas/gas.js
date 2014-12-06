@@ -26,10 +26,10 @@
   IdealGasPhysicalWorld.prototype.init = function() {
 
     //Number of molecules in the box
-    this.numberOfMolecules = 100;
+    this.numberOfMolecules = 200;
 
     //Average speed of a molecule, real speed is in the interval [0, 2 * this.averageSpeed]
-    this.averageDimensionSpeed = 15;
+    this.averageDimensionSpeed = 50;
 
     this.box = {
       x: 600,
@@ -43,6 +43,18 @@
 
     //Molecules, each molecule has coordinates
     this.molecules = this.createMolecules();
+
+    //Pressure, is computed from other physical characteristics
+    this.averageP = 0;
+
+    //Number of times some molecule has hit the border in latest deltaT
+    this.borderHits = 0;
+
+    //Current clock tick
+    this.currentClockTick = 0;
+
+    //Time delta during which pressure is being measured this.measurementClockTicks * this.deltaT
+    this.measurementClockTicks = 100;
   };
 
   IdealGasPhysicalWorld.prototype.createMolecules = function() {
@@ -92,6 +104,7 @@
     this.molecules.forEach(function(molecule) {
       ['x', 'y'].forEach(function(dim) {
         if (self.hasBorderCollision(molecule, dim)) {
+          self.borderHits++;
           self.collideWithBorder(molecule, dim);
         }
       });
@@ -140,7 +153,31 @@
     });
   };
 
+  IdealGasPhysicalWorld.prototype.measureAveragePressure = function() {
+
+    /*
+     * Should divide by the dimensions of the box, just a question of scaling as the box does
+     * not change its dimensions.
+     */
+    this.averageP = this.borderHits / this.measurementClockTicks;
+    this.borderHits = 0;
+    console.log("Average pressure", this.averageP);
+  };
+
+  /*
+   * Some physical characteristics such as pressure change quite a bit due to the small number of molecules,
+   * then we need to average them out over some time period to get statistically significant results.
+   */
+  IdealGasPhysicalWorld.prototype.measureAverages = function() {
+    this.currentClockTick++;
+    if (this.currentClockTick >= this.measurementClockTicks) {
+      this.currentClockTick = 0;
+      this.measureAveragePressure();
+    }
+  };
+
   IdealGasPhysicalWorld.prototype.update = function() {
+    this.measureAverages();
     this.moveMolecules();
     this.handleCollisionWithBorder();
     this.handleCollisionBetweenMolecules();
