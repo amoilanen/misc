@@ -1,7 +1,5 @@
 (function(host) {
 
-  //TODO: Compute the number of molecules hitting the walls of the box in unit of time (pressure P)
-
   //TODO: Introduce a parameter that will regulate what part of energy is lost when hitting a wall
   //TODO: Compute the average kinetic energy of the moving molecules (temperature)
 
@@ -40,6 +38,9 @@
 
     //Time is discrete in our physical world, this is the increment between two adjacent time values
     this.deltaT = 0.05;
+
+    //What part of impulse of every molecule is still remaining when it hits the border of the box
+    this.borderHitImpulseRetained = 0.5;
 
     //Molecules, each molecule has coordinates
     this.molecules = this.createMolecules();
@@ -84,7 +85,7 @@
   };
 
   IdealGasPhysicalWorld.prototype.collideWithBorder = function(molecule, dim) {
-    molecule.V[dim] = -molecule.V[dim];
+    molecule.V[dim] = this.borderHitImpulseRetained * -molecule.V[dim];
 
     //Adding rigidity
     if (molecule[dim] > this.box[dim]) {
