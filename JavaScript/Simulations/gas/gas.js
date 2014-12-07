@@ -1,6 +1,5 @@
 (function(host) {
 
-  //TODO: Introduce a parameter that will regulate what part of energy is lost when hitting a wall
   //TODO: Compute the average kinetic energy of the moving molecules (temperature)
 
   function integerRandom(value) {
@@ -16,7 +15,7 @@
    * assume that the force of gravity is zero and the forces of gravity in between molecules are negligible.
    */
   function IdealGasPhysicalWorld() {
-    this.visibleFeatureNames = ['molecules', 'averageP'];
+    this.visibleFeatureNames = ['molecules', 'averagePressure', 'averageSpeed'];
   }
 
   IdealGasPhysicalWorld.prototype = new PhysicalWorld();
@@ -46,7 +45,10 @@
     this.molecules = this.createMolecules();
 
     //Pressure, is computed from other physical characteristics
-    this.averageP = 0;
+    this.averagePressure = 0;
+
+    //Average speed of the moving molecules, "temperature"
+    this.averageSpeed = 0;
 
     //Number of times some molecule has hit the border in latest deltaT
     this.borderHits = 0;
@@ -55,7 +57,7 @@
     this.currentClockTick = 0;
 
     //Time delta during which pressure is being measured this.measurementClockTicks * this.deltaT
-    this.measurementClockTicks = 100;
+    this.measurementClockTicks = 10;
   };
 
   IdealGasPhysicalWorld.prototype.createMolecules = function() {
@@ -155,13 +157,19 @@
   };
 
   IdealGasPhysicalWorld.prototype.measureAveragePressure = function() {
+    var self = this;
 
     /*
      * Should divide by the dimensions of the box, just a question of scaling as the box does
      * not change its dimensions.
      */
-    this.averageP = this.borderHits / this.measurementClockTicks;
+    this.averagePressure = this.borderHits / this.measurementClockTicks;
     this.borderHits = 0;
+    this.averageSpeed = this.molecules.reduce(function(prev, molecule) {
+      var V = Math.sqrt(Math.pow(molecule.V.x, 2) + Math.pow(molecule.V.y, 2));
+
+      return prev + V / self.molecules.length;
+    }, 0);
   };
 
   /*
@@ -196,14 +204,14 @@
     var self = this;
     var features = world.getVisibleFeatures();
     var molecules = features.molecules;
-    var averageP = features.averageP;
 
     this.clear();
     molecules.forEach(function(molecule, idx) {
       self.drawMolecule(molecule, idx);
     });
     this.drawingContext.fillStyle = "red";
-    this.drawingContext.fillText("P: " + averageP, 20, 20);
+    this.drawingContext.fillText("Pressure: " + features.averagePressure.toFixed(2), 20, 20);
+    this.drawingContext.fillText("Temperature: " + features.averageSpeed.toFixed(2), 20, 60);
   };
 
   IdealGasDisplay.prototype.drawMolecule = function(molecule, idx) {
