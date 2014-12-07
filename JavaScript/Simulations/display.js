@@ -20,6 +20,7 @@
     displayElement.width = this.canvasWidth;
     displayElement.height = this.canvasHeight;
     this.drawingContext = displayElement.getContext("2d");
+    this.drawingContext.font="22px Arial";
   };
 
   Display.prototype.clear = function() {

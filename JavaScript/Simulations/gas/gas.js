@@ -18,7 +18,7 @@
    * assume that the force of gravity is zero and the forces of gravity in between molecules are negligible.
    */
   function IdealGasPhysicalWorld() {
-    this.visibleFeatureNames = ['molecules'];
+    this.visibleFeatureNames = ['molecules', 'averageP'];
   }
 
   IdealGasPhysicalWorld.prototype = new PhysicalWorld();
@@ -161,7 +161,6 @@
      */
     this.averageP = this.borderHits / this.measurementClockTicks;
     this.borderHits = 0;
-    console.log("Average pressure", this.averageP);
   };
 
   /*
@@ -194,12 +193,16 @@
 
   IdealGasDisplay.prototype.draw = function(world) {
     var self = this;
-    var molecules = world.getVisibleFeatures().molecules;
+    var features = world.getVisibleFeatures();
+    var molecules = features.molecules;
+    var averageP = features.averageP;
 
     this.clear();
     molecules.forEach(function(molecule, idx) {
       self.drawMolecule(molecule, idx);
     });
+    this.drawingContext.fillStyle = "red";
+    this.drawingContext.fillText("P: " + averageP, 20, 20);
   };
 
   IdealGasDisplay.prototype.drawMolecule = function(molecule, idx) {
