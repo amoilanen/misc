@@ -21,7 +21,7 @@
   IdealGasPhysicalWorld.prototype.init = function() {
 
     //Number of molecules in the box
-    this.numberOfMolecules = 200;
+    this.numberOfMolecules = 300;
 
     //Average speed of a molecule, real speed is in the interval [0, 2 * this.averageSpeed]
     this.averageDimensionSpeed = 50;
@@ -57,8 +57,11 @@
     //Time delta during which pressure is being measured this.measurementClockTicks * this.deltaT
     this.measurementClockTicks = 10;
 
-    //TODO: If more than 100 path entries, clear
+    //Random path of a selected molecule
     this.randomPath = [];
+
+    //Maximum length of random path that is kept in memory
+    this.randomPathMaxLength = 100;
   };
 
   IdealGasPhysicalWorld.prototype.createMolecules = function() {
@@ -76,6 +79,13 @@
       });
     }
     return molecules;
+  };
+
+  IdealGasPhysicalWorld.prototype.rememberRandomPathEntry = function(pathEntry) {
+    this.randomPath.push(pathEntry);
+    if (this.randomPath.length >= this.randomPathMaxLength) {
+      this.randomPath.shift();
+    }
   };
 
   IdealGasPhysicalWorld.prototype.moveMolecules = function() {
@@ -109,7 +119,7 @@
       ['x', 'y'].forEach(function(dim) {
         if (self.hasBorderCollision(molecule, dim)) {
           if (idx === 0) {
-            self.randomPath.push({
+            self.rememberRandomPathEntry({
               x: molecule.x,
               y: molecule.y
             });
@@ -158,7 +168,7 @@
       self.molecules.slice(idx1 + 1).forEach(function(molecule2, idx2) {
         if (self.haveCollision(molecule1, molecule2)) {
           if (idx1 === 0) {
-            self.randomPath.push({
+            self.rememberRandomPathEntry({
               x: molecule1.x,
               y: molecule1.y
             });
@@ -217,6 +227,12 @@
     var self = this;
     var features = world.getVisibleFeatures();
     var molecules = features.molecules;
+    var randomPath = features.randomPath.slice();
+
+    randomPath.push({
+      x: molecules[0].x,
+      y: molecules[0].y
+    });
 
     this.clear();
     molecules.forEach(function(molecule, idx) {
@@ -224,9 +240,9 @@
     });
 
     //Drawing random molecule path
-    if (features.randomPath.length > 1) {
-      self.drawingContext.moveTo(features.randomPath[0].x, features.randomPath[0].y);
-      features.randomPath.slice(1).forEach(function(pathEntry) {
+    if (randomPath.length > 1) {
+      self.drawingContext.moveTo(randomPath[0].x, randomPath[0].y);
+      randomPath.slice(1).forEach(function(pathEntry) {
         self.drawingContext.lineTo(pathEntry.x, pathEntry.y);
         self.drawingContext.stroke();
         self.drawingContext.moveTo(pathEntry.x, pathEntry.y);
