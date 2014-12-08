@@ -1,7 +1,5 @@
 (function(host) {
 
-  //TODO: Compute the average kinetic energy of the moving molecules (temperature)
-
   function integerRandom(value) {
     return Math.floor(Math.random() * value);
   }
@@ -15,7 +13,7 @@
    * assume that the force of gravity is zero and the forces of gravity in between molecules are negligible.
    */
   function IdealGasPhysicalWorld() {
-    this.visibleFeatureNames = ['molecules', 'averagePressure', 'averageSpeed'];
+    this.visibleFeatureNames = ['molecules', 'randomPath', 'averagePressure', 'averageSpeed'];
   }
 
   IdealGasPhysicalWorld.prototype = new PhysicalWorld();
@@ -39,7 +37,7 @@
     this.deltaT = 0.05;
 
     //What part of impulse of every molecule is still remaining when it hits the border of the box
-    this.borderHitImpulseRetained = 0.5;
+    this.borderHitImpulseRetained = 1;
 
     //Molecules, each molecule has coordinates
     this.molecules = this.createMolecules();
@@ -58,6 +56,9 @@
 
     //Time delta during which pressure is being measured this.measurementClockTicks * this.deltaT
     this.measurementClockTicks = 10;
+
+    //TODO: If more than 100 path entries, clear
+    this.randomPath = [];
   };
 
   IdealGasPhysicalWorld.prototype.createMolecules = function() {
@@ -104,9 +105,15 @@
   IdealGasPhysicalWorld.prototype.handleCollisionWithBorder = function() {
     var self = this;
 
-    this.molecules.forEach(function(molecule) {
+    this.molecules.forEach(function(molecule, idx) {
       ['x', 'y'].forEach(function(dim) {
         if (self.hasBorderCollision(molecule, dim)) {
+          if (idx === 0) {
+            self.randomPath.push({
+              x: molecule.x,
+              y: molecule.y
+            });
+          }
           self.borderHits++;
           self.collideWithBorder(molecule, dim);
         }
@@ -150,6 +157,12 @@
     this.molecules.forEach(function(molecule1, idx1) {
       self.molecules.slice(idx1 + 1).forEach(function(molecule2, idx2) {
         if (self.haveCollision(molecule1, molecule2)) {
+          if (idx1 === 0) {
+            self.randomPath.push({
+              x: molecule1.x,
+              y: molecule1.y
+            });
+          }
           self.collide(molecule1, molecule2);
         }
       });
@@ -209,6 +222,18 @@
     molecules.forEach(function(molecule, idx) {
       self.drawMolecule(molecule, idx);
     });
+
+    //Drawing random molecule path
+    if (features.randomPath.length > 1) {
+      self.drawingContext.moveTo(features.randomPath[0].x, features.randomPath[0].y);
+      features.randomPath.slice(1).forEach(function(pathEntry) {
+        self.drawingContext.lineTo(pathEntry.x, pathEntry.y);
+        self.drawingContext.stroke();
+        self.drawingContext.moveTo(pathEntry.x, pathEntry.y);
+      });
+    }
+
+    //Drawing measured average values
     this.drawingContext.fillStyle = "red";
     this.drawingContext.fillText("Pressure: " + features.averagePressure.toFixed(2), 20, 20);
     this.drawingContext.fillText("Temperature: " + features.averageSpeed.toFixed(2), 20, 60);
