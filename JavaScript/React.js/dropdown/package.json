@@ -1,0 +1,12 @@
+{
+  "name": "reactjs-dropdown",
+  "version": "0.0.1",
+  "description": "Exploring React.js, not a real component",
+  "scripts": {},
+  "author": "",
+  "license": "MIT",
+  "private": true,"
+  "devDependencies": {
+    "bower": "^1.3.12"
+  }
+}

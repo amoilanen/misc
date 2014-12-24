@@ -1,0 +1,22 @@
+{
+  "name": "dropdown",
+  "version": "0.0.1",
+  "homepage": "https://github.com/antivanov/misc",
+  "authors": [
+    "Anton Ivanov <anton.al.ivanov@gmail.com>"
+  ],
+  "description": "Exploring React.js, not a real component",
+  "main": "dropdown.js",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "react": "~0.12.2"
+  }
+}
