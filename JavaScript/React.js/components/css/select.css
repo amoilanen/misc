@@ -1,0 +1,56 @@
+.rc-select {
+  /* Default select width, can be overridden */
+  width: 200px;
+}
+
+.rc-select--field {
+  display: inline-block;
+  position: relative;
+  height: 24px;
+  width: 100%;
+  background: #f5f5f5;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.rc-select--field .rc-select--input {
+  height: 100%;
+  padding-right: 24px;
+  padding-left: 12px;
+  line-height: 24px;
+}
+
+.rc-select--arrow {
+
+  /* arrow */
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #444444;
+
+  position: absolute;
+  right: 8px;
+  top: 50%;
+}
+
+.rc-select--options {
+  position: relative;
+}
+
+.rc-select--options ul {
+  list-style-type: none;
+  margin-top: 1px;
+  padding-left: 12px;
+  background: #fdfdfd;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  -webkit-box-shadow: 1px 1px 3px 0px rgba(50, 50, 50, 0.45);
+  -moz-box-shadow: 1px 1px 3px 0px rgba(50, 50, 50, 0.45);
+  box-shadow: 1px 1px 2px 0px rgba(50, 50, 50, 0.45);
+}
+
+.rc-select--options li {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
