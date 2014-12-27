@@ -15,7 +15,7 @@ var SelectOptionList = React.createClass({
     });
 
     return (
-      <div className="rc-select--options">
+      <div className={this.props.active ? "rc-select--options fade-in-fast" : "rc-select--options"}>
         <ul>
           {options}
         </ul>
@@ -40,7 +40,7 @@ var Select = React.createClass({
           <div className="rc-select--input">abcdef</div>
           <div className="rc-select--arrow"></div>
         </div>
-        <SelectOptionList options={this.props.options} />
+        <SelectOptionList options={this.props.options} active={this.state.active}/>
       </div>
     );
   }

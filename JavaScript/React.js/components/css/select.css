@@ -1,3 +1,31 @@
+/* Animation taken from https://github.com/daneden/animate.css */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in-fast {
+  animation: fadeIn;
+  animation-duration: 0.25s;
+  animation-fill-mode: both;
+  -webkit-animation: fadeIn;
+  -webkit-animation-duration: 0.25s;
+  -webkit-animation-fill-mode: both;
+}
+
 .rc-select {
   /* Default select width, can be overridden */
   width: 200px;
