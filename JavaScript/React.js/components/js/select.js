@@ -1,7 +1,7 @@
 var SelectOption = React.createClass({
   render: function() {
     return (
-      <li>{this.props.label}</li>
+      <li value={this.props.value}>{this.props.label}</li>
     );
   }
 });
@@ -10,7 +10,7 @@ var SelectOptionList = React.createClass({
   render: function() {
     var options = this.props.options.map(function(option, index) {
       return (
-        <SelectOption label={option.label} key={index} />
+        <SelectOption label={option.label} value={option.value} key={index} />
       );
     });
 
@@ -27,33 +27,20 @@ var SelectOptionList = React.createClass({
 var Select = React.createClass({
   getInitialState: function() {
     return {
-      options: [
-        {
-          label: "Prague"
-        },
-        {
-          label: "Berlin"
-        },
-        {
-          label: "Helsinki"
-        },
-        {
-          label: "Amsterdam"
-        },
-        {
-          label: "Paris"
-        }
-      ]
+      active: false
     };
+  },
+  toggle: function() {
+    this.setState({active: !this.state.active});
   },
   render: function() {
     return (
-      <div className="rc-select">
+      <div onClick={this.toggle} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
         <div className="rc-select--field">
           <div className="rc-select--input">abcdef</div>
           <div className="rc-select--arrow"></div>
         </div>
-        <SelectOptionList options={this.state.options} />
+        <SelectOptionList options={this.props.options} />
       </div>
     );
   }

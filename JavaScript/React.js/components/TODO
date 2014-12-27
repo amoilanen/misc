@@ -2,11 +2,14 @@
   -- Options are rendered but not visible
   -- Options are shown when field is clicked
   -- On clicking one of the options it is selected, entered in the field and option list is hidden
+  -- One option can be specified as selected
   -- Open option list is hidden when Esc is pressed
   -- When clicking outside of the dropdown option list is hidden
   -- It is possible to select options from the option list using keyboard
      --- Change focus to dropdown field without click, press arrow down, option list should be shown
   -- Properly wrap the component as a module that can be imported (AMD?)
+  -- Use LESS for styles
+  -- Use ES6 features in the code of the component
 
 - Checkbox component
 - Autosuggest component

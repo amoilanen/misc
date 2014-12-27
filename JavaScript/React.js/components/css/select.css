@@ -1,6 +1,10 @@
 .rc-select {
   /* Default select width, can be overridden */
   width: 200px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .rc-select--field {
@@ -36,6 +40,11 @@
 
 .rc-select--options {
   position: relative;
+  display: none;
+}
+
+.rc-select_active .rc-select--options {
+  display: block;
 }
 
 .rc-select--options ul {
