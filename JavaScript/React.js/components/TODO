@@ -6,6 +6,7 @@
   -- When clicking outside of the dropdown option list is hidden
   -- It is possible to select options from the option list using keyboard
      --- Change focus to dropdown field without click, press arrow down, option list should be shown
+  -- Properly wrap the component as a module that can be imported (AMD?)
 
 - Checkbox component
 - Autosuggest component
