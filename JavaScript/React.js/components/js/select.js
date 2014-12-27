@@ -1,7 +1,11 @@
 var SelectOption = React.createClass({
   render: function() {
+    var className = this.props.selected ? "rc-select--option rc-select--option_selected" : "rc-select--option";
+
     return (
-      <li value={this.props.value}>{this.props.label}</li>
+      <li value={this.props.value} className={className}>
+        <div className="rs-selection--option-label">{this.props.label}</div>
+      </li>
     );
   }
 });
@@ -10,7 +14,7 @@ var SelectOptionList = React.createClass({
   render: function() {
     var options = this.props.options.map(function(option, index) {
       return (
-        <SelectOption label={option.label} value={option.value} key={index} />
+        <SelectOption label={option.label} value={option.value} selected={option.selected} key={index} />
       );
     });
 
@@ -34,10 +38,14 @@ var Select = React.createClass({
     this.setState({active: !this.state.active});
   },
   render: function() {
+    var selectedOption = this.props.options.filter(function(option) {
+      return option.selected;
+    })[0];
+
     return (
       <div onClick={this.toggle} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
         <div className="rc-select--field">
-          <div className="rc-select--input">abcdef</div>
+          <div className="rc-select--input">{selectedOption.label}</div>
           <div className="rc-select--arrow"></div>
         </div>
         <SelectOptionList options={this.props.options} active={this.state.active}/>

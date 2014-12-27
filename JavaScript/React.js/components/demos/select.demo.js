@@ -5,7 +5,8 @@ var options = [
   },
   {
     value: 86,
-    label: "Berlin"
+    label: "Berlin",
+    selected: true
   },
   {
     value: 33,
