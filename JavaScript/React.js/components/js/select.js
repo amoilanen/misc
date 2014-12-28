@@ -3,6 +3,9 @@ var SelectOption = React.createClass({
     this.props.onSelect(this.props.value);
     event.stopPropagation();
   },
+  onMouseOver: function(event) {
+    this.props.onActivate(this.props.idx);
+  },
   render: function() {
     var className = "rc-select--option";
 
@@ -13,7 +16,7 @@ var SelectOption = React.createClass({
       className = className + " rc-select--option_active";
     }
     return (
-      <li value={this.props.value} className={className} onClick={this.onSelect}>
+      <li value={this.props.value} className={className} onMouseOver={this.onMouseOver} onClick={this.onSelect}>
         <div className="rs-selection--option-label">{this.props.label}</div>
       </li>
     );
@@ -25,7 +28,7 @@ var SelectOptionList = React.createClass({
     var self = this;
     var options = this.props.options.map(function(option, index) {
       return (
-        <SelectOption active={index === self.props.activeIndex} label={option.label} value={option.value} selected={option.selected} key={index} onSelect={self.props.onSelect}/>
+        <SelectOption active={index === self.props.activeIndex} idx={index} label={option.label} value={option.value} selected={option.selected} key={index} onSelect={self.props.onSelect} onActivate={self.props.onActivate}/>
       );
     });
 
@@ -128,6 +131,9 @@ var Select = React.createClass({
     //Need to return focus to the focus trap, the focus was lost to an option
     focusTrapElement.focus();
   },
+  activate: function(idx) {
+    this.setState({activeIndex: idx});
+  },
   render: function() {
     var selectedOption = this.props.options.filter(function(option) {
       return option.selected;
@@ -147,7 +153,7 @@ var Select = React.createClass({
           <div className="rc-select--input">{selectedOption.label}</div>
           <div className="rc-select--arrow"></div>
         </div>
-        <SelectOptionList activeIndex={this.state.activeIndex} options={this.props.options} active={this.state.active} onSelect={this.select}/>
+        <SelectOptionList activeIndex={this.state.activeIndex} options={this.props.options} active={this.state.active} onSelect={this.select} onActivate={this.activate}/>
       </div>
     );
   }
