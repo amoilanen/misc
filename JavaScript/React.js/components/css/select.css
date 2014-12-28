@@ -54,6 +54,10 @@
   border-radius: 4px;
 }
 
+.rc-select_focus .rc-select--field {
+  border-color: #4285f4;
+}
+
 .rc-select--field .rc-select--input {
   height: 100%;
   padding-right: 27px;

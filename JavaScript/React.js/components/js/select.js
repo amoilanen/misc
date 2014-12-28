@@ -46,6 +46,7 @@ var Select = React.createClass({
   getInitialState: function() {
     return {
       active: false,
+      inFocus: false,
       activeIndex: -1
     };
   },
@@ -94,6 +95,12 @@ var Select = React.createClass({
       this.setState({activeIndex: activeIndex});
     }
   },
+  onFocus: function(event) {
+    this.setState({inFocus: true});
+  },
+  onBlur: function(event) {
+    this.setState({inFocus: false});
+  },
   isInsideComponent: function(domElement) {
     var containerElement = this.refs.rcSelectContainer.getDOMNode();
 
@@ -111,19 +118,31 @@ var Select = React.createClass({
     }
   },
   select: function(value) {
+    var focusTrapElement = this.refs.rcSelectFocusTrap.getDOMNode();
+
     this.props.options.forEach(function(option) {
       option.selected = (option.value === value);
     });
     this.toggle();
+
+    //Need to return focus to the focus trap, the focus was lost to an option
+    focusTrapElement.focus();
   },
   render: function() {
     var selectedOption = this.props.options.filter(function(option) {
       return option.selected;
     })[0];
+    var className = "rc-select";
 
+    if (this.state.active) {
+      className = className + " rc-select_active";
+    }
+    if (this.state.inFocus) {
+      className = className + " rc-select_focus";
+    }
     return (
-      <div ref="rcSelectContainer" onClick={this.onClick} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
-        <input ref="rcSelectFocusTrap" onKeyUp={this.onKeyUp} className="rc-select--focus-trap" type="text" readOnly="true" />
+      <div ref="rcSelectContainer" onClick={this.onClick} className={className}>
+        <input ref="rcSelectFocusTrap" onKeyUp={this.onKeyUp} className="rc-select--focus-trap" type="text" readOnly="true" onFocus={this.onFocus} onBlur={this.onBlur} />
         <div className="rc-select--field">
           <div className="rc-select--input">{selectedOption.label}</div>
           <div className="rc-select--arrow"></div>
