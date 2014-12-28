@@ -38,8 +38,28 @@ var Select = React.createClass({
       active: false
     };
   },
-  toggle: function() {
-    this.setState({active: !this.state.active});
+  toggle: function(active) {
+    if (typeof active === 'undefined') {
+      active = !this.state.active;
+    }
+    var focusTrapElement = this.refs.rcSelectFocusTrap.getDOMNode();
+
+    this.setState({active: active});
+    if (active) {
+      focusTrapElement.focus();
+    } else {
+      focusTrapElement.blur();
+    }
+  },
+  onClick: function(event) {
+    this.toggle();
+  },
+  onKeyUp: function(event) {
+    var nativeEvent = event.nativeEvent;
+
+    if (nativeEvent.keyCode === 27) {
+      this.toggle(false);
+    }
   },
   select: function(value) {
     this.props.options.forEach(function(option) {
@@ -52,7 +72,8 @@ var Select = React.createClass({
     })[0];
 
     return (
-      <div onClick={this.toggle} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
+      <div onClick={this.onClick} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
+        <input onKeyUp={this.onKeyUp} className="rc-select--focus-trap" ref="rcSelectFocusTrap" type="text" readOnly="true" />
         <div className="rc-select--field">
           <div className="rc-select--input">{selectedOption.label}</div>
           <div className="rc-select--arrow"></div>

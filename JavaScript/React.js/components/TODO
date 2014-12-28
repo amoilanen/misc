@@ -2,7 +2,7 @@
   -- Options are rendered but not visible - OK
   -- Options are shown when field is clicked - OK
   -- One option can be specified as selected - OK
-  -- On clicking one of the options it is selected, entered in the field and option list is hidden
+  -- On clicking one of the options it is selected, entered in the field and option list is hidden - OK
   -- Open option list is hidden when Esc is pressed
   -- When clicking outside of the dropdown option list is hidden
   -- It is possible to select options from the option list using keyboard

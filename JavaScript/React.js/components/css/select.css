@@ -35,6 +35,15 @@
   user-select: none;
 }
 
+.rc-select--focus-trap {
+  width: 0px;
+  height: 0px;
+  border: none;
+  position: fixed;
+  left: -100px;
+  top: -100px;
+}
+
 .rc-select--field {
   display: inline-block;
   position: relative;
