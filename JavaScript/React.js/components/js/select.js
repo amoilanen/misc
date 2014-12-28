@@ -1,12 +1,13 @@
 var SelectOption = React.createClass({
-  select: function() {
+  onSelect: function(event) {
     this.props.onSelect(this.props.value);
+    event.stopPropagation();
   },
   render: function() {
     var className = this.props.selected ? "rc-select--option rc-select--option_selected" : "rc-select--option";
 
     return (
-      <li value={this.props.value} className={className} onClick={this.select}>
+      <li value={this.props.value} className={className} onClick={this.onSelect}>
         <div className="rs-selection--option-label">{this.props.label}</div>
       </li>
     );
@@ -61,10 +62,24 @@ var Select = React.createClass({
       this.toggle(false);
     }
   },
+  onBlur: function(event) {
+    var self = this;
+
+    /*
+     * Blur can occur if we click on an option or outside of the option list,
+     * giving some time for option selection to complete.
+     */
+    setTimeout(function() {
+      if (self.state.active) {
+        self.toggle(false);
+      }
+    }, 200);
+  },
   select: function(value) {
     this.props.options.forEach(function(option) {
       option.selected = (option.value === value);
     });
+    this.toggle();
   },
   render: function() {
     var selectedOption = this.props.options.filter(function(option) {
@@ -73,7 +88,7 @@ var Select = React.createClass({
 
     return (
       <div onClick={this.onClick} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
-        <input onKeyUp={this.onKeyUp} className="rc-select--focus-trap" ref="rcSelectFocusTrap" type="text" readOnly="true" />
+        <input onKeyUp={this.onKeyUp} onBlur={this.onBlur} className="rc-select--focus-trap" ref="rcSelectFocusTrap" type="text" readOnly="true" />
         <div className="rc-select--field">
           <div className="rc-select--input">{selectedOption.label}</div>
           <div className="rc-select--arrow"></div>
