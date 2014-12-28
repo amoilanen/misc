@@ -46,7 +46,7 @@ var Select = React.createClass({
   getInitialState: function() {
     return {
       active: false,
-      activeIndex: 3
+      activeIndex: -1
     };
   },
   toggle: function(active) {
@@ -57,7 +57,7 @@ var Select = React.createClass({
 
     this.setState({
       active: active,
-      activeIndex: 3
+      activeIndex: -1
     });
     if (active) {
       focusTrapElement.focus();
@@ -75,12 +75,18 @@ var Select = React.createClass({
     if (nativeEvent.keyCode === 27) {
       this.toggle(false);
     } else if (nativeEvent.keyCode === 40) {
+      if (!this.state.active) {
+        this.toggle(true);
+      }
       activeIndex++;
       if (activeIndex >= this.props.options.length) {
         activeIndex = 0;
       }
       this.setState({activeIndex: activeIndex});
     } else if (nativeEvent.keyCode === 38) {
+      if (!this.state.active) {
+        this.toggle(true);
+      }
       activeIndex--;
       if (activeIndex < 0) {
         activeIndex = this.props.options.length - 1;
