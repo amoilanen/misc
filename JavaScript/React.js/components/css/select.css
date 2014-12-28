@@ -100,8 +100,13 @@
   background-color: rgba(0, 0, 0, 0.03);
 }
 
+.rc-select--options .rc-select--option_active {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
 .rc-select--option.rc-select--option_selected,
-.rc-select--options .rc-select--option.rc-select--option_selected:hover {
+.rc-select--options .rc-select--option.rc-select--option_selected:hover,
+.rc-select--options .rc-select--option_active.rc-select--option_selected {
   background-color: rgba(0, 0, 0, 0.1);
 }
 

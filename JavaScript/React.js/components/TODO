@@ -4,7 +4,7 @@
   -- One option can be specified as selected - OK
   -- On clicking one of the options it is selected, entered in the field and option list is hidden - OK
   -- Open option list is hidden when Esc is pressed - OK
-  -- When clicking outside of the dropdown option list is hidden
+  -- When clicking outside of the dropdown option list is hidden - OK
   -- It is possible to select options from the option list using keyboard
      --- Change focus to dropdown field without click, press arrow down, option list should be shown
   -- Properly wrap the component as a module that can be imported (AMD?)
