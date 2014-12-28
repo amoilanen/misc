@@ -76,9 +76,9 @@ var Select = React.createClass({
     var nativeEvent = event.nativeEvent;
     var activeIndex = this.state.activeIndex;
 
-    if (nativeEvent.keyCode === 27) {
+    if (nativeEvent.keyCode === 27) { //Esc
       this.toggle(false);
-    } else if (nativeEvent.keyCode === 40) {
+    } else if (nativeEvent.keyCode === 40) { //Key Down
       if (!this.state.active) {
         this.toggle(true);
       }
@@ -87,7 +87,7 @@ var Select = React.createClass({
         activeIndex = 0;
       }
       this.setState({activeIndex: activeIndex});
-    } else if (nativeEvent.keyCode === 38) {
+    } else if (nativeEvent.keyCode === 38) { //Key Up
       if (!this.state.active) {
         this.toggle(true);
       }
@@ -96,6 +96,11 @@ var Select = React.createClass({
         activeIndex = this.props.options.length - 1;
       }
       this.setState({activeIndex: activeIndex});
+    } else if (nativeEvent.keyCode === 13) { //Enter
+      var activeOption = this.props.options[this.state.activeIndex];
+
+      this.setState({activeIndex: -1});
+      this.select(activeOption.value);
     }
   },
   onFocus: function(event) {

@@ -5,8 +5,9 @@
   -- On clicking one of the options it is selected, entered in the field and option list is hidden - OK
   -- Open option list is hidden when Esc is pressed - OK
   -- When clicking outside of the dropdown option list is hidden - OK
-  -- It is possible to select options from the option list using keyboard
+  -- It is possible to select options from the option list using keyboard - OK
      --- Change focus to dropdown field without click, press arrow down, option list should be shown
+  -- Proper interface for interaction with the code that uses the component
   -- Properly wrap the component as a module that can be imported (AMD?)
   -- Use LESS for styles
   -- Use ES6 features in the code of the component
