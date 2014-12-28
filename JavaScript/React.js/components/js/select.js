@@ -34,6 +34,9 @@ var SelectOptionList = React.createClass({
 });
 
 var Select = React.createClass({
+  componentDidMount: function() {
+    window.addEventListener('click', this.onDocumentClick);
+  },
   getInitialState: function() {
     return {
       active: false
@@ -62,18 +65,21 @@ var Select = React.createClass({
       this.toggle(false);
     }
   },
-  onBlur: function(event) {
-    var self = this;
+  isInsideComponent: function(domElement) {
+    var containerElement = this.refs.rcSelectContainer.getDOMNode();
 
-    /*
-     * Blur can occur if we click on an option or outside of the option list,
-     * giving some time for option selection to complete.
-     */
-    setTimeout(function() {
-      if (self.state.active) {
-        self.toggle(false);
+    while (domElement) {
+      if (domElement === containerElement) {
+        return true;
       }
-    }, 200);
+      domElement = domElement.parentNode;
+    }
+    return false;
+  },
+  onDocumentClick: function(event) {
+    if (this.state.active && !this.isInsideComponent(event.target)) {
+      this.toggle(false);
+    }
   },
   select: function(value) {
     this.props.options.forEach(function(option) {
@@ -87,8 +93,8 @@ var Select = React.createClass({
     })[0];
 
     return (
-      <div onClick={this.onClick} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
-        <input onKeyUp={this.onKeyUp} onBlur={this.onBlur} className="rc-select--focus-trap" ref="rcSelectFocusTrap" type="text" readOnly="true" />
+      <div ref="rcSelectContainer" onClick={this.onClick} className={this.state.active ? "rc-select rc-select_active" : "rc-select"}>
+        <input ref="rcSelectFocusTrap" onKeyUp={this.onKeyUp} className="rc-select--focus-trap" type="text" readOnly="true" />
         <div className="rc-select--field">
           <div className="rc-select--input">{selectedOption.label}</div>
           <div className="rc-select--arrow"></div>
