@@ -126,10 +126,15 @@ var Select = React.createClass({
     }
   },
   select: function(value) {
+    var self = this;
     var focusTrapElement = this.refs.rcSelectFocusTrap.getDOMNode();
 
     this.props.options.forEach(function(option) {
       option.selected = (option.value === value);
+
+      if (option.selected) {
+        self.props.onChange(option);
+      }
     });
     this.toggle();
 

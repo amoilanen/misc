@@ -26,7 +26,20 @@ var options = [
   }
 ];
 
+function onChange(callbackSelectedOption) {
+
+  //Selected option is passed to the callback
+  console.log("Select option, passed to callback = ", callbackSelectedOption);
+
+  //Options passed to the component are also updated
+  var selectedOption = options.filter(function(option) {
+    return option.selected;
+  })[0];
+
+  console.log("Select option, from the initial list = ", selectedOption);
+}
+
 React.render(
-  <Select options={options}/>,
+  <Select options={options} onChange={onChange}/>,
   document.getElementById('select-example')
 );
