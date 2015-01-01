@@ -3,9 +3,12 @@
   <head>
     <link rel="stylesheet" href="../css/select.css"></link>
     <script src="../bower_components/react/react.js"></script>
-    <!--<script src="bower_components/react/JSXTransformer.js"></script>-->
-    <!--<script type="text/jsx" src="js/select.js" />-->
-    <script src="../compiled/select.js"></script>
+    <script src="../bower_components/requirejs/require.js"></script>
+    <script type="text/javascript">
+      require.config({
+        baseUrl: '../compiled'
+      });
+    </script>
   </head>
   <body>
     <div id="select-example"></div>

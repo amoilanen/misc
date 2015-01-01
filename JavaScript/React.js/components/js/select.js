@@ -1,3 +1,5 @@
+define('select', function() {
+
 var SelectOption = React.createClass({
   onSelect: function(event) {
     this.props.onSelect(this.props.value);
@@ -167,4 +169,7 @@ var Select = React.createClass({
       </div>
     );
   }
+});
+
+  return Select;
 });
