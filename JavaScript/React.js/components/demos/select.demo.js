@@ -26,7 +26,7 @@ var options = [
   }
 ];
 
-function onChange(callbackSelectedOption) {
+function onSelect(callbackSelectedOption) {
 
   //Selected option is passed to the callback
   console.log("Select option, passed to callback = ", callbackSelectedOption);
@@ -41,7 +41,7 @@ function onChange(callbackSelectedOption) {
 
 require(['components/select'], function(Select) {
   React.render(
-    <Select options={options} onChange={onChange}/>,
+    <Select options={options} onSelect={onSelect}/>,
     document.getElementById('select-example')
   );
 });

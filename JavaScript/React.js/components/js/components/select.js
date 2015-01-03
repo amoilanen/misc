@@ -87,31 +87,43 @@ define('components/select', ['components/select-option-list', 'components/util']
       var nativeEvent = event.nativeEvent;
       var activeIndex = this.state.activeIndex;
 
-      if (nativeEvent.keyCode === Util.KEY_CODES.ESC) {
-        this.toggle(false);
-      } else if (nativeEvent.keyCode === Util.KEY_CODES.ARROW_DOWN) {
-        if (!this.state.active) {
-          this.toggle(true);
-        }
-        activeIndex++;
-        if (activeIndex >= this.props.options.length) {
-          activeIndex = 0;
-        }
-        this.setState({activeIndex: activeIndex});
-      } else if (nativeEvent.keyCode === Util.KEY_CODES.ARROW_UP) {
-        if (!this.state.active) {
-          this.toggle(true);
-        }
-        activeIndex--;
-        if (activeIndex < 0) {
-          activeIndex = this.props.options.length - 1;
-        }
-        this.setState({activeIndex: activeIndex});
-      } else if (nativeEvent.keyCode === Util.KEY_CODES.ENTER) {
-        var activeOption = this.props.options[this.state.activeIndex];
+      switch(nativeEvent.keyCode) {
 
-        this.setState({activeIndex: -1});
-        this.select(activeOption.value);
+        case Util.KEY_CODES.ESC:
+          this.toggle(false);
+          break;
+
+        case Util.KEY_CODES.ARROW_DOWN:
+          if (!this.state.active) {
+            this.toggle(true);
+          }
+          activeIndex++;
+          if (activeIndex >= this.props.options.length) {
+            activeIndex = 0;
+          }
+          this.setState({activeIndex: activeIndex});
+          break;
+
+        case Util.KEY_CODES.ARROW_UP:
+          if (!this.state.active) {
+            this.toggle(true);
+          }
+          activeIndex--;
+          if (activeIndex < 0) {
+            activeIndex = this.props.options.length - 1;
+          }
+          this.setState({activeIndex: activeIndex});
+          break;
+
+        case Util.KEY_CODES.ENTER:
+          var activeOption = this.props.options[this.state.activeIndex];
+
+          this.setState({activeIndex: -1});
+          this.select(activeOption.value);
+          break;
+
+        default:
+          break;
       }
     },
     onFocus: function(event) {
@@ -135,7 +147,7 @@ define('components/select', ['components/select-option-list', 'components/util']
         option.selected = (option.value === value);
 
         if (option.selected) {
-          self.props.onChange(option);
+          self.props.onSelect(option);
         }
       });
       this.toggle();
