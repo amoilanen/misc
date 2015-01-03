@@ -8,11 +8,12 @@
   -- It is possible to select options from the option list using keyboard - OK
      --- Change focus to dropdown field without click, press arrow down, option list should be shown - OK
   -- Proper interface for interaction with the code that uses the component - OK
-  -- Properly wrap the component as a module that can be imported (AMD?)
+  -- Properly wrap the component as a module that can be imported (AMD?) - OK
   -- Use LESS for styles
   -- Use ES6 features in the code of the component
 
 - Checkbox component
 - Autosuggest component
+- Tabs component
 
 Use https://github.com/JedWatson/generator-react-component?

@@ -39,7 +39,8 @@ function onChange(callbackSelectedOption) {
   console.log("Select option, from the initial list = ", selectedOption);
 }
 
-require(['select'], function(Select) {
+require(['components/select'], function(Select) {
+  console.log('Select = ', Select);
   React.render(
     <Select options={options} onChange={onChange}/>,
     document.getElementById('select-example')
