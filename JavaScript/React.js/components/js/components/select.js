@@ -51,7 +51,7 @@ define('components/select-option-list', ['components/select-option'], function(S
   return SelectOptionList;
 });
 
-define('components/select', ['components/select-option-list'], function(SelectOptionList) {
+define('components/select', ['components/select-option-list', 'components/util'], function(SelectOptionList, Util) {
 
   var Select = React.createClass({
     componentDidMount: function() {
@@ -87,9 +87,9 @@ define('components/select', ['components/select-option-list'], function(SelectOp
       var nativeEvent = event.nativeEvent;
       var activeIndex = this.state.activeIndex;
 
-      if (nativeEvent.keyCode === 27) { //Esc
+      if (nativeEvent.keyCode === Util.KEY_CODES.ESC) {
         this.toggle(false);
-      } else if (nativeEvent.keyCode === 40) { //Key Down
+      } else if (nativeEvent.keyCode === Util.KEY_CODES.ARROW_DOWN) {
         if (!this.state.active) {
           this.toggle(true);
         }
@@ -98,7 +98,7 @@ define('components/select', ['components/select-option-list'], function(SelectOp
           activeIndex = 0;
         }
         this.setState({activeIndex: activeIndex});
-      } else if (nativeEvent.keyCode === 38) { //Key Up
+      } else if (nativeEvent.keyCode === Util.KEY_CODES.ARROW_UP) {
         if (!this.state.active) {
           this.toggle(true);
         }
@@ -107,7 +107,7 @@ define('components/select', ['components/select-option-list'], function(SelectOp
           activeIndex = this.props.options.length - 1;
         }
         this.setState({activeIndex: activeIndex});
-      } else if (nativeEvent.keyCode === 13) { //Enter
+      } else if (nativeEvent.keyCode === Util.KEY_CODES.ENTER) {
         var activeOption = this.props.options[this.state.activeIndex];
 
         this.setState({activeIndex: -1});
@@ -120,19 +120,10 @@ define('components/select', ['components/select-option-list'], function(SelectOp
     onBlur: function(event) {
       this.setState({inFocus: false});
     },
-    isInsideComponent: function(domElement) {
-      var containerElement = this.refs.rcSelectContainer.getDOMNode();
-
-      while (domElement) {
-        if (domElement === containerElement) {
-          return true;
-        }
-        domElement = domElement.parentNode;
-      }
-      return false;
-    },
     onDocumentClick: function(event) {
-      if (this.state.active && !this.isInsideComponent(event.target)) {
+      var selectContainerElement = this.refs.rcSelectContainer.getDOMNode();
+
+      if (this.state.active && !Util.hasParent(event.target, selectContainerElement)) {
         this.toggle(false);
       }
     },

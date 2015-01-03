@@ -40,7 +40,6 @@ function onChange(callbackSelectedOption) {
 }
 
 require(['components/select'], function(Select) {
-  console.log('Select = ', Select);
   React.render(
     <Select options={options} onChange={onChange}/>,
     document.getElementById('select-example')
