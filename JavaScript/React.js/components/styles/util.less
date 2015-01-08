@@ -1,0 +1,44 @@
+/* Animation taken from https://github.com/daneden/animate.css */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animation(@name, @duration, @fillMode) {
+  animation: @name;
+  animation-duration: @duration;
+  animation-fill-mode: @fillMode;
+  -webkit-animation: @name;
+  -webkit-animation-duration: @duration;
+  -webkit-animation-fill-mode: @fillMode;
+}
+
+.user-select(@value) {
+  -webkit-user-select: @value;
+  -moz-user-select: @value;
+  -ms-user-select: @value;
+  user-select: @value;
+}
+
+.box-shadow(@value) {
+  -webkit-box-shadow: @value;
+  -moz-box-shadow: @value;
+  box-shadow: @value;
+}
+
+.fade-in-fast {
+  .animation(fadeIn, 0.25s, both)
+}
