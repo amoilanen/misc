@@ -1,0 +1,8 @@
+- setPath method that will set model for breadcrumbs
+- CSS styling
+- handler for each breadcrumb (onClick)
+- Extract template from JavaScript
+- Modularity and reusability for the component
+  -- CSS
+  -- template
+  -- JavaScript

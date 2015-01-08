@@ -5,6 +5,13 @@
   <title>Breadcrumbs</title>
   <link rel="stylesheet" type="text/css" href="breadcrumbs.css">
   <script src="breadcrumbs.js"></script>
+  <script>
+    window.addEventListener('load', function() {
+      var element = document.createElement('rc-breadcrumbs');
+
+      document.body.appendChild(element);
+    });
+  </script>
 </head>
 <body>
   Demo of Web components.
