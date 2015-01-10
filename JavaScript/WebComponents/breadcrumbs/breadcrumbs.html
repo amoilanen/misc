@@ -12,16 +12,19 @@
 <script>
   (function() {
 
-    var prototype = Object.create(HTMLElement.prototype);
-
     var template = document.currentScript.ownerDocument.querySelector('#breadcrumbs-template');
+
+    var prototype = Object.create(HTMLElement.prototype);
 
     prototype.createdCallback = function() {
       var root = this.createShadowRoot();
-      var clone = document.importNode(template.content, true);
+      this.element = document.importNode(template.content, true);
 
-      root.appendChild(clone);
-    }
+      root.appendChild(this.element);
+    };
+    prototype.setPath = function(path) {
+      console.log("path = ", path);
+    };
     document.registerElement('rc-breadcrumbs', {
       prototype: prototype
     });
