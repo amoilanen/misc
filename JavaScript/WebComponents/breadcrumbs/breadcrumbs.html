@@ -1,0 +1,29 @@
+<template id="breadcrumbs-template">
+  <style>
+    .crumb {
+      background-color: gray;
+    }
+  </style>
+  <div class="breadcrumbs">
+    <!-- TODO: Crumbs should be generated when path is set -->
+    <span class="crumb">Crumb1</div>
+  </div>
+</template>
+<script>
+  (function() {
+
+    var prototype = Object.create(HTMLElement.prototype);
+
+    var template = document.currentScript.ownerDocument.querySelector('#breadcrumbs-template');
+
+    prototype.createdCallback = function() {
+      var root = this.createShadowRoot();
+      var clone = document.importNode(template.content, true);
+
+      root.appendChild(clone);
+    }
+    document.registerElement('rc-breadcrumbs', {
+      prototype: prototype
+    });
+  })();
+</script>
