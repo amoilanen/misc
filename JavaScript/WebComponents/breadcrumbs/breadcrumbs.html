@@ -1,12 +1,24 @@
 <template id="breadcrumbs-template">
   <style>
+    .crumb,
+    .crumb-separator {
+      padding: 4px;
+      cursor: default;
+    }
     .crumb {
-      background-color: gray;
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .crumb:hover {
+      background-color: #f2f2f2;
+      border: 1px solid #d4d4d4;
+    }
+    .crumb:last-child {
+      background-color: #d4d4d4;
+      border: 1px solid #d4d4d4;
     }
   </style>
   <div class="breadcrumbs">
-    <!-- TODO: Crumbs should be generated when path is set -->
-    <span class="crumb">Crumb1</div>
   </div>
 </template>
 <script>
@@ -18,12 +30,32 @@
 
     prototype.createdCallback = function() {
       var root = this.createShadowRoot();
-      this.element = document.importNode(template.content, true);
+      var element = document.importNode(template.content, true);
 
-      root.appendChild(this.element);
+      this.container = element.querySelector('.breadcrumbs');
+      root.appendChild(element);
     };
     prototype.setPath = function(path) {
-      console.log("path = ", path);
+      var self = this;
+
+      while(this.container.firstChild) {
+        this.container.removeChild(this.container.firstChild);
+      }
+      path.forEach(function(pathPart, idx) {
+        var crumb = document.createElement('span');
+
+        crumb.setAttribute('class', 'crumb');
+        crumb.appendChild(document.createTextNode(pathPart));
+        self.container.appendChild(crumb);
+
+        if (idx != path.length - 1) {
+          var crumbSeparator = document.createElement('span');
+
+          crumbSeparator.appendChild(document.createTextNode('>'));
+          crumbSeparator.setAttribute('class', 'crumb-separator');
+          self.container.appendChild(crumbSeparator);
+        }
+      });
     };
     document.registerElement('rc-breadcrumbs', {
       prototype: prototype
