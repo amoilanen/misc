@@ -110,7 +110,9 @@
       //Crumbs container
       this.container = element.querySelector('.breadcrumbs');
       this.container.addEventListener('click', function(event) {
-        onClick(self, event.target);
+        if (event.target.getAttribute('class') === 'crumb') {
+          onClick(self, event.target);
+        }
       }, false);
       this.createShadowRoot().appendChild(element);
     };
