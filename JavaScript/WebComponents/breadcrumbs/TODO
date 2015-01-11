@@ -2,9 +2,11 @@
 - CSS styling - OK
 - Show current breadcrumb - OK
 - handler for each breadcrumb (onClick) - OK
-- If too many path elements, show ...in the middle
-- Extract template from JavaScript
-- Modularity and reusability for the component
+- Extract template from JavaScript - OK
+- Modularity and reusability for the component - OK
   -- CSS
   -- template
   -- JavaScript
+
+- If too many path elements, show ... in the middle
+- Fix issue: clicking on the path separator breaks the component

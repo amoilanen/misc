@@ -28,6 +28,8 @@
 <script>
   (function() {
 
+    var DOTS_SEPARATOR = {};
+
     function onClick(self, crumb) {
       var idx = parseInt(crumb.getAttribute('idx'));
       var newPath = self.path.slice(0, idx + 1);
@@ -41,16 +43,41 @@
     }
 
     function renderPath(self, path) {
+      var maxEntries = parseInt(self.getAttribute('maxEntries')) || -1;
+      var pathToRender = path;
+
       while(self.container.firstChild) {
         self.container.removeChild(self.container.firstChild);
       }
-      path.forEach(function(pathPart, idx) {
-        var crumb = createCrumb(pathPart, idx);
-        self.container.appendChild(crumb);
-        if (idx != path.length - 1) {
+      if (maxEntries > -1) {
+        pathToRender = path.slice(0, maxEntries - 1);
+        pathToRender.push(DOTS_SEPARATOR);
+        pathToRender.push(path[path.length - 1]);
+      }
+      pathToRender.forEach(function(pathPart, idx) {
+        if (pathPart == DOTS_SEPARATOR) {
+          self.container.appendChild(createDotsSeparator(path, maxEntries));
+        } else {
+          self.container.appendChild(createCrumb(pathPart, idx));
+        }
+        if (idx != pathToRender.length - 1) {
           self.container.appendChild(createCrumbSeparator());
         }
       });
+    }
+
+    function createDotsSeparator(path, maxEntries) {
+      var crumbSeparator = document.createElement('span');
+      var tooltipParts = path.slice(maxEntries - 1);
+
+      tooltipParts.pop();
+
+      var tooltip = tooltipParts.join(' > ');
+
+      crumbSeparator.appendChild(document.createTextNode('...'));
+      crumbSeparator.setAttribute('class', 'crumb-separator');
+      crumbSeparator.setAttribute('title', tooltip);
+      return crumbSeparator;
     }
 
     function createCrumb(pathPart, idx) {
@@ -85,7 +112,6 @@
       this.container.addEventListener('click', function(event) {
         onClick(self, event.target);
       }, false);
-
       this.createShadowRoot().appendChild(element);
     };
     prototype.setPath = function(path) {

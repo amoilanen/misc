@@ -17,7 +17,7 @@
     }
   </style>
   <script>
-    var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5'];
+    var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5', 'element6', 'element7'];
 
     function setPath(breadcrumbsElement, contentElement, path) {
       breadcrumbsElement.setPath(path);
@@ -28,19 +28,20 @@
     }
 
     window.addEventListener('load', function() {
-      var container = document.querySelector('#breadcrumb-container');
-      var breadcrumbs = document.createElement('rc-breadcrumbs');
+      var containerElement = document.querySelector('#breadcrumb-container');
+      var breadcrumbsElement = document.createElement('rc-breadcrumbs');
       var contentLabel = document.querySelector('#contentLabel');
       var resetButton = document.querySelector('#resetButton');
 
-      container.appendChild(breadcrumbs);
+      breadcrumbsElement.setAttribute('maxEntries', 4);
+      containerElement.appendChild(breadcrumbsElement);
 
-      setPath(breadcrumbs, content, fullPath);
-      breadcrumbs.addEventListener('pathChange', function(event) {
+      setPath(breadcrumbsElement, content, fullPath);
+      breadcrumbsElement.addEventListener('pathChange', function(event) {
         setPath(this, content, event.detail);
       }, false);
       resetButton.addEventListener('click', function(event) {
-        setPath(breadcrumbs, content, fullPath);
+        setPath(breadcrumbsElement, content, fullPath);
       });
     });
   </script>
