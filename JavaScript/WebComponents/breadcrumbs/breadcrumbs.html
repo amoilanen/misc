@@ -28,9 +28,30 @@
 <script>
   (function() {
 
-    var template = document.currentScript.ownerDocument.querySelector('#breadcrumbs-template');
+    function onClick(self, crumb) {
+      var idx = parseInt(crumb.getAttribute('idx'));
+      var newPath = self.path.slice(0, idx + 1);
 
-    var prototype = Object.create(HTMLElement.prototype);
+      if (newPath.join('/') != self.path.join('/')) {
+        var event = new CustomEvent('pathChange', {
+          'detail': newPath
+        });
+        self.dispatchEvent(event);
+      }
+    }
+
+    function renderPath(self, path) {
+      while(self.container.firstChild) {
+        self.container.removeChild(self.container.firstChild);
+      }
+      path.forEach(function(pathPart, idx) {
+        var crumb = createCrumb(pathPart, idx);
+        self.container.appendChild(crumb);
+        if (idx != path.length - 1) {
+          self.container.appendChild(createCrumbSeparator());
+        }
+      });
+    }
 
     function createCrumb(pathPart, idx) {
       var crumb = document.createElement('span');
@@ -49,9 +70,11 @@
       return crumbSeparator;
     }
 
+    var template = document.currentScript.ownerDocument.querySelector('#breadcrumbs-template');
+    var prototype = Object.create(HTMLElement.prototype);
+
     prototype.createdCallback = function() {
       var self = this;
-      var root = this.createShadowRoot();
       var element = document.importNode(template.content, true);
 
       //Current path
@@ -59,36 +82,15 @@
 
       //Crumbs container
       this.container = element.querySelector('.breadcrumbs');
-
-      root.appendChild(element);
-
       this.container.addEventListener('click', function(event) {
-        var idx = parseInt(event.target.getAttribute('idx'));
-        var newPath = self.path.slice(0, idx + 1);
-
-        if (newPath.join('/') != self.path.join('/')) {
-          var e = new CustomEvent('pathChange', {
-            'detail': newPath
-          });
-          self.dispatchEvent(e);
-        }
+        onClick(self, event.target);
       }, false);
+
+      this.createShadowRoot().appendChild(element);
     };
     prototype.setPath = function(path) {
-      var self = this;
-
       this.path = path;
-
-      while(this.container.firstChild) {
-        this.container.removeChild(this.container.firstChild);
-      }
-      path.forEach(function(pathPart, idx) {
-        var crumb = createCrumb(pathPart, idx);
-        self.container.appendChild(crumb);
-        if (idx != path.length - 1) {
-          self.container.appendChild(createCrumbSeparator());
-        }
-      });
+      renderPath(this, path);
     };
     document.registerElement('rc-breadcrumbs', {
       prototype: prototype
