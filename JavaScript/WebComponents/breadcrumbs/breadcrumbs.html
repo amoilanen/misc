@@ -28,32 +28,61 @@
 
     var prototype = Object.create(HTMLElement.prototype);
 
+    function createCrumb(pathPart, idx) {
+      var crumb = document.createElement('span');
+
+      crumb.setAttribute('class', 'crumb');
+      crumb.setAttribute('idx', idx);
+      crumb.appendChild(document.createTextNode(pathPart));
+      return crumb;
+    }
+
+    function createCrumbSeparator() {
+      var crumbSeparator = document.createElement('span');
+
+      crumbSeparator.appendChild(document.createTextNode('>'));
+      crumbSeparator.setAttribute('class', 'crumb-separator');
+      return crumbSeparator;
+    }
+
     prototype.createdCallback = function() {
+      var self = this;
       var root = this.createShadowRoot();
       var element = document.importNode(template.content, true);
 
+      //Current path
+      this.path = [];
+
+      //Crumbs container
       this.container = element.querySelector('.breadcrumbs');
+
       root.appendChild(element);
+
+      this.container.addEventListener('click', function(event) {
+        var idx = parseInt(event.target.getAttribute('idx'));
+        var newPath = self.path.slice(0, idx + 1);
+
+        if (newPath.join('/') != self.path.join('/')) {
+          var e = new CustomEvent('pathChange', {
+            'detail': newPath
+          });
+          self.dispatchEvent(e);
+        }
+      }, false);
     };
     prototype.setPath = function(path) {
       var self = this;
+
+      this.path = path;
 
       while(this.container.firstChild) {
         this.container.removeChild(this.container.firstChild);
       }
       path.forEach(function(pathPart, idx) {
-        var crumb = document.createElement('span');
-
-        crumb.setAttribute('class', 'crumb');
-        crumb.appendChild(document.createTextNode(pathPart));
+        var crumb = createCrumb(pathPart, idx);
         self.container.appendChild(crumb);
-
         if (idx != path.length - 1) {
-          var crumbSeparator = document.createElement('span');
-
-          crumbSeparator.appendChild(document.createTextNode('>'));
-          crumbSeparator.setAttribute('class', 'crumb-separator');
-          self.container.appendChild(crumbSeparator);
+          self.container.appendChild(createCrumbSeparator());
         }
       });
     };

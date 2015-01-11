@@ -9,19 +9,48 @@
       margin-left: 16px;
       margin-top: 16px;
     }
+    #content {
+      margin: 32px;
+    }
+    #resetButton {
+      margin-left: 32px;
+    }
   </style>
   <script>
+    var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5'];
+
+    function setPath(breadcrumbsElement, contentElement, path) {
+      breadcrumbsElement.setPath(path);
+      while (contentElement.firstChild) {
+        contentElement.removeChild(contentElement.firstChild);
+      }
+      contentElement.appendChild(document.createTextNode(path[path.length - 1]));
+    }
+
     window.addEventListener('load', function() {
       var container = document.querySelector('#breadcrumb-container');
-      var element = document.createElement('rc-breadcrumbs');
+      var breadcrumbs = document.createElement('rc-breadcrumbs');
+      var contentLabel = document.querySelector('#contentLabel');
+      var resetButton = document.querySelector('#resetButton');
 
-      container.appendChild(element);
+      container.appendChild(breadcrumbs);
 
-      element.setPath(["element1", "element2", "element3"]);
+      setPath(breadcrumbs, content, fullPath);
+      breadcrumbs.addEventListener('pathChange', function(event) {
+        setPath(this, content, event.detail);
+      }, false);
+      resetButton.addEventListener('click', function(event) {
+        setPath(breadcrumbs, content, fullPath);
+      });
     });
   </script>
 </head>
 <body>
   <div id="breadcrumb-container"></div>
+  <div id="content">
+    <label>Current content:</label>
+    <label id="contentLabel"></label>
+  </div>
+  <button id="resetButton">Reset</button>
 </body>
 </html>
