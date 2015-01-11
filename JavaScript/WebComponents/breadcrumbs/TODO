@@ -1,7 +1,7 @@
 - setPath method that will set model for breadcrumbs - OK
 - CSS styling - OK
 - Show current breadcrumb - OK
-- handler for each breadcrumb (onClick)
+- handler for each breadcrumb (onClick) - OK
 - If too many path elements, show ...in the middle
 - Extract template from JavaScript
 - Modularity and reusability for the component
