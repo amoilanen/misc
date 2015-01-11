@@ -28,8 +28,6 @@
 <script>
   (function() {
 
-    var DOTS_SEPARATOR = {};
-
     function onClick(self, crumb) {
       var idx = parseInt(crumb.getAttribute('idx'));
       var newPath = self.path.slice(0, idx + 1);
@@ -44,23 +42,28 @@
 
     function renderPath(self, path) {
       var maxEntries = parseInt(self.getAttribute('maxEntries')) || -1;
-      var pathToRender = path;
+      var shouldShorten = (maxEntries > -1) && (path.length > maxEntries);
+      var renderedDotsSeparator = false;
 
       while(self.container.firstChild) {
         self.container.removeChild(self.container.firstChild);
       }
-      if ((maxEntries > -1) && (path.length > maxEntries)) {
-        pathToRender = path.slice(0, maxEntries - 1);
-        pathToRender.push(DOTS_SEPARATOR);
-        pathToRender.push(path[path.length - 1]);
-      }
-      pathToRender.forEach(function(pathPart, idx) {
-        if (pathPart == DOTS_SEPARATOR) {
-          self.container.appendChild(createDotsSeparator(path, maxEntries));
-        } else {
-          self.container.appendChild(createCrumb(pathPart, idx));
+      path.forEach(function(pathPart, idx) {
+
+        //Skip path entries in the middle
+        if ((idx >= maxEntries - 1) && (idx < path.length - 1)) {
+
+          //Render the dots separator once
+          if (!renderedDotsSeparator) {
+            self.container.appendChild(createDotsSeparator(path, maxEntries));
+            self.container.appendChild(createCrumbSeparator());
+            renderedDotsSeparator = true;
+          }
+          return;
         }
-        if (idx != pathToRender.length - 1) {
+
+        self.container.appendChild(createCrumb(pathPart, idx));
+        if (idx != path.length - 1) {
           self.container.appendChild(createCrumbSeparator());
         }
       });
