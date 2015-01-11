@@ -49,7 +49,7 @@
       while(self.container.firstChild) {
         self.container.removeChild(self.container.firstChild);
       }
-      if (maxEntries > -1) {
+      if ((maxEntries > -1) && (path.length > maxEntries)) {
         pathToRender = path.slice(0, maxEntries - 1);
         pathToRender.push(DOTS_SEPARATOR);
         pathToRender.push(path[path.length - 1]);
