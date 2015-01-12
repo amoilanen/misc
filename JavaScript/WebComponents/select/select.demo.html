@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Breadcrumbs</title>
+  <link rel="import" href="select.html">
+  <style>
+    #select-container {
+      margin-left: 16px;
+      margin-top: 16px;
+    }
+    rc-select {
+      width: 200px;
+      display: inline-block;
+    }
+  </style>
+  <script>
+    window.addEventListener('load', function() {
+      var containerElement = document.querySelector('#select-container');
+      var selectElement = document.createElement('rc-select');
+
+      containerElement.appendChild(selectElement);
+    });
+  </script>
+</head>
+<body>
+  <div id="select-container"></div>
+</body>
+</html>

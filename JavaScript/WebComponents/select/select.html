@@ -1,0 +1,126 @@
+<template id="select-template">
+  <style>
+    .rc-select {
+      width: 200px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+       user-select: none;
+     }
+
+     .rc-select--focus-trap {
+       width: 0px;
+       height: 0px;
+       border: none;
+       position: fixed;
+       left: -100px;
+       top: -100px;
+     }
+
+     .rc-select--field {
+       display: inline-block;
+       position: relative;
+       height: 27px;
+       width: 100%;
+       background: #f5f5f5;
+       border: 1px solid rgba(0, 0, 0, 0.1);
+       border-radius: 4px;
+     }
+
+    .rc-select--field .rc-select--input {
+      height: 100%;
+      padding-right: 27px;
+      padding-left: 12px;
+      line-height: 27px;
+    }
+
+    .rc-select_focus .rc-select--field {
+      border-color: #4285f4;
+    }
+
+    .rc-select--arrow {
+      /* arrow */
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #444444;
+
+      position: absolute;
+      right: 8px;
+      top: 50%;
+    }
+
+    .rc-select--options {
+      position: relative;
+      /* display: none; */
+    }
+
+    .rc-select_active .rc-select--options {
+      display: block;
+    }
+
+    .rc-select--options ul {
+      list-style-type: none;
+      margin-top: 1px;
+      padding-left: 0;
+      background: #fdfdfd;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      -webkit-box-shadow: 1px 1px 3px 0px rgba(50, 50, 50, 0.45);
+      -moz-box-shadow: 1px 1px 3px 0px rgba(50, 50, 50, 0.45);
+      box-shadow: 1px 1px 3px 0px rgba(50, 50, 50, 0.45);
+    }
+
+    .rc-select--options .rc-select--option_active {
+      background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    .rc-select--option.rc-select--option_selected,
+    .rc-select--options .rc-select--option_active.rc-select--option_selected {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .rs-selection--option-label {
+      margin-left: 12px;
+      padding-bottom: 4px;
+      padding-top: 4px;
+    }
+  </style>
+  <div name="rcSelectContainer">
+    <input name="rcSelectFocusTrap" class="rc-select--focus-trap" type="text" readonly/>
+    <div class="rc-select--field">
+      <div class="rc-select--input">label2</div>
+      <div class="rc-select--arrow"></div>
+    </div>
+    <div class="rc-select--options">
+      <ul>
+        <li value="1">
+          <div class="rs-selection--option-label">label1</div>
+        </li>
+        <li value="2">
+          <div class="rs-selection--option-label">label2</div>
+        </li>
+        <li value="3">
+          <div class="rs-selection--option-label">label3</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+<script>
+  (function() {
+
+    var template = document.currentScript.ownerDocument.querySelector('#select-template');
+    var prototype = Object.create(HTMLElement.prototype);
+
+    prototype.createdCallback = function() {
+      var self = this;
+      var element = document.importNode(template.content, true);
+      this.createShadowRoot().appendChild(element);
+    };
+    document.registerElement('rc-select', {
+      prototype: prototype
+    });
+  })();
+</script>
