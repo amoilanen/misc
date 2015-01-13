@@ -131,7 +131,16 @@
       this.options.forEach(function(option) {
         var optionContainerElement = document.createElement('li');
         var optionLabelElement = document.createElement('div');
+        var className = "rc-select--option";
 
+        if (option.selected) {
+          className = className + " rc-select--option_selected";
+        }
+        if (option.active) {
+          className = className + " rc-select--option_active";
+        }
+
+        optionContainerElement.setAttribute('class', className);
         optionContainerElement.setAttribute('value', option.value);
         optionLabelElement.setAttribute('class', 'rs-selection--option-label');
         optionLabelElement.appendChild(document.createTextNode(option.label));
