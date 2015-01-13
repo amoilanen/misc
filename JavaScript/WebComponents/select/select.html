@@ -53,7 +53,7 @@
 
     .rc-select--options {
       position: relative;
-      /* display: none; */
+      display: none;
     }
 
     .rc-select_active .rc-select--options {
@@ -87,7 +87,7 @@
       padding-top: 4px;
     }
   </style>
-  <div name="rcSelectContainer">
+  <div name="rcSelectContainer" class="rc-select">
     <input name="rcSelectFocusTrap" class="rc-select--focus-trap" type="text" readonly/>
     <div class="rc-select--field">
       <div class="rc-select--input">label2</div>
@@ -95,15 +95,6 @@
     </div>
     <div class="rc-select--options">
       <ul>
-        <li value="1">
-          <div class="rs-selection--option-label">label1</div>
-        </li>
-        <li value="2">
-          <div class="rs-selection--option-label">label2</div>
-        </li>
-        <li value="3">
-          <div class="rs-selection--option-label">label3</div>
-        </li>
       </ul>
     </div>
   </div>
@@ -114,10 +105,25 @@
     var template = document.currentScript.ownerDocument.querySelector('#select-template');
     var prototype = Object.create(HTMLElement.prototype);
 
+    function toggle(self) {
+      var className = 'rc-select';
+
+      self.active = !self.active;
+      if (self.active) {
+        className = className + ' rc-select_active';
+      }
+      self.selectContainer.setAttribute('class', className);
+    }
+
     prototype.createdCallback = function() {
       var self = this;
       var element = document.importNode(template.content, true);
 
+      this.active = false;
+      this.selectContainer = element.querySelector('.rc-select');
+      this.selectContainer.addEventListener('click', function(event) {
+        toggle(self);
+      }, false);
       this.optionsContainer = element.querySelector('.rc-select--options ul');
       this.createShadowRoot().appendChild(element);
     };
