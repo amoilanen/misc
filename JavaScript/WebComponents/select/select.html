@@ -117,7 +117,27 @@
     prototype.createdCallback = function() {
       var self = this;
       var element = document.importNode(template.content, true);
+
+      this.optionsContainer = element.querySelector('.rc-select--options ul');
       this.createShadowRoot().appendChild(element);
+    };
+    prototype.setOptions = function(options) {
+      var self = this;
+
+      this.options = options;
+      while (this.optionsContainer.firstChild) {
+        this.optionsContainer.removeChild(this.optionsContainer.firstChild);
+      }
+      this.options.forEach(function(option) {
+        var optionContainerElement = document.createElement('li');
+        var optionLabelElement = document.createElement('div');
+
+        optionContainerElement.setAttribute('value', option.value);
+        optionLabelElement.setAttribute('class', 'rs-selection--option-label');
+        optionLabelElement.appendChild(document.createTextNode(option.label));
+        optionContainerElement.appendChild(optionLabelElement);
+        self.optionsContainer.appendChild(optionContainerElement);
+      });
     };
     document.registerElement('rc-select', {
       prototype: prototype
