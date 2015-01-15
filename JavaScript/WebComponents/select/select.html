@@ -87,8 +87,8 @@
       padding-top: 4px;
     }
   </style>
-  <div name="rcSelectContainer" class="rc-select">
-    <input name="rcSelectFocusTrap" class="rc-select--focus-trap" type="text" readonly/>
+  <div class="rc-select">
+    <input class="rc-select--focus-trap" type="text" readonly/>
     <div class="rc-select--field">
       <div class="rc-select--input">label2</div>
       <div class="rc-select--arrow"></div>
@@ -111,14 +111,65 @@
       }
     }
 
-    function toggle(self) {
+    function closest(element, className) {
+      while (element) {
+        var elementClass = element.getAttribute ? element.getAttribute('class') : null;
+
+        if (elementClass && elementClass.indexOf(className) >= 0) {
+          return element;
+        }
+        element = element.parentNode;
+      }
+    }
+
+    function toggle(self, active) {
       var className = 'rc-select';
 
-      self.active = !self.active;
+      if (typeof active === 'undefined') {
+        active = !self.active;
+      }
+      self.active = active;
       if (self.active) {
         className = className + ' rc-select_active';
       }
+      self.activeIndex = -1;
+      if (active) {
+        self.focusTrapElement.focus();
+      } else {
+        self.focusTrapElement.blur();
+      }
       self.selectContainer.setAttribute('class', className);
+    }
+
+    function activate(self, activeIndex) {
+      self.activeIndex = activeIndex;
+      render(self);
+    }
+
+    function render(self) {
+      empty(self.selectInput);
+      self.selectInput.appendChild(document.createTextNode(self.selectedOption.label));
+      empty(self.optionsContainer);
+      self.options.forEach(function(option, idx) {
+        var optionContainerElement = document.createElement('li');
+        var optionLabelElement = document.createElement('div');
+        var className = "rc-select--option";
+
+        if (option.selected) {
+          className = className + " rc-select--option_selected";
+        }
+        if (idx === self.activeIndex) {
+          className = className + " rc-select--option_active";
+        }
+
+        optionContainerElement.setAttribute('class', className);
+        optionContainerElement.setAttribute('value', option.value);
+        optionContainerElement.setAttribute('idx', idx);
+        optionLabelElement.setAttribute('class', 'rs-selection--option-label');
+        optionLabelElement.appendChild(document.createTextNode(option.label));
+        optionContainerElement.appendChild(optionLabelElement);
+        self.optionsContainer.appendChild(optionContainerElement);
+      });
     }
 
     prototype.createdCallback = function() {
@@ -126,12 +177,28 @@
       var element = document.importNode(template.content, true);
 
       this.active = false;
+      this.inFocus = false;
+      this.activeIndex = -1;
+
       this.selectContainer = element.querySelector('.rc-select');
       this.selectContainer.addEventListener('click', function(event) {
         toggle(self);
       }, false);
+      this.selectContainer.addEventListener('mouseover', function(event) {
+        var closestOption = closest(event.target, 'rc-select--option');
+
+        console.log('closestOption = ', closestOption);
+        if (closestOption) {
+          var index = parseInt(closestOption.getAttribute('idx'));
+
+          if (self.activeIndex !== index) {
+            activate(self, index);
+          }
+        }
+      });
       this.optionsContainer = element.querySelector('.rc-select--options ul');
       this.selectInput = element.querySelector('.rc-select--input');
+      this.focusTrapElement = element.querySelector('.rc-select--focus-trap');
       this.createShadowRoot().appendChild(element);
     };
     prototype.setOptions = function(options) {
@@ -141,28 +208,7 @@
       this.selectedOption = this.options.filter(function(option) {
         return option.selected;
       })[0];
-      empty(this.selectInput);
-      this.selectInput.appendChild(document.createTextNode(this.selectedOption.label));
-      empty(this.optionsContainer.firstChild);
-      this.options.forEach(function(option) {
-        var optionContainerElement = document.createElement('li');
-        var optionLabelElement = document.createElement('div');
-        var className = "rc-select--option";
-
-        if (option.selected) {
-          className = className + " rc-select--option_selected";
-        }
-        if (option.active) {
-          className = className + " rc-select--option_active";
-        }
-
-        optionContainerElement.setAttribute('class', className);
-        optionContainerElement.setAttribute('value', option.value);
-        optionLabelElement.setAttribute('class', 'rs-selection--option-label');
-        optionLabelElement.appendChild(document.createTextNode(option.label));
-        optionContainerElement.appendChild(optionLabelElement);
-        self.optionsContainer.appendChild(optionContainerElement);
-      });
+      render(this);
     };
     document.registerElement('rc-select', {
       prototype: prototype
