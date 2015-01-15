@@ -105,6 +105,12 @@
     var template = document.currentScript.ownerDocument.querySelector('#select-template');
     var prototype = Object.create(HTMLElement.prototype);
 
+    function empty(element) {
+      while (element.firstChild) {
+        element.removeChild(element.firstChild);
+      }
+    }
+
     function toggle(self) {
       var className = 'rc-select';
 
@@ -125,15 +131,19 @@
         toggle(self);
       }, false);
       this.optionsContainer = element.querySelector('.rc-select--options ul');
+      this.selectInput = element.querySelector('.rc-select--input');
       this.createShadowRoot().appendChild(element);
     };
     prototype.setOptions = function(options) {
       var self = this;
 
       this.options = options;
-      while (this.optionsContainer.firstChild) {
-        this.optionsContainer.removeChild(this.optionsContainer.firstChild);
-      }
+      this.selectedOption = this.options.filter(function(option) {
+        return option.selected;
+      })[0];
+      empty(this.selectInput);
+      this.selectInput.appendChild(document.createTextNode(this.selectedOption.label));
+      empty(this.optionsContainer.firstChild);
       this.options.forEach(function(option) {
         var optionContainerElement = document.createElement('li');
         var optionLabelElement = document.createElement('div');
