@@ -2,10 +2,15 @@ Code the following decision rules:
 
 #TODO: If one cafe one day then likely another one next day
 #TODO: If meatballs, likely go there
-#TODO: Prefer meat
-#TODO: Chicken is also OK but worse
-#TODO: Fish is sort of OK, but worse than chicken
+#TODO: Prefer meat: pork, meat, beef
+#TODO: Chicken is also OK but worse: chicken, broiler
+#TODO: Fish is sort of OK, but worse than chicken: fish, tuna
 #TODO: If pea soup, likely go there
 #TODO: If bad weather (strong wind or high probability of rain) then Hima & Sali
 #TODO: If Wednesday or Friday the possibility of Nepalese is greater
 #TODO: No menu means no way to go to that cafe (holiday)
+#TODO: Nepalese no more than once per week
+#TODO: Chinese no more than once per week
+
+#TODO: Store previous choices in the file, empty the file if the last entry is from previous week
+#TODO: Support holidays during the current work week
