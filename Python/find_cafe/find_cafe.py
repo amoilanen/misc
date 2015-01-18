@@ -2,6 +2,10 @@
 # additional information (weather, cafe of choice yesterday) gives recommendations
 # where to go for lunch.
 
+from chief_lunch_officer import ChiefLunchOfficer
+from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
+from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
+
 from datetime import date, timedelta
 import urllib.request
 import re
@@ -41,20 +45,22 @@ def parse_weather_value(regex, html):
 
 WEATHER_REGEXES = {
     'TEMPERATURE': '"temperature-container".*?class="value">(.*?)</span>',
-    'PRECIPITATION': '"precipitation-container".*?class="value">(.*?)</span>',
+    'PRECIPITATION_CHANCE': '"precipitation-container".*?class="value">(.*?)</span>',
+    'PRECIPITATION_AMOUNT': 'precipitation-1h".*?(\d+)\.\d* mm',
     'WIND': 'wind-icon.*?class="value">(.*?)</span>'
 }
 
 def get_todays_weather():
     html = get(YLE_WEATHER_URL)
     return {
-        'temperature': parse_weather_value(WEATHER_REGEXES['TEMPERATURE'], html),
-        'precipitation': parse_weather_value(WEATHER_REGEXES['PRECIPITATION'], html),
-        'wind': parse_weather_value(WEATHER_REGEXES['WIND'], html)
+        TEMPERATURE: parse_weather_value(WEATHER_REGEXES['TEMPERATURE'], html),
+        PRECIPITATION_CHANCE: parse_weather_value(WEATHER_REGEXES['PRECIPITATION_CHANCE'], html),
+        PRECIPITATION_AMOUNT: parse_weather_value(WEATHER_REGEXES['PRECIPITATION_AMOUNT'], html),
+        WIND: parse_weather_value(WEATHER_REGEXES['WIND'], html)
     }
 
 today = date.today()
-#today = today + timedelta(days=2)
+today = today + timedelta(days=2)
 
 print('Today %s\n' % today.strftime('%d.%m.%y'))
 
@@ -65,4 +71,31 @@ dylan_milk_menu = get_dylan_milk_menu(today)
 print('\nDylan Milk:\n\n%s' % dylan_milk_menu.replace('<br />', '\n'))
 
 weather = get_todays_weather()
-print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n wind %s m/s' % (weather['temperature'], weather['precipitation'], weather['wind']))
+print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation %s mm\n wind %s m/s' % tuple(weather.values()))
+
+#hima_sali_menu = 'meatballs'
+#dylan_milk_menu = 'fish'
+#weather = {
+#    TEMPERATURE: 2,
+#    PRECIPITATION_CHANCE: 10,
+#    PRECIPITATION_AMOUNT: 2,
+#    WIND: 5
+#}
+
+#TODO: Read from the local file where previous lunches for the current week are stored
+lunch_history = [HIMA_SALI, DYLAN_MILK]
+
+print('\nLunch history for current week:\n\n %s' % ', '.join(lunch_history))
+
+cafe_menus = {
+    NEPALESE: '',
+    CHINESE: '',
+    HIMA_SALI: hima_sali_menu,
+    DYLAN_MILK: dylan_milk_menu
+}
+
+clo = ChiefLunchOfficer()
+
+clo.history(lunch_history).weather(weather).menus(cafe_menus)
+
+print('\nRecommendation:\n\n %s' % clo.decide())
