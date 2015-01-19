@@ -12,8 +12,8 @@ class ChiefLunchOfficer:
         self._weather = {}
         self._menus = []
 
-    def history(self, history):
-        self._history = history
+    def lunched(self, lunched):
+        self._lunched = lunched
         return self
 
     def weather(self, weather):
