@@ -6,7 +6,8 @@ from chief_lunch_officer import ChiefLunchOfficer
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
 from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
 
-from datetime import date, timedelta
+from pathlib import Path
+from datetime import date, datetime, timedelta
 import urllib.request
 import json
 import re
@@ -56,27 +57,56 @@ def get_todays_weather():
 today = date.today()
 today = today + timedelta(days=2)
 
-#hima_sali_menu = 'meatballs'
-#dylan_milk_menu = 'fish'
-#weather = {
-#    TEMPERATURE: 2,
-#    PRECIPITATION_CHANCE: 10,
-#    PRECIPITATION_AMOUNT: 2.0,
-#    WIND: 5
-#}
+hima_sali_menu = 'meatballs'
+dylan_milk_menu = 'fish'
+weather = {
+    TEMPERATURE: 2,
+    PRECIPITATION_CHANCE: 10,
+    PRECIPITATION_AMOUNT: 2.0,
+    WIND: 5
+}
 
 print('Today %s\n' % today.strftime('%d.%m.%y'))
 
-hima_sali_menu = get_hima_sali_menu(today)
+#hima_sali_menu = get_hima_sali_menu(today)
 print('\nHima & Sali:\n\n%s' % hima_sali_menu.replace('<br />', '').replace('&amp;', '&').replace('&nbsp;', ''))
-dylan_milk_menu = get_dylan_milk_menu(today)
+#dylan_milk_menu = get_dylan_milk_menu(today)
 print('\nDylan Milk:\n\n%s' % dylan_milk_menu.replace('<br />', '\n'))
 
-weather = get_todays_weather()
+#weather = get_todays_weather()
 print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
 
-#TODO: Read from the local file where previous lunches for the current week are stored
-lunch_history = [HIMA_SALI, DYLAN_MILK]
+def week_number(date):
+    return date.isocalendar()[1]
+
+def parse_date(date_str):
+    return datetime.strptime(date_str, '%d.%m.%Y')
+
+def get_current_week_lunch_history(today):
+    history_path = Path('history.json')
+    if not history_path.exists():
+        with history_path.open('w') as f:
+            f.write('{}')
+
+    history = ''
+    with history_path.open('r') as f:
+        history = json.loads(f.read())
+
+    history = {
+        '14.01.2015': NEPALESE,
+        '15.01.2015': HIMA_SALI,
+        '19.01.2015': NEPALESE,
+        '20.01.2015': CHINESE
+    }
+
+    current_week = week_number(today)
+    current_week_history = {(k, v) for (k, v) in history.items() if current_week == week_number(parse_date(k))}
+
+    current_week_cafes = list(current_week_history)
+    current_week_cafes.sort(key=lambda t: t[0]) # Sort by date
+    return list(map(lambda t: t[1], current_week_cafes)) # List of cafe names
+
+lunch_history = get_current_week_lunch_history(today)
 print('\nLunch history for current week:\n\n %s' % ', '.join(lunch_history))
 
 cafe_menus = {
