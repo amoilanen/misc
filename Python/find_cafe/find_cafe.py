@@ -65,7 +65,6 @@ def get_current_week_history(today):
     if not history_path.exists():
         with history_path.open('w') as f:
             f.write('{}')
-    history = ''
     with history_path.open('r') as f:
         history = json.loads(f.read())
     #history = {
@@ -116,15 +115,23 @@ lunch_history = get_current_week_history(today)
 current_week_cafes = ordered_cafes(lunch_history)
 print('\nLunch history for current week:\n\n %s' % ', '.join(current_week_cafes))
 
-cafe_menus = {
-    NEPALESE: '',
-    CHINESE: '',
-    HIMA_SALI: hima_sali_menu,
-    DYLAN_MILK: dylan_milk_menu
+cafes = {
+    NEPALESE: {
+        menu: ''
+    },
+    CHINESE: {
+        menu: ''
+    },
+    HIMA_SALI: {
+        menu: hima_sali_menu
+    },
+    DYLAN_MILK: {
+        menu: dylan_milk_menu
+    }
 }
 
 clo = ChiefLunchOfficer()
-clo.lunched(current_week_cafes).weather(weather).menus(cafe_menus)
+clo.lunched(current_week_cafes).weather(weather).cafes(cafes)
 todays_cafe = clo.decide()
 update_history(lunch_history, today, todays_cafe)
 print('\nRecommendation:\n\n %s' % todays_cafe)

@@ -1,4 +1,19 @@
-Code the following decision rules:
+import unittest
+
+from chief_lunch_officer import ChiefLunchOfficer
+
+class TestChiefLunchOfficer(unittest.TestCase):
+
+    def setUp(self):
+        self.clo = ChiefLunchOfficer()
+
+    def test_if_only_one_cafe_to_choose_from_it_is_chosen(self):
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food'
+          }
+        })
+        self.assertEqual('cafe1', self.clo.decide())
 
 #TODO: If one cafe one day then likely another one next day
 #TODO: If meatballs, likely go there

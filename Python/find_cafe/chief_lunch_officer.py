@@ -5,12 +5,12 @@
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
 from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
 
-class ChiefLunchOfficer:
+class ChiefLunchOfficer(object):
 
     def __init__(self):
         self._history = []
         self._weather = {}
-        self._menus = []
+        self._cafes = []
 
     def lunched(self, lunched):
         self._lunched = lunched
@@ -20,9 +20,9 @@ class ChiefLunchOfficer:
         self._weather = weather
         return self
 
-    def menus(self, menus):
-        self._menus = menus
+    def cafes(self, cafes):
+        self._cafes = cafes
         return self
 
     def decide(self):
-        return HIMA_SALI
+        return list(self._cafes.keys())[0] if len(self._cafes.keys()) > 0 else 'No idea'
