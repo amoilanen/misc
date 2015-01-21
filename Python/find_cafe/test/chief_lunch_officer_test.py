@@ -1,7 +1,7 @@
 import unittest
 
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
-from chief_lunch_officer import ChiefLunchOfficer, WeatherOpinion
+from chief_lunch_officer import ChiefLunchOfficer, WeatherOpinion, FoodTaste
 
 class TestChiefLunchOfficer(unittest.TestCase):
 
@@ -15,6 +15,30 @@ class TestChiefLunchOfficer(unittest.TestCase):
           }
         })
         self.assertEqual('cafe1', self.clo.decide())
+
+class TestFoodTaste(unittest.TestCase):
+
+    def setUp(self):
+        self.food_taste = FoodTaste()
+        self.food_taste.preferences({
+            'item1': 1,
+            'item2': 2,
+            'item3': 3,
+            'item4': 4,
+            'item5': 5
+        })
+
+    def test_unknown_food_one_item_menu(self):
+        self.assertEqual(0, self.food_taste.rate('unknown_item'))
+
+    def test_known_food_one_item_menu(self):
+        self.assertEqual(3, self.food_taste.rate('item3'))
+
+    def test_composite_menu_some_parts_unknown(self):
+        self.assertEqual(7, self.food_taste.rate('item3 item4 then also something else'))
+
+    def test_composite_menu_all_parts_unknown(self):
+        self.assertEqual(9, self.food_taste.rate('item3 item4 item2'))
 
 class TestWeatherOpinion(unittest.TestCase):
 
@@ -53,16 +77,17 @@ class TestWeatherOpinion(unittest.TestCase):
         self.assertTrue(self.opinion.is_positive())
 
 #TODO: If one cafe one day then likely another one next day
+#TODO: Cafe without a menu no more than once per week
+
 #TODO: If meatballs, likely go there
-#TODO: Prefer meat: pork, meat, beef
+#TODO: If pea soup, likely go there
+#TODO: Prefer meat: pork, meat, beef, hamburger
 #TODO: Chicken is also OK but worse: chicken, broiler
 #TODO: Fish is sort of OK, but worse than chicken: fish, tuna
-#TODO: If pea soup, likely go there
-#TODO: If bad weather (strong wind or high probability of rain) then Hima & Sali
-#TODO: If Wednesday or Friday the possibility of Nepalese is greater
-#TODO: No menu means no way to go to that cafe (holiday)
-#TODO: Nepalese no more than once per week
-#TODO: Chinese no more than once per week
 
-#TODO: Store previous choices in the file, empty the file if the last entry is from previous week
-#TODO: Support holidays during the current work week
+#TODO: If bad weather (strong wind or high probability of rain) then Hima & Sali
+
+#TODO: If Wednesday or Friday the possibility of Nepalese is greater:
+# add the ability to specify preferrable weekdays for a cafe
+
+#TODO: No menu means no way to go to that cafe (holiday)

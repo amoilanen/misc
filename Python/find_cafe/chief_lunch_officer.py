@@ -3,7 +3,6 @@
 # cafe visits for the current week.
 
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
-from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
 
 class WeatherOpinion:
 
@@ -26,6 +25,17 @@ class WeatherOpinion:
                 self._weather[TEMPERATURE] >= WeatherOpinion.MIN_ACCEPTABLE_TEMPERATURE and
                 self._weather[PRECIPITATION_CHANCE] <= WeatherOpinion.MAX_ACCEPTABLE_PRECIPITATION_CHANCE and
                 self._weather[PRECIPITATION_AMOUNT] <= WeatherOpinion.MAX_ACCEPTABLE_PRECIPITATION_AMOUNT)
+
+class FoodTaste:
+
+    def preferences(self, preferences):
+        self._preferences = preferences
+
+    def rate(self, menu):
+        rating = 0
+        for menu_item in menu.split():
+            rating += self._preferences.get(menu_item, 0)
+        return rating
 
 class ChiefLunchOfficer(object):
 
