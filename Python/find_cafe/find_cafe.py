@@ -36,10 +36,10 @@ def find_menu(url, date, regex, index=0):
 
 def get_hima_sali_menu(date):
     date_label = '%d\\.%d\\.' % (date.day, date.month)
-    return find_menu(HIMA_SALI_URL, date, r'%s<br />\n(.*?)\n<br />' % (date_label), -1)
+    return find_menu(HIMA_SALI_URL, date, r'%s(.*?)\d\d\.' % (date_label), -1)
 
 def get_dylan_milk_menu(date):
-    return find_menu(DYLAN_MILK_URL, date, r'BUFFET:<br />(.*?)<br /> <br />')
+    return find_menu(DYLAN_MILK_URL, date, r'BUFFET:(.*?)</')
 
 def parse_weather_value(regex, html):
     value = re.findall(regex, html, re.MULTILINE | re.DOTALL)[0]
@@ -105,9 +105,9 @@ today = date.today()
 print('Today %s\n' % today.strftime('%d.%m.%Y'))
 
 hima_sali_menu = get_hima_sali_menu(today)
-print('\nHima & Sali:\n\n%s' % hima_sali_menu.replace('<br />', '').replace('&amp;', '&').replace('&nbsp;', ''))
+print('\nHima & Sali:\n\n%s' % re.sub('<.*?>', '', hima_sali_menu).replace('&amp;', '&').replace('&nbsp;', ''))
 dylan_milk_menu = get_dylan_milk_menu(today)
-print('\nDylan Milk:\n\n%s' % dylan_milk_menu.replace('<br />', '\n'))
+print('\nDylan Milk:\n\n%s' % re.sub('<br />', '\n', dylan_milk_menu))
 
 weather = get_todays_weather()
 print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
