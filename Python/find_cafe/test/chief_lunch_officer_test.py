@@ -178,7 +178,22 @@ class ChiefLunchOfficerTest(unittest.TestCase):
         })
         self.assertEqual(['cafe3', 'cafe2'], self.clo.decide())
 
-    #TODO: If cafe has holiday days do not go to it on holiday day
+    def test_if_some_cafe_is_closed_then_do_not_choose_this_cafe(self):
+        self.clo.weekday(5)
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 1,
+            'closed_weekdays': [5, 6]
+          },
+          'cafe2': {
+            'menu': 'food2',
+            'distance': 1
+          }
+        })
+        self.assertEqual(['cafe2'], self.clo.decide())
+
+    #TODO: If cafe is configured as only once per week, do not go there if it is in history
     #TODO: No weather information provided
     #TODO: No cafes provided
     #TODO: No history provided

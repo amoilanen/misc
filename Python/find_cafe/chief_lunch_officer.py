@@ -77,6 +77,9 @@ class ChiefLunchOfficer:
         cafe_score = {}
         for cafe in self._cafes:
             cafe_details = self._cafes[cafe]
+            if ('closed_weekdays' in cafe_details and
+                self._weekday in cafe_details['closed_weekdays']):
+                continue
             menu_rating = self.MENU_WEIGHT * self._food_taste.rate(cafe_details['menu'])
             if is_bad_weather:
                 menu_rating = menu_rating + self.WEATHER_WEIGHT * cafe_details['distance']
