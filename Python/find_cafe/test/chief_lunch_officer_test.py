@@ -68,7 +68,9 @@ class ChiefLunchOfficerTest(unittest.TestCase):
 
     def setUp(self):
         self.taste = FoodTaste().preferences({})
-        self.clo = ChiefLunchOfficer(food_taste=self.taste)
+        self.weather = WeatherOpinion()
+        self.weather.is_positive = Mock(return_value=True)
+        self.clo = ChiefLunchOfficer(food_taste=self.taste, weather_opinion=self.weather)
 
     def test_if_only_one_cafe_to_choose_from_it_is_chosen(self):
         self.clo.cafes({
@@ -82,31 +84,51 @@ class ChiefLunchOfficerTest(unittest.TestCase):
 
         def rate(menu):
             ratings = {
-                'food1': 2,
-                'food2': 3,
-                'food3': 1
+                'good_food': 2,
+                'excellent_food': 3,
+                'some_food': 1
             }
             return ratings[menu]
 
         self.taste.rate = Mock(side_effect=rate)
         self.clo.cafes({
           'cafe1': {
-            'menu': 'food1'
+            'menu': 'good_food'
           },
           'cafe2': {
-            'menu': 'food2'
+            'menu': 'excellent_food'
           },
           'cafe3': {
-            'menu': 'food3'
+            'menu': 'some_food'
           }
         })
         self.assertEqual(['cafe2', 'cafe1', 'cafe3'], self.clo.decide())
 
-    #TODO: When weather is bad the cafe with smaller distance is chosen
+    def test_if_all_same_and_bad_weather_then_cafe_with_shortest_distance_is_chosen(self):
+        self.taste.rate = Mock(return_value=1)
+        self.weather.is_positive = Mock(return_value=False)
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 2
+          },
+          'cafe2': {
+            'menu': 'food2',
+            'distance': 3
+          },
+          'cafe3': {
+            'menu': 'food3',
+            'distance': 1
+          }
+        })
+        self.assertEqual(['cafe3', 'cafe1', 'cafe2'], self.clo.decide())
+
     #TODO: Occurrences of some cafe in history => prefer other cafe
+    #TODO: If on preferred week day choose that cafe
     #TODO: No weather information provided
     #TODO: No cafes provided
     #TODO: No history provided
+    #TODO: No information provided
 
 #TODO: If one cafe one day then likely another one next day
 #TODO: Cafe without a menu no more than once per week
