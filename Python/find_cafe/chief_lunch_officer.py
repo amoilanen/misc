@@ -40,16 +40,17 @@ class FoodTaste:
     def rate(self, menu):
         rating = 0
         if self._preferences is not None:
-            for menu_item in set(menu.split()):
-                rating += self._preferences.get(menu_item, 0)
+            for menu_item in self._preferences.keys():
+                if menu_item in menu:
+                    rating += self._preferences.get(menu_item)
         return rating
 
 class ChiefLunchOfficer:
 
     MENU_WEIGHT = 1
-    WEATHER_WEIGHT = -10
-    VISITED_WEIGHT = -5
-    PREFERRED_DAY_WEIGHT = 5
+    WEATHER_WEIGHT = -15
+    VISITED_WEIGHT = -6
+    PREFERRED_DAY_WEIGHT = 12
 
     def __init__(self, food_taste, weather_opinion):
         self._weekday = None
