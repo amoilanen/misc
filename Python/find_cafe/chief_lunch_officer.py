@@ -49,8 +49,8 @@ class ChiefLunchOfficer:
 
     MENU_WEIGHT = 1
     WEATHER_WEIGHT = -15
-    VISITED_WEIGHT = -6
-    PREFERRED_DAY_WEIGHT = 12
+    VISITED_WEIGHT = -3
+    PREFERRED_DAY_WEIGHT = 10
 
     def __init__(self, food_taste, weather_opinion):
         self._weekday = None
@@ -100,6 +100,7 @@ class ChiefLunchOfficer:
                 self._weekday in cafe_details['preferred_weekdays']):
                 menu_rating = menu_rating + self.PREFERRED_DAY_WEIGHT;
             cafe_score[cafe] = menu_rating
+        print(cafe_score)
         cafe_score = sorted(cafe_score.items(), key=lambda t: t[1], reverse=True)
         return list(map(lambda score: score[0], cafe_score))
 

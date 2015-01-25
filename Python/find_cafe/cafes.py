@@ -14,8 +14,7 @@ CAFES = {
     },
     HIMA_SALI: {
         'menu': '',
-        'distance': 1,
-        'preferred_weekdays': [3] #Thu
+        'distance': 1
     },
     DYLAN_MILK: {
         'menu': '',
