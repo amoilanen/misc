@@ -93,19 +93,22 @@ class ChiefLunchOfficerTest(unittest.TestCase):
         self.taste.rate = Mock(side_effect=rate)
         self.clo.cafes({
           'cafe1': {
-            'menu': 'good_food'
+            'menu': 'good_food',
+            'distance': 1
           },
           'cafe2': {
-            'menu': 'excellent_food'
+            'menu': 'excellent_food',
+            'distance': 1
           },
           'cafe3': {
-            'menu': 'some_food'
+            'menu': 'some_food',
+            'distance': 1
           }
         })
         self.assertEqual(['cafe2', 'cafe1', 'cafe3'], self.clo.decide())
 
     def test_if_all_same_and_bad_weather_then_cafe_with_shortest_distance_is_chosen(self):
-        self.taste.rate = Mock(return_value=1)
+        self.taste.rate = Mock(return_value=0)
         self.weather.is_positive = Mock(return_value=False)
         self.clo.cafes({
           'cafe1': {
@@ -122,6 +125,24 @@ class ChiefLunchOfficerTest(unittest.TestCase):
           }
         })
         self.assertEqual(['cafe3', 'cafe1', 'cafe2'], self.clo.decide())
+
+    def test_if_all_same_but_history_not_visited_cafe_is_preferred(self):
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 1
+          },
+          'cafe2': {
+            'menu': 'food2',
+            'distance': 1
+          },
+          'cafe3': {
+            'menu': 'food3',
+            'distance': 1
+          }
+        })
+        self.clo.lunched(['cafe2', 'cafe3', 'cafe3', 'cafe1', 'cafe1', 'cafe1'])
+        self.assertEqual(['cafe2', 'cafe3', 'cafe1'], self.clo.decide())
 
     #TODO: Occurrences of some cafe in history => prefer other cafe
     #TODO: If on preferred week day choose that cafe

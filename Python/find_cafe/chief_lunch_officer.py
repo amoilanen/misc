@@ -42,16 +42,19 @@ class ChiefLunchOfficer:
 
     MENU_WEIGHT = 1
     WEATHER_WEIGHT = 10
+    VISITED_WEIGHT = 5
 
     def __init__(self, food_taste, weather_opinion):
-        self._history = []
+        self._lunched = {}
         self._weather = {}
         self._cafes = []
         self._food_taste = food_taste
         self._weather_opinion = weather_opinion
 
     def lunched(self, lunched):
-        self._lunched = lunched
+        self._lunched = {}
+        for cafe_name in lunched:
+            self._lunched[cafe_name] = self._lunched.get(cafe_name, 0) + 1
         return self
 
     def weather(self, weather):
@@ -70,6 +73,8 @@ class ChiefLunchOfficer:
             menu_rating = self.MENU_WEIGHT * self._food_taste.rate(cafe_details['menu'])
             if is_bad_weather:
                 menu_rating = menu_rating - self.WEATHER_WEIGHT * cafe_details['distance']
+            if cafe in self._lunched:
+                menu_rating = menu_rating - self.VISITED_WEIGHT * self._lunched.get(cafe, 0)
             cafe_score[cafe] = menu_rating
         cafe_score = sorted(cafe_score.items(), key=lambda t: t[1], reverse=True)
         return list(map(lambda score: score[0], cafe_score))
