@@ -192,8 +192,26 @@ class ChiefLunchOfficerTest(unittest.TestCase):
           }
         })
         self.assertEqual(['cafe2'], self.clo.decide())
+        self.clo.weekday(4)
+        self.assertEqual({'cafe1', 'cafe2'}, set(self.clo.decide()))
 
-    #TODO: If cafe is configured as only once per week, do not go there if it is in history
+    def test_if_some_cafe_configured_as_once_per_week_and_already_went_there_then_skip_it(self):
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 1,
+            'once_per_week': True
+          },
+          'cafe2': {
+            'menu': 'food2',
+            'distance': 1
+          }
+        })
+        self.clo.lunched([])
+        self.assertEqual({'cafe1', 'cafe2'}, set(self.clo.decide()))
+        self.clo.lunched(['cafe1', 'cafe2'])
+        self.assertEqual({'cafe2'}, set(self.clo.decide()))
+
     #TODO: No weather information provided
     #TODO: No cafes provided
     #TODO: No history provided
