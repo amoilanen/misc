@@ -20,6 +20,8 @@ class WeatherOpinion:
         return self
 
     def is_positive(self):
+        if self._weather is None:
+            return None
         return (self._weather[WIND] <= WeatherOpinion.MAX_ACCEPTABLE_WIND and
                 self._weather[TEMPERATURE] <= WeatherOpinion.MAX_ACCEPTABLE_TEMPERATURE and
                 self._weather[TEMPERATURE] >= WeatherOpinion.MIN_ACCEPTABLE_TEMPERATURE and
@@ -28,14 +30,18 @@ class WeatherOpinion:
 
 class FoodTaste:
 
+    def __init__(self):
+        self._preferences = None
+
     def preferences(self, preferences):
         self._preferences = preferences
         return self
 
     def rate(self, menu):
         rating = 0
-        for menu_item in set(menu.split()):
-            rating += self._preferences.get(menu_item, 0)
+        if self._preferences is not None:
+            for menu_item in set(menu.split()):
+                rating += self._preferences.get(menu_item, 0)
         return rating
 
 class ChiefLunchOfficer:
@@ -46,6 +52,7 @@ class ChiefLunchOfficer:
     PREFERRED_DAY_WEIGHT = 5
 
     def __init__(self, food_taste, weather_opinion):
+        self._weekday = None
         self._lunched = {}
         self._weather = {}
         self._cafes = []

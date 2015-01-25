@@ -34,6 +34,10 @@ class FoodTasteTest(unittest.TestCase):
     def test_repeating_item_on_menu_does_not_change_rating(self):
         self.assertEqual(1, self.food_taste.rate('item1 item1 item1 item1 item1'))
 
+    def test_no_preferences_configured(self):
+        self.food_taste = FoodTaste()
+        self.assertEqual(0, self.food_taste.rate('item1'))
+
 class WeatherOpinionTest(unittest.TestCase):
 
     def setUp(self):
@@ -69,6 +73,10 @@ class WeatherOpinionTest(unittest.TestCase):
         self.weather[PRECIPITATION_CHANCE] = 10
         self.weather[PRECIPITATION_AMOUNT] = 0.5
         self.assertTrue(self.opinion.is_positive())
+
+    def test_if_no_weather_information_then_rating_is_None(self):
+        self.opinion = WeatherOpinion()
+        self.assertIsNone(self.opinion.is_positive())
 
 class ChiefLunchOfficerTest(unittest.TestCase):
 
@@ -212,10 +220,35 @@ class ChiefLunchOfficerTest(unittest.TestCase):
         self.clo.lunched(['cafe1', 'cafe2'])
         self.assertEqual({'cafe2'}, set(self.clo.decide()))
 
-    #TODO: No weather information provided
-    #TODO: No cafes provided
-    #TODO: No history provided
-    #TODO: No information provided
+    def test_if_no_weather_opinion_then_still_decide(self):
+        self.weather.is_positive = Mock(return_value=None)
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 1
+          }
+        })
+        self.assertEqual(['cafe1'], self.clo.decide())
+
+    def test_if_no_cafes_provided_then_empty_list(self):
+        self.clo.cafes({})
+        self.assertEqual([], self.clo.decide())
+        self.assertEqual('No idea', self.clo.decide_one())
+
+    def test_if_no_history_provided_then_empty_list(self):
+        self.clo.lunched([])
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 1
+          }
+        })
+        self.assertEqual(['cafe1'], self.clo.decide())
+
+    def test_if_no_cafes_provided_then_empty_list(self):
+        self.clo.cafes({}).lunched([]).weather(None).weekday(None)
+        self.assertEqual([], self.clo.decide())
+        self.assertEqual('No idea', self.clo.decide_one())
 
 #TODO: If one cafe one day then likely another one next day
 #TODO: Cafe without a menu no more than once per week
