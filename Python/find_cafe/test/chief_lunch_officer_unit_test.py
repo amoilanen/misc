@@ -42,6 +42,9 @@ class FoodTasteTest(unittest.TestCase):
     def test_spaces_in_preferences(self):
         self.assertEqual(6, self.food_taste.rate('item6_part1 item6_part2 something else'))
 
+    def test_case_in_menu_is_ignored(self):
+        self.assertEqual(1, self.food_taste.rate('iTeM1'))
+
 class WeatherOpinionTest(unittest.TestCase):
 
     def setUp(self):

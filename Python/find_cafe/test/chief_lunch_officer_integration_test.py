@@ -68,9 +68,6 @@ class ChiefLunchOfficerIntegrationTest(unittest.TestCase):
         self.clo.lunched([CHINESE])
         self.assertTrue(CHINESE not in self.clo.decide())
 
-#TODO: If Wednesday or Friday the possibility of Nepalese is greater
-#TODO: If Thursday the possibility of Hima & Sali is greater
-
     def test_if_wed_and_nothing_interesting_on_others_menu_then_nepalese_if_not_visited_it(self):
         self.cafes[HIMA_SALI]['menu'] = 'fish'
         self.cafes[DYLAN_MILK]['menu'] = 'fish'

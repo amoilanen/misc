@@ -2,12 +2,15 @@
 # additional information (weather, cafe of choice yesterday) gives recommendations
 # where to go for lunch.
 
-from chief_lunch_officer import ChiefLunchOfficer
+from chief_lunch_officer import ChiefLunchOfficer, WeatherOpinion, FoodTaste
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
 from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
+from preferences import FOOD_PREFERENCES
+from cafes import CAFES
 
 from pathlib import Path
 from datetime import date, datetime, timedelta
+from copy import deepcopy
 import urllib.request
 import json
 import re
@@ -74,7 +77,12 @@ def get_current_week_history(today):
     #    '20.01.2015': CHINESE
     #}
     current_week = week_number(today)
-    current_week_history = {(k, v) for (k, v) in history.items() if current_week == week_number(parse_date(k))}
+
+    def is_date_this_week_before_today(d):
+        return (current_week == week_number(d)
+                and d.date() < today)
+
+    current_week_history = {(k, v) for (k, v) in history.items() if is_date_this_week_before_today(parse_date(k))}
     return dict(current_week_history)
 
 def ordered_cafes(history):
@@ -91,7 +99,7 @@ def update_history(history, today, todays_cafe):
     store_history(history)
 
 today = date.today()
-today = today + timedelta(days=1)
+#today = today + timedelta(days=1)
 #hima_sali_menu = 'meatballs'
 #dylan_milk_menu = 'fish'
 #weather = {
@@ -115,23 +123,16 @@ lunch_history = get_current_week_history(today)
 current_week_cafes = ordered_cafes(lunch_history)
 print('\nLunch history for current week:\n\n %s' % ', '.join(current_week_cafes))
 
-cafes = {
-    NEPALESE: {
-        'menu': ''
-    },
-    CHINESE: {
-        'menu': ''
-    },
-    HIMA_SALI: {
-        'menu': hima_sali_menu
-    },
-    DYLAN_MILK: {
-        'menu': dylan_milk_menu
-    }
-}
+cafes = deepcopy(CAFES)
+cafes[HIMA_SALI]['menu'] = hima_sali_menu
+cafes[DYLAN_MILK]['menu'] = dylan_milk_menu
 
-#clo = ChiefLunchOfficer()
-#clo.lunched(current_week_cafes).weather(weather).cafes(cafes).weekday(today.weekday())
-#todays_cafe = clo.decide()
-#update_history(lunch_history, today, todays_cafe)
-#print('\nRecommendation:\n\n %s' % todays_cafe)
+food_taste = FoodTaste().preferences(FOOD_PREFERENCES)
+weather_opinion = WeatherOpinion().weather(weather)
+clo = ChiefLunchOfficer(food_taste=food_taste, weather_opinion=weather_opinion, debug=True)
+clo.lunched(current_week_cafes).weather(weather).cafes(cafes).weekday(today.weekday())
+todays_cafes = clo.decide()
+todays_cafe = todays_cafes[0]
+update_history(lunch_history, today, todays_cafe)
+print('\nRecommendation:\n\n %s' % todays_cafe)
+print('\nAll options in preferred order: %s' % ', '.join(todays_cafes))

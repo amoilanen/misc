@@ -38,6 +38,7 @@ class FoodTaste:
         return self
 
     def rate(self, menu):
+        menu = menu.lower()
         rating = 0
         if self._preferences is not None:
             for menu_item in self._preferences.keys():
@@ -52,13 +53,18 @@ class ChiefLunchOfficer:
     VISITED_WEIGHT = -3
     PREFERRED_DAY_WEIGHT = 10
 
-    def __init__(self, food_taste, weather_opinion):
+    def __init__(self, food_taste, weather_opinion, debug=False):
         self._weekday = None
         self._lunched = {}
         self._weather = {}
         self._cafes = []
         self._food_taste = food_taste
         self._weather_opinion = weather_opinion
+        self._debug = debug
+
+    def _log(self, msg):
+        if self._debug:
+            print('DEBUG: ' + msg)
 
     def weekday(self, weekday):
         """
@@ -84,23 +90,35 @@ class ChiefLunchOfficer:
         is_bad_weather = not self._weather_opinion.is_positive()
         cafe_score = {}
         for cafe in self._cafes:
+            self._log('%s computing score...' % cafe)
             cafe_details = self._cafes[cafe]
             if ('closed_weekdays' in cafe_details and
                 self._weekday in cafe_details['closed_weekdays']):
+                self._log('%s is closed today, excluding it' % cafe)
                 continue
             if ('once_per_week' in cafe_details and
                 cafe in self._lunched):
+                self._log('%s is only once per week, already visited, excluding it' % cafe)
                 continue
             menu_rating = self.MENU_WEIGHT * self._food_taste.rate(cafe_details['menu'])
+            self._log('menu rating = %d' % menu_rating)
             if is_bad_weather:
-                menu_rating = menu_rating + self.WEATHER_WEIGHT * cafe_details['distance']
+                weather_score_penalty = self.WEATHER_WEIGHT * cafe_details['distance']
+                menu_rating = menu_rating + weather_score_penalty
+                self._log('bad weather: + %d' % weather_score_penalty)
             if cafe in self._lunched:
-                menu_rating = menu_rating + self.VISITED_WEIGHT * self._lunched.get(cafe, 0)
+                visited_times = self._lunched.get(cafe, 0)
+                visited_score_penalty = self.VISITED_WEIGHT * visited_times
+                menu_rating = menu_rating + visited_score_penalty
+                self._log('already visited %d times: + %d' % (visited_times, visited_score_penalty))
             if ('preferred_weekdays' in cafe_details and
                 self._weekday in cafe_details['preferred_weekdays']):
                 menu_rating = menu_rating + self.PREFERRED_DAY_WEIGHT;
+                self._log('preferred weekday: + %d' % self.PREFERRED_DAY_WEIGHT)
+            self._log('overall score: %d' % menu_rating)
             cafe_score[cafe] = menu_rating
-        print(cafe_score)
+        self._log('Overall cafe scores based on the algorithm:')
+        self._log(str(cafe_score))
         cafe_score = sorted(cafe_score.items(), key=lambda t: t[1], reverse=True)
         return list(map(lambda score: score[0], cafe_score))
 
