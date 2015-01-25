@@ -131,7 +131,7 @@ cafes = {
 }
 
 #clo = ChiefLunchOfficer()
-#clo.lunched(current_week_cafes).weather(weather).cafes(cafes)
+#clo.lunched(current_week_cafes).weather(weather).cafes(cafes).weekday(today.weekday())
 #todays_cafe = clo.decide()
 #update_history(lunch_history, today, todays_cafe)
 #print('\nRecommendation:\n\n %s' % todays_cafe)

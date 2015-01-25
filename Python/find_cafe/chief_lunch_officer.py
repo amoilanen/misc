@@ -41,8 +41,9 @@ class FoodTaste:
 class ChiefLunchOfficer:
 
     MENU_WEIGHT = 1
-    WEATHER_WEIGHT = 10
-    VISITED_WEIGHT = 5
+    WEATHER_WEIGHT = -10
+    VISITED_WEIGHT = -5
+    PREFERRED_DAY_WEIGHT = 5
 
     def __init__(self, food_taste, weather_opinion):
         self._lunched = {}
@@ -50,6 +51,12 @@ class ChiefLunchOfficer:
         self._cafes = []
         self._food_taste = food_taste
         self._weather_opinion = weather_opinion
+
+    def weekday(self, weekday):
+        """
+        weekday - number of the day of week in the range 0 - 6 (Monday - Sunday)
+        """
+        self._weekday = weekday
 
     def lunched(self, lunched):
         self._lunched = {}
@@ -72,9 +79,12 @@ class ChiefLunchOfficer:
             cafe_details = self._cafes[cafe]
             menu_rating = self.MENU_WEIGHT * self._food_taste.rate(cafe_details['menu'])
             if is_bad_weather:
-                menu_rating = menu_rating - self.WEATHER_WEIGHT * cafe_details['distance']
+                menu_rating = menu_rating + self.WEATHER_WEIGHT * cafe_details['distance']
             if cafe in self._lunched:
-                menu_rating = menu_rating - self.VISITED_WEIGHT * self._lunched.get(cafe, 0)
+                menu_rating = menu_rating + self.VISITED_WEIGHT * self._lunched.get(cafe, 0)
+            if ('preferred_weekdays' in cafe_details and
+                self._weekday in cafe_details['preferred_weekdays']):
+                menu_rating = menu_rating + self.PREFERRED_DAY_WEIGHT;
             cafe_score[cafe] = menu_rating
         cafe_score = sorted(cafe_score.items(), key=lambda t: t[1], reverse=True)
         return list(map(lambda score: score[0], cafe_score))

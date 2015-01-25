@@ -144,8 +144,37 @@ class ChiefLunchOfficerTest(unittest.TestCase):
         self.clo.lunched(['cafe2', 'cafe3', 'cafe3', 'cafe1', 'cafe1', 'cafe1'])
         self.assertEqual(['cafe2', 'cafe3', 'cafe1'], self.clo.decide())
 
-    #TODO: Occurrences of some cafe in history => prefer other cafe
+    def test_if_all_same_and_some_cafe_preferred_on_this_weekday_choose_this_cafe(self):
+        self.clo.weekday(4)
+        self.clo.cafes({
+          'cafe1': {
+            'menu': 'food1',
+            'distance': 1,
+            'preferred_weekdays': [3]
+          },
+          'cafe2': {
+            'menu': 'food2',
+            'distance': 1,
+            'preferred_weekdays': [4]
+          }
+        })
+        self.assertEqual(['cafe2', 'cafe1'], self.clo.decide())
+        self.clo.cafes({
+          'cafe2': {
+            'menu': 'food2',
+            'distance': 1
+          },
+          'cafe3': {
+            'menu': 'food3',
+            'distance': 1,
+            'preferred_weekdays': [4]
+          }
+        })
+        self.assertEqual(['cafe3', 'cafe2'], self.clo.decide())
+
     #TODO: If on preferred week day choose that cafe
+    #TODO: Menu is empty for some cafes, then rating is 0
+    #TODO: If cafe has holiday days do not go to it on holiday day
     #TODO: No weather information provided
     #TODO: No cafes provided
     #TODO: No history provided
