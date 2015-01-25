@@ -91,7 +91,7 @@ def update_history(history, today, todays_cafe):
     store_history(history)
 
 today = date.today()
-#today = today + timedelta(days=1)
+today = today + timedelta(days=1)
 #hima_sali_menu = 'meatballs'
 #dylan_milk_menu = 'fish'
 #weather = {
@@ -117,21 +117,21 @@ print('\nLunch history for current week:\n\n %s' % ', '.join(current_week_cafes)
 
 cafes = {
     NEPALESE: {
-        menu: ''
+        'menu': ''
     },
     CHINESE: {
-        menu: ''
+        'menu': ''
     },
     HIMA_SALI: {
-        menu: hima_sali_menu
+        'menu': hima_sali_menu
     },
     DYLAN_MILK: {
-        menu: dylan_milk_menu
+        'menu': dylan_milk_menu
     }
 }
 
-clo = ChiefLunchOfficer()
-clo.lunched(current_week_cafes).weather(weather).cafes(cafes)
-todays_cafe = clo.decide()
-update_history(lunch_history, today, todays_cafe)
-print('\nRecommendation:\n\n %s' % todays_cafe)
+#clo = ChiefLunchOfficer()
+#clo.lunched(current_week_cafes).weather(weather).cafes(cafes)
+#todays_cafe = clo.decide()
+#update_history(lunch_history, today, todays_cafe)
+#print('\nRecommendation:\n\n %s' % todays_cafe)

@@ -30,6 +30,7 @@ class FoodTaste:
 
     def preferences(self, preferences):
         self._preferences = preferences
+        return self
 
     def rate(self, menu):
         rating = 0
@@ -37,12 +38,13 @@ class FoodTaste:
             rating += self._preferences.get(menu_item, 0)
         return rating
 
-class ChiefLunchOfficer(object):
+class ChiefLunchOfficer:
 
-    def __init__(self):
+    def __init__(self, food_taste):
         self._history = []
         self._weather = {}
         self._cafes = []
+        self._food_taste = food_taste
 
     def lunched(self, lunched):
         self._lunched = lunched
@@ -57,4 +59,14 @@ class ChiefLunchOfficer(object):
         return self
 
     def decide(self):
-        return list(self._cafes.keys())[0] if len(self._cafes.keys()) > 0 else 'No idea'
+        cafe_score = {}
+        for cafe in self._cafes:
+            cafe_details = self._cafes[cafe]
+            menu_rating = self._food_taste.rate(cafe_details['menu'])
+            cafe_score[cafe] = menu_rating
+        cafe_score = sorted(cafe_score.items(), key=lambda t: t[1], reverse=True)
+        return list(map(lambda score: score[0], cafe_score))
+
+    def decide_one(self):
+        decision = self.decide()
+        return decision[0] if len(decision) > 0 else 'No idea'
