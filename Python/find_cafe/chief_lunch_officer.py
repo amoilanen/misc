@@ -34,7 +34,7 @@ class FoodTaste:
 
     def rate(self, menu):
         rating = 0
-        for menu_item in menu.split():
+        for menu_item in set(menu.split()):
             rating += self._preferences.get(menu_item, 0)
         return rating
 

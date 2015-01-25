@@ -28,6 +28,12 @@ class FoodTasteTest(unittest.TestCase):
     def test_composite_menu_all_parts_unknown(self):
         self.assertEqual(9, self.food_taste.rate('item3 item4 item2'))
 
+    def test_empty_menu_rating_is_zero(self):
+        self.assertEqual(0, self.food_taste.rate(''))
+
+    def test_repeating_item_on_menu_does_not_change_rating(self):
+        self.assertEqual(1, self.food_taste.rate('item1 item1 item1 item1 item1'))
+
 class WeatherOpinionTest(unittest.TestCase):
 
     def setUp(self):
@@ -172,8 +178,6 @@ class ChiefLunchOfficerTest(unittest.TestCase):
         })
         self.assertEqual(['cafe3', 'cafe2'], self.clo.decide())
 
-    #TODO: If on preferred week day choose that cafe
-    #TODO: Menu is empty for some cafes, then rating is 0
     #TODO: If cafe has holiday days do not go to it on holiday day
     #TODO: No weather information provided
     #TODO: No cafes provided
