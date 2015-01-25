@@ -104,11 +104,6 @@ class ChiefLunchOfficerIntegrationTest(unittest.TestCase):
         self.clo.lunched([HIMA_SALI, HIMA_SALI, HIMA_SALI])
         self.assertEqual(DYLAN_MILK, self.clo.decide_one())
 
-#TODO: If meatballs, likely go there
-#TODO: If pea soup, likely go there
-#TODO: Prefer meat: pork, meat, beef, hamburger
-#TODO: Chicken is also OK but worse: chicken, broiler
-#TODO: Fish is sort of OK, but worse than chicken: fish, tuna
     def test_prefer_pea_soup_over_meatballs(self):
         self.cafes[HIMA_SALI]['menu'] = 'meatballs'
         self.cafes[DYLAN_MILK]['menu'] = 'pea soup'
@@ -120,12 +115,16 @@ class ChiefLunchOfficerIntegrationTest(unittest.TestCase):
         self.assertEqual(HIMA_SALI, self.clo.decide_one())
 
     def test_prefer_meat_over_chicken(self):
-        pass
+        self.cafes[HIMA_SALI]['menu'] = 'chicken'
+        self.cafes[DYLAN_MILK]['menu'] = 'meat'
+        self.assertEqual(DYLAN_MILK, self.clo.decide_one())
 
     def test_prefer_chicken_over_fish(self):
-        pass
+        self.cafes[HIMA_SALI]['menu'] = 'chicken'
+        self.cafes[DYLAN_MILK]['menu'] = 'fish'
+        self.assertEqual(HIMA_SALI, self.clo.decide_one())
 
     def test_prefer_fish_over_everything_remaining(self):
-        pass
-
-#TODO: No menu means no way to go to that cafe (holiday)
+        self.cafes[HIMA_SALI]['menu'] = 'brocolli'
+        self.cafes[DYLAN_MILK]['menu'] = 'fish'
+        self.assertEqual(DYLAN_MILK, self.clo.decide_one())
