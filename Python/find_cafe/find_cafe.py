@@ -70,12 +70,6 @@ def get_current_week_history(today):
             f.write('{}')
     with history_path.open('r') as f:
         history = json.loads(f.read())
-    #history = {
-    #    '14.01.2015': NEPALESE,
-    #    '15.01.2015': HIMA_SALI,
-    #    '19.01.2015': NEPALESE,
-    #    '20.01.2015': CHINESE
-    #}
     current_week = week_number(today)
 
     def is_date_this_week_before_today(d):
@@ -99,16 +93,6 @@ def update_history(history, today, todays_cafe):
     store_history(history)
 
 today = date.today()
-#today = today + timedelta(days=1)
-#hima_sali_menu = 'meatballs'
-#dylan_milk_menu = 'fish'
-#weather = {
-#    TEMPERATURE: 2,
-#    PRECIPITATION_CHANCE: 10,
-#    PRECIPITATION_AMOUNT: 2.0,
-#    WIND: 5
-#}
-
 print('Today %s\n' % today.strftime('%d.%m.%Y'))
 
 hima_sali_menu = get_hima_sali_menu(today)
@@ -117,7 +101,7 @@ dylan_milk_menu = get_dylan_milk_menu(today)
 print('\nDylan Milk:\n\n%s' % re.sub('<br />', '\n', dylan_milk_menu))
 
 weather = get_todays_weather()
-print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
+print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation amount %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
 
 lunch_history = get_current_week_history(today)
 current_week_cafes = ordered_cafes(lunch_history)
@@ -129,7 +113,7 @@ cafes[DYLAN_MILK]['menu'] = dylan_milk_menu
 
 food_taste = FoodTaste().preferences(FOOD_PREFERENCES)
 weather_opinion = WeatherOpinion().weather(weather)
-clo = ChiefLunchOfficer(food_taste=food_taste, weather_opinion=weather_opinion, debug=True)
+clo = ChiefLunchOfficer(food_taste=food_taste, weather_opinion=weather_opinion)
 clo.lunched(current_week_cafes).weather(weather).cafes(cafes).weekday(today.weekday())
 todays_cafes = clo.decide()
 todays_cafe = todays_cafes[0]

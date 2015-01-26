@@ -43,7 +43,9 @@ class FoodTaste:
         if self._preferences is not None:
             for menu_item in self._preferences.keys():
                 if menu_item in menu:
-                    rating += self._preferences.get(menu_item)
+                    item_rating = self._preferences.get(menu_item)
+                    if item_rating > rating:
+                        rating = item_rating
         return rating
 
 class ChiefLunchOfficer:

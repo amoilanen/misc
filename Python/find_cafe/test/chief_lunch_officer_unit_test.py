@@ -23,11 +23,11 @@ class FoodTasteTest(unittest.TestCase):
     def test_known_food_one_item_menu(self):
         self.assertEqual(3, self.food_taste.rate('item3'))
 
-    def test_composite_menu_some_parts_unknown(self):
-        self.assertEqual(7, self.food_taste.rate('item3 item4 then also something else'))
+    def test_composite_menu_some_parts_unknown_highest_rating_is_chosen(self):
+        self.assertEqual(4, self.food_taste.rate('item3 item4 then also something else'))
 
     def test_composite_menu_all_parts_unknown(self):
-        self.assertEqual(9, self.food_taste.rate('item3 item4 item2'))
+        self.assertEqual(4, self.food_taste.rate('item3 item4 item2'))
 
     def test_empty_menu_rating_is_zero(self):
         self.assertEqual(0, self.food_taste.rate(''))
