@@ -119,4 +119,4 @@ todays_cafes = clo.decide()
 todays_cafe = todays_cafes[0]
 update_history(lunch_history, today, todays_cafe)
 print('\nRecommendation:\n\n %s' % todays_cafe)
-print('\nAll options in preferred order: %s' % ', '.join(todays_cafes))
+print('\nAll lunch in preferred order: %s' % ', '.join(todays_cafes))
