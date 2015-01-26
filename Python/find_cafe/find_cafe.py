@@ -44,10 +44,6 @@ def get_hima_sali_menu(date):
 def get_dylan_milk_menu(date):
     return find_menu(DYLAN_MILK_URL, date, r'BUFFET:(.*?)</')
 
-def parse_weather_value(regex, html):
-    value = re.findall(regex, html, re.MULTILINE | re.DOTALL)[0]
-    return int(value.replace('&lt;', ''))
-
 def get_todays_weather():
     forecast = json.loads(get(YLE_WEATHER_FORECAST_URL))['weatherInfos'][0]
     return {
