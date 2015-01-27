@@ -252,7 +252,15 @@
 
       this.selectContainer = element.querySelector('.rc-select');
       this.selectContainer.addEventListener('click', function(event) {
-        toggle(self);
+        var closestOption = closest(event.target, 'rc-select--option');
+
+        if (closestOption) {
+          var optionValue = closestOption.getAttribute('value');
+
+          select(self, optionValue);
+        } else {
+          toggle(self);
+        }
       }, false);
       this.selectContainer.addEventListener('mouseover', function(event) {
         var closestOption = closest(event.target, 'rc-select--option');
@@ -269,7 +277,7 @@
       this.selectInput = element.querySelector('.rc-select--input');
       this.focusTrapElement = element.querySelector('.rc-select--focus-trap');
       this.focusTrapElement.addEventListener('keyup', function(event) {
-          onKeyUp(self, event);
+        onKeyUp(self, event);
       });
       this.createShadowRoot().appendChild(element);
     };
