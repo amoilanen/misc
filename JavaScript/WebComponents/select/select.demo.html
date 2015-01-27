@@ -62,6 +62,9 @@
       var selectElement = document.createElement('rc-select');
 
       selectElement.setOptions(options);
+      selectElement.addEventListener('change', function(event) {
+        onChange(event.target.selectedOption);
+      }, false);
       containerElement.appendChild(selectElement);
     });
   </script>

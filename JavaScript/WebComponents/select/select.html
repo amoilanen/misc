@@ -99,9 +99,11 @@
     </div>
   </div>
 </template>
+<link rel="import" href="util.html">
 <script>
   (function() {
 
+    //TODO: Allow to specify options as nested HTML elements
     var template = document.currentScript.ownerDocument.querySelector('#select-template');
     var prototype = Object.create(HTMLElement.prototype);
 
@@ -172,6 +174,74 @@
       });
     }
 
+    function onKeyUp(self, event) {
+      var activeIndex = self.activeIndex;
+
+      switch(event.keyCode) {
+
+        case Util.KEY_CODES.ESC:
+          toggle(self, false);
+          break;
+
+        case Util.KEY_CODES.ARROW_DOWN:
+          if (!self.active) {
+            toggle(self, true);
+          }
+          activeIndex++;
+          if (activeIndex >= self.options.length) {
+            activeIndex = 0;
+          }
+          self.activeIndex = activeIndex;
+          break;
+
+        case Util.KEY_CODES.ARROW_UP:
+          if (!self.active) {
+            toggle(self, true);
+          }
+          activeIndex--;
+          if (activeIndex < 0) {
+            activeIndex = self.options.length - 1;
+          }
+          self.activeIndex = activeIndex;
+          break;
+
+        case Util.KEY_CODES.ENTER:
+          var activeOption = self.options[self.activeIndex];
+
+          self.activeIndex = -1;
+          select(self, activeOption.value);
+          break;
+
+        default:
+          break;
+      }
+      render(self);
+    }
+
+    function onSelect(self, option) {
+      var event = new CustomEvent('change', {
+        'detail': option
+      });
+
+      self.dispatchEvent(event);
+    }
+
+    function select(self, value) {
+      self.options.forEach(function(option) {
+        option.selected = (option.value === value);
+
+        if (option.selected) {
+          self.selectedOption = option;
+          onSelect(self, option);
+        }
+      });
+      render(self);
+      toggle(self);
+
+      //Need to return focus to the focus trap, the focus was lost to an option
+      self.focusTrapElement.focus();
+    }
+
     prototype.createdCallback = function() {
       var self = this;
       var element = document.importNode(template.content, true);
@@ -187,7 +257,6 @@
       this.selectContainer.addEventListener('mouseover', function(event) {
         var closestOption = closest(event.target, 'rc-select--option');
 
-        console.log('closestOption = ', closestOption);
         if (closestOption) {
           var index = parseInt(closestOption.getAttribute('idx'));
 
@@ -199,6 +268,9 @@
       this.optionsContainer = element.querySelector('.rc-select--options ul');
       this.selectInput = element.querySelector('.rc-select--input');
       this.focusTrapElement = element.querySelector('.rc-select--focus-trap');
+      this.focusTrapElement.addEventListener('keyup', function(event) {
+          onKeyUp(self, event);
+      });
       this.createShadowRoot().appendChild(element);
     };
     prototype.setOptions = function(options) {
