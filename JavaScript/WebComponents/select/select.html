@@ -104,6 +104,7 @@
   (function() {
 
     //TODO: Allow to specify options as nested HTML elements
+    //TODO: Re-factoring: extract rendering operations, avoid re-factoring whole of the component
     var template = document.currentScript.ownerDocument.querySelector('#select-template');
     var prototype = Object.create(HTMLElement.prototype);
 
@@ -125,22 +126,18 @@
     }
 
     function toggle(self, active) {
-      var className = 'rc-select';
-
       if (typeof active === 'undefined') {
         active = !self.active;
       }
       self.active = active;
-      if (self.active) {
-        className = className + ' rc-select_active';
-      }
       self.activeIndex = -1;
       if (active) {
         self.focusTrapElement.focus();
       } else {
         self.focusTrapElement.blur();
       }
-      self.selectContainer.setAttribute('class', className);
+      self.inFocus = active;
+      renderSelectContainerClass(self);
     }
 
     function activate(self, activeIndex) {
@@ -148,30 +145,14 @@
       render(self);
     }
 
-    function render(self) {
-      empty(self.selectInput);
-      self.selectInput.appendChild(document.createTextNode(self.selectedOption.label));
-      empty(self.optionsContainer);
-      self.options.forEach(function(option, idx) {
-        var optionContainerElement = document.createElement('li');
-        var optionLabelElement = document.createElement('div');
-        var className = "rc-select--option";
+    function onFocus(self, event) {
+      self.inFocus = true;
+      renderSelectContainerClass(self);
+    }
 
-        if (option.selected) {
-          className = className + " rc-select--option_selected";
-        }
-        if (idx === self.activeIndex) {
-          className = className + " rc-select--option_active";
-        }
-
-        optionContainerElement.setAttribute('class', className);
-        optionContainerElement.setAttribute('value', option.value);
-        optionContainerElement.setAttribute('idx', idx);
-        optionLabelElement.setAttribute('class', 'rs-selection--option-label');
-        optionLabelElement.appendChild(document.createTextNode(option.label));
-        optionContainerElement.appendChild(optionLabelElement);
-        self.optionsContainer.appendChild(optionContainerElement);
-      });
+    function onBlur(self, event) {
+      self.inFocus = false;
+      renderSelectContainerClass(self);
     }
 
     function onKeyUp(self, event) {
@@ -242,6 +223,47 @@
       self.focusTrapElement.focus();
     }
 
+    /*
+     * Rendering and re-rendering functions.
+     */
+    function renderSelectContainerClass(self) {
+      var className = 'rc-select';
+
+      if (self.active) {
+        className = className + ' rc-select_active';
+      }
+      if (self.inFocus) {
+        className = className + ' rc-select_focus';
+      }
+      self.selectContainer.setAttribute('class', className);
+    }
+
+    function render(self) {
+      empty(self.selectInput);
+      self.selectInput.appendChild(document.createTextNode(self.selectedOption.label));
+      empty(self.optionsContainer);
+      self.options.forEach(function(option, idx) {
+        var optionContainerElement = document.createElement('li');
+        var optionLabelElement = document.createElement('div');
+        var className = "rc-select--option";
+
+        if (option.selected) {
+          className = className + " rc-select--option_selected";
+        }
+        if (idx === self.activeIndex) {
+          className = className + " rc-select--option_active";
+        }
+
+        optionContainerElement.setAttribute('class', className);
+        optionContainerElement.setAttribute('value', option.value);
+        optionContainerElement.setAttribute('idx', idx);
+        optionLabelElement.setAttribute('class', 'rs-selection--option-label');
+        optionLabelElement.appendChild(document.createTextNode(option.label));
+        optionContainerElement.appendChild(optionLabelElement);
+        self.optionsContainer.appendChild(optionContainerElement);
+      });
+    }
+
     prototype.createdCallback = function() {
       var self = this;
       var element = document.importNode(template.content, true);
@@ -261,7 +283,7 @@
         } else {
           toggle(self);
         }
-      }, false);
+      });
       this.selectContainer.addEventListener('mouseover', function(event) {
         var closestOption = closest(event.target, 'rc-select--option');
 
@@ -278,6 +300,12 @@
       this.focusTrapElement = element.querySelector('.rc-select--focus-trap');
       this.focusTrapElement.addEventListener('keyup', function(event) {
         onKeyUp(self, event);
+      });
+      this.focusTrapElement.addEventListener('focus', function(event) {
+        onFocus(self, event);
+      });
+      this.focusTrapElement.addEventListener('blur', function(event) {
+        onBlur(self, event);
       });
       this.createShadowRoot().appendChild(element);
     };
