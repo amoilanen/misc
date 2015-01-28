@@ -255,9 +255,9 @@
         var closestOption = closest(event.target, 'rc-select--option');
 
         if (closestOption) {
-          var optionValue = closestOption.getAttribute('value');
+          var index = parseInt(closestOption.getAttribute('idx'));
 
-          select(self, optionValue);
+          select(self, self.options[index].value);
         } else {
           toggle(self);
         }
