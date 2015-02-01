@@ -5,6 +5,7 @@ FOOD_PREFERENCES = {
     'meat': 6,
     'pork': 6,
     'beef': 6,
+    'game': 6,
     'hamburger': 6,
     'chicken': 5,
     'broiler': 5,

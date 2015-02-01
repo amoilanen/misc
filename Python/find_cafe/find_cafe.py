@@ -16,8 +16,13 @@ import json
 import re
 
 HIMA_SALI_URL = 'http://www.himasali.com/p/lounaslista.html'
-DYLAN_MILK_URL = 'http://dylan.fi/milk/'
+DYLAN_MILK_URL = 'https://www.facebook.com/DylanMilk?fref=ts&filter=1'
 YLE_WEATHER_FORECAST_URL = 'http://yle.fi/saa/resources/ajax/saa-api/hourly-forecast.action?id=642554'
+
+def make_readable(content_with_html_tags):
+    content_with_html_tags = re.sub('<br.*?>', '\n', content_with_html_tags)
+    content_with_html_tags = re.sub('<.*?>', '', content_with_html_tags)
+    return content_with_html_tags.replace('&amp;', '&').replace('&nbsp;', '')
 
 def get(url):
     response = urllib.request.urlopen(url)
@@ -39,13 +44,14 @@ def find_menu(url, date, regex, index=0):
 
 def get_hima_sali_menu(date):
     date_label = '%d\\.%d\\.' % (date.day, date.month)
-    return find_menu(HIMA_SALI_URL, date, r'%s(.*?)\d\d\.' % (date_label), -1)
+    return find_menu(HIMA_SALI_URL, date, r'%s(.*?Wok.*?[\d\.]+)' % (date_label), -1)
 
 def get_dylan_milk_menu(date):
-    return find_menu(DYLAN_MILK_URL, date, r'BUFFET:(.*?)</')
+    return find_menu(DYLAN_MILK_URL, date, r'BUFFET:<br />(.*?)<span class="text_exposed_link"')
 
 def get_todays_weather():
-    forecast = json.loads(get(YLE_WEATHER_FORECAST_URL))['weatherInfos'][0]
+    weather_response = get(YLE_WEATHER_FORECAST_URL)
+    forecast = json.loads(weather_response)['weatherInfos'][0]
     return {
         TEMPERATURE: forecast['temperature'],
         PRECIPITATION_CHANCE: forecast['probabilityPrecipitation'],
@@ -77,7 +83,10 @@ def get_current_week_history(today):
 
 def ordered_cafes(history):
     sorted_dates = sorted(history)
-    return {history[cafe_date] for cafe_date in sorted_dates}
+    cafes = []
+    for cafe_date in sorted_dates:
+        cafes.append(history[cafe_date])
+    return cafes
 
 def store_history(history):
     history_path = Path('history.json')
@@ -89,12 +98,13 @@ def update_history(history, today, todays_cafe):
     store_history(history)
 
 today = date.today()
+today = today + timedelta(days=1)
 print('Today %s\n' % today.strftime('%d.%m.%Y'))
 
 hima_sali_menu = get_hima_sali_menu(today)
-print('\nHima & Sali:\n\n%s' % re.sub('<.*?>', '', hima_sali_menu).replace('&amp;', '&').replace('&nbsp;', ''))
+print('\nHima & Sali:\n\n%s' % make_readable(hima_sali_menu))
 dylan_milk_menu = get_dylan_milk_menu(today)
-print('\nDylan Milk:\n\n%s' % re.sub('<br />', '\n', dylan_milk_menu))
+print('\nDylan Milk:\n\n%s' % make_readable(dylan_milk_menu))
 
 weather = get_todays_weather()
 print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation amount %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
