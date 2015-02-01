@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Breadcrumbs</title>
+  <style>
+    #breadcrumb-container {
+      margin-left: 16px;
+      margin-top: 16px;
+    }
+    #content {
+      margin: 32px;
+    }
+    #resetButton {
+      margin-left: 32px;
+    }
+  </style>
+  <style>
+    .crumb,
+    .crumb-separator {
+      padding: 4px;
+      cursor: default;
+    }
+    .crumb {
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .crumb:hover {
+      background-color: #f2f2f2;
+      border: 1px solid #d4d4d4;
+    }
+    .crumb:active {
+      background-color: #e9e9e9;
+      border: 1px solid #d4d4d4;
+    }
+    .crumb:last-child {
+      background-color: #d4d4d4;
+      border: 1px solid #d4d4d4;
+    }
+  </style>
+  <script src="../../bower_components/angular/angular.js"></script>
+  <script src="breadcrumbs.js"></script>
+  <script>
+    var app = angular.module('BreadcrumbsDemo', ['Components']);
+
+    app.controller('Path', function Path($scope) {
+      var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5', 'element6', 'element7'];
+
+      $scope.reset = function() {
+        $scope.path = fullPath;
+      };
+      $scope.reset();
+    });
+  </script>
+</head>
+<body ng-app="BreadcrumbsDemo" ng-controller="Path">
+  <div id="breadcrumb-container">
+    <comp-breadcrumbs path="path"></comp-breadcrumbs>
+  </div>
+  <div id="content">
+    <label>Current content:</label>
+    <label id="contentLabel">{{path.join("/")}}</label>
+  </div>
+  <button id="resetButton" ng-click="reset()">Reset</button>
+</body>
+</html>
