@@ -15,8 +15,8 @@ bubblesort xs = bubblesort' xs 0
 
 -- Quicksort
 quicksort :: (Ord a) => [a] -> [a]
-quicksort (x:xs) = quicksort [y | y <- xs, y <= x] ++ [x] ++ quicksort [y | y <- xs, y > x]
 quicksort [] = []
+quicksort (x:xs) = quicksort [y | y <- xs, y <= x] ++ [x] ++ quicksort [y | y <- xs, y > x]
 
 -- Mergesort
 mergesort'merge :: (Ord a) => [a] -> [a] -> [a]
