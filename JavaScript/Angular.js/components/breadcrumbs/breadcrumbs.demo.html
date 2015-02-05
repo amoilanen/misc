@@ -43,11 +43,15 @@
   <script>
     var app = angular.module('BreadcrumbsDemo', ['Components']);
 
-    app.controller('Path', function Path($scope) {
-      var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5', 'element6', 'element7'];
-
+    app.constant('fullPath',
+      ['element1', 'element2', 'element3',
+       'element4', 'element5', 'element6', 'element7'])
+    .controller('Path', function Path($scope, fullPath) {
       $scope.reset = function() {
         $scope.path = fullPath;
+      };
+      $scope.onPathChange = function(path) {
+        $scope.path = path;
       };
       $scope.reset();
     });
@@ -55,12 +59,9 @@
 </head>
 <body ng-app="BreadcrumbsDemo" ng-controller="Path">
   <div id="breadcrumb-container">
-    <comp-breadcrumbs path="path"></comp-breadcrumbs>
+    <comp-breadcrumbs path="path" on-change="onPathChange(path)"></comp-breadcrumbs>
   </div>
-  <div id="content">
-    <label>Current content:</label>
-    <label id="contentLabel">{{path.join("/")}}</label>
-  </div>
+  <div id="content">{{path[path.length - 1 ]}}</div>
   <button id="resetButton" ng-click="reset()">Reset</button>
 </body>
 </html>
