@@ -30,7 +30,7 @@
     window.addEventListener('load', function() {
       var containerElement = document.querySelector('#breadcrumb-container');
       var breadcrumbsElement = document.createElement('rc-breadcrumbs');
-      var contentLabel = document.querySelector('#contentLabel');
+      var content = document.querySelector('#content');
       var resetButton = document.querySelector('#resetButton');
 
       breadcrumbsElement.setAttribute('maxEntries', 5);
@@ -48,10 +48,7 @@
 </head>
 <body>
   <div id="breadcrumb-container"></div>
-  <div id="content">
-    <label>Current content:</label>
-    <label id="contentLabel"></label>
-  </div>
+  <div id="content"></div>
   <button id="resetButton">Reset</button>
 </body>
 </html>
