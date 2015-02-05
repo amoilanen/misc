@@ -1,0 +1,6 @@
+<div class="breadcrumbs">
+  <span class="crumb"
+    ng-click="pathSelected($index)" 
+    ng-repeat-start="pathPart in path">{{pathPart}}</span>
+  <span class="crumb-separator" ng-if="$index < path.length - 1" ng-repeat-end>&gt;</span>
+</div>

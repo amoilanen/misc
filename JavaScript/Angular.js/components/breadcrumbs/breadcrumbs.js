@@ -17,9 +17,6 @@ components.controller('breadcrumbsController', function ($scope) {
       onChange: '&onChange'
     },
     controller: 'breadcrumbsController',
-    template: '<div class="breadcrumbs">\n' +
-'<span class="crumb" ng-click="pathSelected($index)" ng-repeat-start="pathPart in path">{{pathPart}}</span>' +
-'<span class="crumb-separator" ng-if="$index < path.length - 1" ng-repeat-end>&gt;</span>' +
-'</div>'
+    templateUrl: 'breadcrumbs.tpl.html'
   };
 });
