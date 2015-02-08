@@ -42,7 +42,6 @@
 
     function renderPath(self, path) {
       var maxEntries = parseInt(self.getAttribute('maxEntries')) || -1;
-      var shouldShorten = (maxEntries > -1) && (path.length > maxEntries);
       var renderedDotsSeparator = false;
 
       while(self.container.firstChild) {
@@ -51,7 +50,7 @@
       path.forEach(function(pathPart, idx) {
 
         //Skip path entries in the middle
-        if ((idx >= maxEntries - 1) && (idx < path.length - 1)) {
+        if ((maxEntries >= 1) && (idx >= maxEntries - 1) && (idx < path.length - 1)) {
 
           //Render the dots separator once
           if (!renderedDotsSeparator) {
