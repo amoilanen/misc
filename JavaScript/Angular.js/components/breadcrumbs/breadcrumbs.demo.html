@@ -37,7 +37,7 @@
 </head>
 <body ng-app="BreadcrumbsDemo" ng-controller="Path">
   <div id="breadcrumb-container">
-    <comp-breadcrumbs path="path" on-change="onPathChange(path)"></comp-breadcrumbs>
+    <comp-breadcrumbs path="path" max-entries="5" on-change="onPathChange(path)"></comp-breadcrumbs>
   </div>
   <div id="content">{{path[path.length - 1 ]}}</div>
   <button id="resetButton" ng-click="reset()">Reset</button>

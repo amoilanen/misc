@@ -1,6 +1,7 @@
 <div class="breadcrumbs">
   <span class="crumb"
-    ng-click="pathSelected($index)" 
-    ng-repeat-start="pathPart in path">{{pathPart}}</span>
-  <span class="crumb-separator" ng-if="$index < path.length - 1" ng-repeat-end>&gt;</span>
+    ng-click="pathSelected(pathPart.clickable ? pathPart.index : -1)"
+    ng-attr-title="{{pathPart.tooltip ? pathPart.tooltip : ''}}"
+    ng-repeat-start="pathPart in pathToRender">{{pathPart.value}}</span>
+  <span class="crumb-separator" ng-if="$index < pathToRender.length - 1" ng-repeat-end>&gt;</span>
 </div>
