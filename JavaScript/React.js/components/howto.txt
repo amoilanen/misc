@@ -4,5 +4,7 @@ npm install
 bower install
 npm install -g react-tools
 npm install -g less
-jsx js compiled && jsx demos compiled
-lessc styles/select.less compiled/styles/select.css
+
+cd select
+clear && jsx . compiled
+clear && lessc select.less compiled/select.css

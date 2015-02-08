@@ -1,4 +1,4 @@
-define('components/select-option', function() {
+define('select-option', function() {
 
   var SelectOption = React.createClass({
     onSelect: function(event) {
@@ -27,7 +27,7 @@ define('components/select-option', function() {
   return SelectOption;
 });
 
-define('components/select-option-list', ['components/select-option'], function(SelectOption) {
+define('select-option-list', ['select-option'], function(SelectOption) {
 
   var SelectOptionList = React.createClass({
 
@@ -51,7 +51,7 @@ define('components/select-option-list', ['components/select-option'], function(S
   return SelectOptionList;
 });
 
-define('components/select', ['components/select-option-list', 'components/util'], function(SelectOptionList, Util) {
+define('select', ['select-option-list', 'util'], function(SelectOptionList, Util) {
 
   var Select = React.createClass({
     componentDidMount: function() {

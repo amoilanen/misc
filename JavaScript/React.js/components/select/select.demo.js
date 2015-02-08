@@ -39,7 +39,7 @@ function onSelect(callbackSelectedOption) {
   console.log("Select option, from the initial list = ", selectedOption);
 }
 
-require(['components/select'], function(Select) {
+require(['select'], function(Select) {
   React.render(
     <Select options={options} onSelect={onSelect}/>,
     document.getElementById('select-example')

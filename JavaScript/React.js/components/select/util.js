@@ -1,4 +1,4 @@
-define('components/util', function() {
+define('util', function() {
 
   var KEY_CODES = {
     ENTER: 13,
