@@ -1,7 +1,10 @@
 var Crumb = React.createClass({
+  activate: function() {
+    this.props.onSelected(this.props.idx);
+  },
   render: function() {
     return (
-      <span className="crumb">{this.props.value}</span>
+      <span className="crumb" onClick={this.activate}>{this.props.value}</span>
     )
   }
 });
@@ -15,27 +18,36 @@ var CrumbSeparator = React.createClass({
 });
 
 var Breadcrumbs = React.createClass({
+  onSelected: function(idx) {
+    if (idx < 0) {
+      return;
+    }
+    var newPath = this.props.path.slice(0, idx + 1);
+
+    if (newPath.join('/') != this.props.path.join('/')) {
+      this.props.onChange(newPath);
+    }
+  },
   render: function() {
     var self = this;
     var pathParts = this.props.path;
 
     var pathCrumbs = pathParts.map(function(pathPart, index) {
       return (
-        <Crumb idx={index} value={pathPart} key={index}/>
+        <Crumb idx={index} value={pathPart} key={index} onSelected={self.onSelected}/>
       );
     });
     var crumbSeparators = pathParts.map(function(pathPart, index) {
-      if (index < self.props.path.length - 1) {
+      if (index < pathParts.length - 1) {
         return (
           <CrumbSeparator/>
         )
       }
     });
-    var crumbs = _.zip(pathCrumbs, crumbSeparators);
 
     return (
       <div className="breadcrumbs">
-        {crumbs}
+        {_.zip(pathCrumbs, crumbSeparators)}
       </div>
     );
   }

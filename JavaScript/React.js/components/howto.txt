@@ -6,5 +6,6 @@ npm install -g react-tools
 npm install -g less
 
 cd select
+rm -rf compiled
 clear && jsx . compiled
 clear && lessc select.less compiled/select.css
