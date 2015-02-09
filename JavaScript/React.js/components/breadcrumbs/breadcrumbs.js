@@ -16,15 +16,22 @@ var CrumbSeparator = React.createClass({
 
 var Breadcrumbs = React.createClass({
   render: function() {
+    var self = this;
+    var pathParts = this.props.path;
 
-    var crumbs = this.props.path.map(function(pathPart, index) {
+    var pathCrumbs = pathParts.map(function(pathPart, index) {
       return (
-        <span>
-          <Crumb idx={index} value={pathPart} key={index}/>
-          <CrumbSeparator/>
-        </span>
+        <Crumb idx={index} value={pathPart} key={index}/>
       );
     });
+    var crumbSeparators = pathParts.map(function(pathPart, index) {
+      if (index < self.props.path.length - 1) {
+        return (
+          <CrumbSeparator/>
+        )
+      }
+    });
+    var crumbs = _.zip(pathCrumbs, crumbSeparators);
 
     return (
       <div className="breadcrumbs">
