@@ -18,7 +18,7 @@ components.controller('breadcrumbsController', function ($scope) {
 
           shortenedPath.push({
             value: '...',
-            clickable: false,
+            dots: true,
             tooltip: tooltipParts.join(' > ')
           });
           hasShortened = true;
@@ -27,7 +27,6 @@ components.controller('breadcrumbsController', function ($scope) {
       }
       shortenedPath.push({
         value: pathPart,
-        clickable: true,
         index: idx
       });
     });

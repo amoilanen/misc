@@ -20,7 +20,9 @@ var BreadcrumbsDemo = React.createClass({
   render: function() {
     return (
       <div>
-        <Breadcrumbs path={this.state.path} maxEntries="5" onChange={this.onPathChange}/>
+        <div id="breadcrumb-container">
+          <Breadcrumbs path={this.state.path} maxEntries="5" onChange={this.onPathChange}/>
+        </div>
         <div id="content">{this.getContent(this.state.path)}</div>
         <button id="resetButton" onClick={this.reset}>Reset</button>
       </div>
@@ -32,5 +34,5 @@ var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5', 'ele
 
 React.render(
   <BreadcrumbsDemo path={fullPath}/>,
-  document.querySelector('#breadcrumbs-container')
+  document.querySelector('#container')
 );
