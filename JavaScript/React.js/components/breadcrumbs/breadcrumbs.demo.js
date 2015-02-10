@@ -20,7 +20,7 @@ var BreadcrumbsDemo = React.createClass({
   render: function() {
     return (
       <div>
-        <Breadcrumbs path={this.state.path} onChange={this.onPathChange}/>
+        <Breadcrumbs path={this.state.path} maxEntries="5" onChange={this.onPathChange}/>
         <div id="content">{this.getContent(this.state.path)}</div>
         <button id="resetButton" onClick={this.reset}>Reset</button>
       </div>
