@@ -33,6 +33,10 @@ components.controller('breadcrumbsController', function ($scope) {
     return shortenedPath;
   }
 
+  $scope.activatePathPart = function(pathPart) {
+    $scope.pathSelected(!pathPart.dots ? pathPart.index : -1)
+  };
+
   $scope.pathSelected = function(idx) {
     if (idx < 0) {
       return;

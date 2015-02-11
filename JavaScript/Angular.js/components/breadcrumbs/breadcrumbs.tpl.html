@@ -1,6 +1,7 @@
 <div class="breadcrumbs">
-  <span ng-class="{'crumb': !pathPart.dots, 'crumb-separator': pathPart.dots}"
-    ng-click="pathSelected(!pathPart.dots ? pathPart.index : -1)"
+  <span tabindex="0" ng-class="{'crumb': !pathPart.dots, 'crumb-separator': pathPart.dots}"
+    ng-click="activatePathPart(pathPart)"
+    ng-keypress="($event.which === 13) && activatePathPart(pathPart)"
     ng-attr-title="{{pathPart.tooltip ? pathPart.tooltip : ''}}"
     ng-repeat-start="pathPart in pathToRender">{{pathPart.value}}</span><span class="crumb-separator" ng-if="$index < pathToRender.length - 1" ng-repeat-end>&gt;</span>
 </div>

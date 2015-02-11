@@ -7,7 +7,8 @@
   border: 1px solid transparent;
   border-radius: 4px;
 }
-.crumb:hover {
+.crumb:hover,
+.crumb:focus {
   background-color: #f2f2f2;
   border: 1px solid #d4d4d4;
 }
