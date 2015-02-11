@@ -2,9 +2,14 @@ var Crumb = React.createClass({
   activate: function() {
     this.props.onSelected(this.props.idx);
   },
+  onKeyPress: function(event) {
+    if (event.nativeEvent.which == 13) {
+      this.activate();
+    }
+  },
   render: function() {
     return (
-      <span className="crumb" onClick={this.activate}>{this.props.value}</span>
+      <span className="crumb" tabIndex="0" onKeyPress={this.onKeyPress} onClick={this.activate}>{this.props.value}</span>
     )
   }
 });
