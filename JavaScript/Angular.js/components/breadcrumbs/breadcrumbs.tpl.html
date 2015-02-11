@@ -1,5 +1,5 @@
 <div class="breadcrumbs">
-  <span tabindex="0" ng-class="{'crumb': !pathPart.dots, 'crumb-separator': pathPart.dots}"
+  <span tabindex="{{pathPart.dots ? '' : '0'}}" ng-class="{'crumb': !pathPart.dots, 'crumb-separator': pathPart.dots}"
     ng-click="activatePathPart(pathPart)"
     ng-keypress="($event.which === 13) && activatePathPart(pathPart)"
     ng-attr-title="{{pathPart.tooltip ? pathPart.tooltip : ''}}"

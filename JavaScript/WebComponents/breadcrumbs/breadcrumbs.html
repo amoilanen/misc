@@ -9,7 +9,8 @@
       border: 1px solid transparent;
       border-radius: 4px;
     }
-    .crumb:hover {
+    .crumb:hover,
+    .crumb:focus {
       background-color: #f2f2f2;
       border: 1px solid #d4d4d4;
     }
@@ -28,7 +29,7 @@
 <script>
   (function() {
 
-    function onClick(self, crumb) {
+    function activateCrumb(self, crumb) {
       var idx = parseInt(crumb.getAttribute('idx'));
       var newPath = self.path.slice(0, idx + 1);
 
@@ -86,6 +87,7 @@
       var crumb = document.createElement('span');
 
       crumb.setAttribute('class', 'crumb');
+      crumb.setAttribute('tabindex', '0');
       crumb.setAttribute('idx', idx);
       crumb.appendChild(document.createTextNode(pathPart));
       return crumb;
@@ -113,7 +115,12 @@
       this.container = element.querySelector('.breadcrumbs');
       this.container.addEventListener('click', function(event) {
         if (event.target.getAttribute('class') === 'crumb') {
-          onClick(self, event.target);
+          activateCrumb(self, event.target);
+        }
+      }, false);
+      this.container.addEventListener('keypress', function(event) {
+        if ((event.target.getAttribute('class') === 'crumb') && (event.which == 13)) {
+          activateCrumb(self, event.target);
         }
       }, false);
       this.createShadowRoot().appendChild(element);
