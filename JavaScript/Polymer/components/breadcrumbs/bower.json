@@ -1,0 +1,8 @@
+{
+  "name": "breadcrumbs",
+  "private": true,
+  "description": "Breadcrumbs",
+  "dependencies": {
+    "polymer": "Polymer/polymer#master"
+  }
+}

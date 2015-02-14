@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Breadcrumbs</title>
+  <script src="bower_components/webcomponentsjs/webcomponents.js"></script>
+  <link rel="import" href="breadcrumbs.html">
+  <style>
+    #breadcrumb-container {
+      margin-left: 16px;
+      margin-top: 16px;
+    }
+    #content {
+      margin: 32px;
+    }
+    #resetButton {
+      margin-left: 32px;
+    }
+  </style>
+  <script>
+    var fullPath = ['element1', 'element2', 'element3', 'element4', 'element5', 'element6', 'element7'];
+
+    function setPath(breadcrumbsElement, contentElement, path) {
+      breadcrumbsElement.setPath(path);
+      while (contentElement.firstChild) {
+        contentElement.removeChild(contentElement.firstChild);
+      }
+      contentElement.appendChild(document.createTextNode(path[path.length - 1]));
+    }
+
+    window.addEventListener('load', function() {
+      var containerElement = document.querySelector('#breadcrumb-container');
+      var breadcrumbsElement = document.createElement('rc-breadcrumbs');
+      var content = document.querySelector('#content');
+      var resetButton = document.querySelector('#resetButton');
+
+      breadcrumbsElement.setAttribute('maxEntries', 5);
+      containerElement.appendChild(breadcrumbsElement);
+
+      setPath(breadcrumbsElement, content, fullPath);
+      breadcrumbsElement.addEventListener('pathChange', function(event) {
+        setPath(this, content, event.detail);
+      }, false);
+      resetButton.addEventListener('click', function(event) {
+        setPath(breadcrumbsElement, content, fullPath);
+      });
+    });
+  </script>
+</head>
+<body unresolved>
+  <div id="breadcrumb-container"></div>
+  <div id="content"></div>
+  <button id="resetButton">Reset</button>
+</body>
+</html>
