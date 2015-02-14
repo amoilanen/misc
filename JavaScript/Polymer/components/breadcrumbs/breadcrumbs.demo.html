@@ -28,7 +28,7 @@
       contentElement.appendChild(document.createTextNode(path[path.length - 1]));
     }
 
-    window.addEventListener('load', function() {
+    window.addEventListener('polymer-ready', function() {
       var containerElement = document.querySelector('#breadcrumb-container');
       var breadcrumbsElement = document.createElement('rc-breadcrumbs');
       var content = document.querySelector('#content');

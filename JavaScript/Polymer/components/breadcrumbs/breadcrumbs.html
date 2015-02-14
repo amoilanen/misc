@@ -105,18 +105,14 @@
       return crumbSeparator;
     }
 
-    var template = document.currentScript.ownerDocument.querySelector('#breadcrumbs-template');
-    var prototype = Object.create(HTMLElement.prototype);
+    var prototype = {};
 
-    prototype.createdCallback = function() {
+    prototype.path = [];
+    prototype.domReady = function() {
       var self = this;
-      var element = document.importNode(template.content, true);
-
-      //Current path
-      this.path = [];
 
       //Crumbs container
-      this.container = element.querySelector('.breadcrumbs');
+      this.container = this.shadowRoot.querySelector('.breadcrumbs');
       this.container.addEventListener('click', function(event) {
         if (event.target.getAttribute('class') === 'crumb') {
           activateCrumb(self, event.target);
@@ -127,14 +123,16 @@
           activateCrumb(self, event.target);
         }
       }, false);
-      this.createShadowRoot().appendChild(element);
+      renderPath(this, this.path);
     };
     prototype.setPath = function(path) {
       this.path = path;
-      renderPath(this, path);
+      if (this.container) {
+        renderPath(this, path);
+      }
     };
 
-    Polymer(prototype);
+    Polymer('rc-breadcrumbs', prototype);
   })();
 </script>
 </polymer-element>
