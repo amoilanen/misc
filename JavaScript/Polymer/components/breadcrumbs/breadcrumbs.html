@@ -1,6 +1,6 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 
-<polymer-element name="rc-breadcrumbs" tabindex="0">
+<polymer-element name="rc-breadcrumbs">
 
 <template id="breadcrumbs-template">
   <style>
@@ -30,7 +30,7 @@
       display: none;
     }
   </style>
-  <div class="breadcrumbs">
+  <div class="breadcrumbs" on-keypress="{{_onKeypress}}">
     <template id="crumbs" repeat="{{ crumb, index in crumbs }}">
       <span class="crumb" idx="{{ index }}" on-click="{{_onActivateCrumb}}" tabIndex="0" >{{ crumb }}</span>
       <span class="crumb-separator">&gt;</span>
@@ -61,13 +61,16 @@
       this.crumbs = path;
     };
     prototype._onActivateCrumb = function(event) {
-      //TODO: Inline?
-      console.log("event = ", event);
       activateCrumb(this, event.target);
+    };
+    prototype._onKeypress = function(event) {
+      //'Enter' is pressed
+      if (event.keyCode == 13) {
+        activateCrumb(this, event.target);
+      }
     };
 
     //TODO: Dots in the middle
-    //TODO: Support keypress
 
     Polymer('rc-breadcrumbs', prototype);
   })();
