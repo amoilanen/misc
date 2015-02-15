@@ -31,8 +31,11 @@
     }
   </style>
   <div class="breadcrumbs" on-keypress="{{_onKeypress}}">
-    <template id="crumbs" repeat="{{ crumb, index in crumbs }}">
-      <span class="crumb" idx="{{ index }}" on-click="{{_onActivateCrumb}}" tabIndex="0" >{{ crumb }}</span>
+    <template id="crumbs" repeat="{{crumb, index in crumbs}}">
+      <span class="{{crumb.dots ? 'crumb-separator' : 'crumb'}}" 
+        idx="{{crumb.idx}}" title="{{crumb.tooltip}}" 
+        on-click="{{_onActivateCrumb}}" 
+        tabIndex="0" >{{crumb.value}}</span>
       <span class="crumb-separator">&gt;</span>
     </template>
   </div>
@@ -42,6 +45,9 @@
 
     function activateCrumb(self, crumb) {
       var idx = parseInt(crumb.getAttribute('idx'));
+      if (isNaN(idx)) {
+        return;
+      }
       var newPath = self.path.slice(0, idx + 1);
 
       if (newPath.join('/') != self.path.join('/')) {
@@ -52,13 +58,45 @@
       }
     }
 
+    function renderPath(self, path) {
+      var maxEntries = parseInt(self.getAttribute("maxEntries")) || -1;
+      var hasShortened = false;
+      var crumbs = [];
+
+      path.forEach(function(pathPart, idx) {
+
+        //Skip path entries in the middle
+        if ((maxEntries >= 1) && (idx >= maxEntries - 1) && (idx < path.length - 1)) {
+
+          //Render the dots separator once
+          if (!hasShortened) {
+            var tooltipParts = path.slice(maxEntries - 1);
+
+            tooltipParts.pop();
+            crumbs.push({
+              value: "...",
+              tooltip: tooltipParts.join(' > '),
+              dots: true
+            });
+            hasShortened = true;
+          }
+          return;
+        }
+        crumbs.push({
+          idx: idx,
+          value: pathPart
+        });
+      });
+      return crumbs;
+    }
+
     var prototype = {};
 
     prototype.path = [];
     prototype.crumbs = [];
     prototype.setPath = function(path) {
       this.path = path;
-      this.crumbs = path;
+      this.crumbs = renderPath(this, path);
     };
     prototype._onActivateCrumb = function(event) {
       activateCrumb(this, event.target);
@@ -69,8 +107,6 @@
         activateCrumb(this, event.target);
       }
     };
-
-    //TODO: Dots in the middle
 
     Polymer('rc-breadcrumbs', prototype);
   })();
