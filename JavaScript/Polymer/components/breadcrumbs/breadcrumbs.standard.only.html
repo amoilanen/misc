@@ -1,0 +1,138 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<polymer-element name="rc-breadcrumbs" tabindex="0">
+
+<template id="breadcrumbs-template">
+  <style>
+    .crumb,
+    .crumb-separator {
+      padding: 4px;
+      cursor: default;
+    }
+    .crumb {
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .crumb:hover,
+    .crumb:focus {
+      background-color: #f2f2f2;
+      border: 1px solid #d4d4d4;
+    }
+    .crumb:active {
+      background-color: #e9e9e9;
+      border: 1px solid #d4d4d4;
+    }
+    .crumb:last-child {
+      background-color: #d4d4d4;
+      border: 1px solid #d4d4d4;
+    }
+  </style>
+  <div class="breadcrumbs">
+  </div>
+</template>
+<script>
+  (function() {
+
+    function activateCrumb(self, crumb) {
+      var idx = parseInt(crumb.getAttribute('idx'));
+      var newPath = self.path.slice(0, idx + 1);
+
+      if (newPath.join('/') != self.path.join('/')) {
+        var event = new CustomEvent('pathChange', {
+          'detail': newPath
+        });
+        self.dispatchEvent(event);
+      }
+    }
+
+    function renderPath(self, path) {
+      var maxEntries = parseInt(self.getAttribute('maxEntries')) || -1;
+      var renderedDotsSeparator = false;
+
+      while(self.container.firstChild) {
+        self.container.removeChild(self.container.firstChild);
+      }
+      path.forEach(function(pathPart, idx) {
+
+        //Skip path entries in the middle
+        if ((maxEntries >= 1) && (idx >= maxEntries - 1) && (idx < path.length - 1)) {
+
+          //Render the dots separator once
+          if (!renderedDotsSeparator) {
+            self.container.appendChild(createDotsSeparator(path, maxEntries));
+            self.container.appendChild(createCrumbSeparator());
+            renderedDotsSeparator = true;
+          }
+          return;
+        }
+
+        self.container.appendChild(createCrumb(pathPart, idx));
+        if (idx != path.length - 1) {
+          self.container.appendChild(createCrumbSeparator());
+        }
+      });
+    }
+
+    function createDotsSeparator(path, maxEntries) {
+      var crumbSeparator = document.createElement('span');
+      var tooltipParts = path.slice(maxEntries - 1);
+
+      tooltipParts.pop();
+
+      var tooltip = tooltipParts.join(' > ');
+
+      crumbSeparator.appendChild(document.createTextNode('...'));
+      crumbSeparator.setAttribute('class', 'crumb-separator');
+      crumbSeparator.setAttribute('title', tooltip);
+      return crumbSeparator;
+    }
+
+    function createCrumb(pathPart, idx) {
+      var crumb = document.createElement('span');
+
+      crumb.setAttribute('class', 'crumb');
+      crumb.setAttribute('tabindex', '0');
+      crumb.setAttribute('idx', idx);
+      crumb.appendChild(document.createTextNode(pathPart));
+      return crumb;
+    }
+
+    function createCrumbSeparator() {
+      var crumbSeparator = document.createElement('span');
+
+      crumbSeparator.appendChild(document.createTextNode('>'));
+      crumbSeparator.setAttribute('class', 'crumb-separator');
+      return crumbSeparator;
+    }
+
+    var prototype = {};
+
+    prototype.path = [];
+    prototype.domReady = function() {
+      var self = this;
+
+      //Crumbs container
+      this.container = this.shadowRoot.querySelector('.breadcrumbs');
+      this.container.addEventListener('click', function(event) {
+        if (event.target.getAttribute('class') === 'crumb') {
+          activateCrumb(self, event.target);
+        }
+      }, false);
+      this.container.addEventListener('keypress', function(event) {
+        if ((event.target.getAttribute('class') === 'crumb') && (event.which == 13)) {
+          activateCrumb(self, event.target);
+        }
+      }, false);
+      renderPath(this, this.path);
+    };
+    prototype.setPath = function(path) {
+      this.path = path;
+      if (this.container) {
+        renderPath(this, path);
+      }
+    };
+
+    Polymer('rc-breadcrumbs', prototype);
+  })();
+</script>
+</polymer-element>
