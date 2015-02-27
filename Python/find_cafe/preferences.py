@@ -11,5 +11,17 @@ FOOD_PREFERENCES = {
     'broiler': 5,
     'fish': 4,
     'salmon': 4,
-    'tuna': 4
+    'tuna': 4,
+    'hernekeitto': 11,
+    'lihapull': 8,
+    'liha': 6,
+    'porsaan': 6,
+    'naudan': 6,
+    'ristä': 6,
+    'hampuri': 6,
+    'kana': 5,
+    'broileri': 5,
+    'kala': 4,
+    'lohi': 4,
+    'tonnikala': 4
 }

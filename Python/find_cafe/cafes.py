@@ -1,4 +1,4 @@
-from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
+from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK, FACTORY_SALMISAARI, PIHKA
 
 CAFES = {
     NEPALESE: {
@@ -19,5 +19,13 @@ CAFES = {
     DYLAN_MILK: {
         'menu': '',
         'distance': 4
+    },
+    FACTORY_SALMISAARI: {
+      'menu': '',
+      'distance': 4
+    },
+    PIHKA: {
+      'menu': '',
+      'distance': 5
     }
 }

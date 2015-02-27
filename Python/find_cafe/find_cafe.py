@@ -4,7 +4,7 @@
 
 from chief_lunch_officer import ChiefLunchOfficer, WeatherOpinion, FoodTaste
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
-from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
+from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK, FACTORY_SALMISAARI, PIHKA
 from preferences import FOOD_PREFERENCES
 from cafes import CAFES
 
@@ -17,11 +17,15 @@ import re
 
 HIMA_SALI_URL = 'http://www.himasali.com/p/lounaslista.html'
 DYLAN_MILK_URL = 'https://www.facebook.com/DylanMilk?fref=ts&filter=1'
+PIHKA_URL = 'http://ruoholahti.pihka.fi/en/'
+FACTORY_SALMISAARI_URL = 'http://www.ravintolafactory.com/ravintolat/helsinki-salmisaari/'
 YLE_WEATHER_FORECAST_URL = 'http://yle.fi/saa/resources/ajax/saa-api/hourly-forecast.action?id=642554'
 
-def make_readable(content_with_html_tags):
-    content_with_html_tags = re.sub('<br.*?>', '\n', content_with_html_tags)
+def make_readable(content_with_html_tags, insert_new_lines=True):
+    content_with_html_tags = re.sub('<br.*?>', '\n' if insert_new_lines else '', content_with_html_tags)
     content_with_html_tags = re.sub('<.*?>', '', content_with_html_tags)
+    content_with_html_tags = re.sub('[ \t]+', ' ', content_with_html_tags)
+    content_with_html_tags = re.sub('\n+', '\n', content_with_html_tags)
     return content_with_html_tags.replace('&amp;', '&').replace('&nbsp;', '')
 
 def get(url):
@@ -48,6 +52,16 @@ def get_hima_sali_menu(date):
 
 def get_dylan_milk_menu(date):
     return find_menu(DYLAN_MILK_URL, date, r'BUFFET:<br />(.*?)<span class="text_exposed_link"')
+
+def get_pihka_menu(date):
+    weekday = date.weekday()
+    found = get_and_find_all(PIHKA_URL, r'<div class="menu\-day.*?<ul>(.*?)</div>')
+    return found[weekday]
+
+def get_factory_salmisaari_menu(date):
+    date_label = '%d\\.%d\\.%d' % (date.day, date.month, date.year)
+    found = get_and_find_all(FACTORY_SALMISAARI_URL, r'%s</h3>(.*?)</p>' % (date_label))
+    return found[0]
 
 def get_todays_weather():
     weather_response = get(YLE_WEATHER_FORECAST_URL)
@@ -98,13 +112,17 @@ def update_history(history, today, todays_cafe):
     store_history(history)
 
 today = date.today()
-today = today + timedelta(days=1)
+#today = today + timedelta(days=2)
 print('Today %s\n' % today.strftime('%d.%m.%Y'))
 
 hima_sali_menu = get_hima_sali_menu(today)
-print('\nHima & Sali:\n\n%s' % make_readable(hima_sali_menu))
+print('\nHima & Sali:\n\n%s' % make_readable(hima_sali_menu, insert_new_lines=False))
 dylan_milk_menu = get_dylan_milk_menu(today)
 print('\nDylan Milk:\n\n%s' % make_readable(dylan_milk_menu))
+pihka_menu = get_pihka_menu(today)
+print('\nPihka:\n\n%s' % make_readable(pihka_menu, insert_new_lines=False))
+factory_salmisaari_menu = get_factory_salmisaari_menu(today)
+print('\nFactory Salmisaari menu:\n\n%s' % make_readable(factory_salmisaari_menu, insert_new_lines=False))
 
 weather = get_todays_weather()
 print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation amount %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
@@ -116,6 +134,8 @@ print('\nLunch history for current week:\n\n %s' % ', '.join(current_week_cafes)
 cafes = deepcopy(CAFES)
 cafes[HIMA_SALI]['menu'] = hima_sali_menu
 cafes[DYLAN_MILK]['menu'] = dylan_milk_menu
+cafes[PIHKA]['menu'] = pihka_menu
+cafes[FACTORY_SALMISAARI]['menu'] = factory_salmisaari_menu
 
 food_taste = FoodTaste().preferences(FOOD_PREFERENCES)
 weather_opinion = WeatherOpinion().weather(weather)
