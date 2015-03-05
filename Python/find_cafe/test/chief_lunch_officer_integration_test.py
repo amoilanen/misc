@@ -1,7 +1,7 @@
 import unittest
 
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
-from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK
+from constants import NEPALESE, HIMA_SALI, DYLAN_MILK
 from chief_lunch_officer import ChiefLunchOfficer, WeatherOpinion, FoodTaste
 from preferences import FOOD_PREFERENCES
 from cafes import CAFES
@@ -63,10 +63,6 @@ class ChiefLunchOfficerIntegrationTest(unittest.TestCase):
     def test_if_already_visited_nepalese_this_week_then_some_another_cafe(self):
         self.clo.lunched([NEPALESE])
         self.assertTrue(NEPALESE not in self.clo.decide())
-
-    def test_if_already_visited_chinese_this_week_then_some_another_cafe(self):
-        self.clo.lunched([CHINESE])
-        self.assertTrue(CHINESE not in self.clo.decide())
 
     def test_if_wed_and_nothing_interesting_on_others_menu_then_nepalese_if_not_visited_it(self):
         self.cafes[HIMA_SALI]['menu'] = 'fish'
