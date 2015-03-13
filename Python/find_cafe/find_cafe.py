@@ -1,10 +1,12 @@
 # Automatically fetches menus for today, grades predefined cafes and based on
 # additional information (weather, cafe of choice yesterday) gives recommendations
 # where to go for lunch.
+# If there are problems with encoding set Python encoding correctly by executing:
+# set PYTHONIOENCODING=utf-8
 
 from chief_lunch_officer import ChiefLunchOfficer, WeatherOpinion, FoodTaste
 from constants import TEMPERATURE, PRECIPITATION_CHANCE, PRECIPITATION_AMOUNT, WIND
-from constants import NEPALESE, CHINESE, HIMA_SALI, DYLAN_MILK, FACTORY_SALMISAARI, PIHKA
+from constants import NEPALESE, HIMA_SALI, DYLAN_MILK, FACTORY_SALMISAARI, PIHKA
 from preferences import FOOD_PREFERENCES
 from cafes import CAFES
 
@@ -16,7 +18,7 @@ import json
 import re
 
 HIMA_SALI_URL = 'http://www.himasali.com/p/lounaslista.html'
-DYLAN_MILK_URL = 'https://www.facebook.com/DylanMilk?fref=ts&filter=1'
+DYLAN_MILK_URL = 'http://dylan.fi/milk/'
 PIHKA_URL = 'http://ruoholahti.pihka.fi/en/'
 FACTORY_SALMISAARI_URL = 'http://www.ravintolafactory.com/ravintolat/helsinki-salmisaari/'
 YLE_WEATHER_FORECAST_URL = 'http://yle.fi/saa/resources/ajax/saa-api/hourly-forecast.action?id=642554'
@@ -51,7 +53,7 @@ def get_hima_sali_menu(date):
     return find_menu(HIMA_SALI_URL, date, r'%s(.*?Wok.*?[\d\.]+)' % (date_label), -1)
 
 def get_dylan_milk_menu(date):
-    return find_menu(DYLAN_MILK_URL, date, r'BUFFET:<br />(.*?)<span class="text_exposed_link"')
+    return find_menu(DYLAN_MILK_URL, date, r'<div class="fbf_desc">(.*?)</div>')
 
 def get_pihka_menu(date):
     weekday = date.weekday()

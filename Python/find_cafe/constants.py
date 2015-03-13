@@ -6,7 +6,6 @@ WIND = 'wind_meters_second'
 
 #Cafe names
 NEPALESE = 'Yeti Nepal'
-CHINESE = 'Tiger Mama'
 HIMA_SALI = 'Hima & Sali'
 DYLAN_MILK = 'Dylan Milk'
 FACTORY_SALMISAARI = 'Factory Salmisaari'
