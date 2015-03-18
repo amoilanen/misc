@@ -28,7 +28,8 @@ def make_readable(content_with_html_tags, insert_new_lines=True):
     content_with_html_tags = re.sub('<.*?>', '', content_with_html_tags)
     content_with_html_tags = re.sub('[ \t]+', ' ', content_with_html_tags)
     content_with_html_tags = re.sub('\n+', '\n', content_with_html_tags)
-    return content_with_html_tags.replace('&amp;', '&').replace('&nbsp;', '')
+    content_with_html_tags = content_with_html_tags.replace('&amp;', '&').replace('&nbsp;', '')
+    return content_with_html_tags.encode('ascii', 'ignore').decode('ascii')
 
 def get(url):
     response = urllib.request.urlopen(url)
@@ -124,7 +125,7 @@ print('\nDylan Milk:\n\n%s' % make_readable(dylan_milk_menu))
 pihka_menu = get_pihka_menu(today)
 print('\nPihka:\n\n%s' % make_readable(pihka_menu, insert_new_lines=False))
 factory_salmisaari_menu = get_factory_salmisaari_menu(today)
-print('\nFactory Salmisaari menu:\n\n%s' % make_readable(factory_salmisaari_menu, insert_new_lines=False))
+print('\nFactory Salmisaari:\n\n%s' % make_readable(factory_salmisaari_menu, insert_new_lines=False))
 
 weather = get_todays_weather()
 print('\nWeather:\n\n temperature %s C\n chance of precipitation %s percent\n precipitation amount %s mm\n wind %s m/s' % (weather[TEMPERATURE], weather[PRECIPITATION_CHANCE], weather[PRECIPITATION_AMOUNT], weather[WIND]))
