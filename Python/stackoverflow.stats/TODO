@@ -1,0 +1,20 @@
+Analyze job openings from stackoverflow.com/careers:
+
+Visualization:
+
+- Top 5 skills required
+- Top 5 cities for each of top 5 skills
+- Top 10 cities in the world
+- Top 10 cities in Europe
+- Top 10 cities in America
+- All the openings planted on a world map
+- All top 5 skills planted on a world map, plus Java, JavaScript, C#, Python
+
+- What average number of skills per position is required
+  -- for a Java developer
+  -- for a JavaScript developer
+  -- for certain geographical area. Is there any correlation with the geography at all?
+
+Mining:
+
+- What skills are frequently required together? i.e. if you known JavaScript you should learn also HTML
