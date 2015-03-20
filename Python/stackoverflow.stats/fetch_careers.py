@@ -12,8 +12,14 @@ jobs_listing_url = base_url + '/jobs?pg=%d'
 def get(url):
     return str(urllib.request.urlopen(url).read())
 
+def regex_literal(s):
+    return re.sub('\+', '\+', s)
+
+def normalize(s):
+    return re.sub('[\-\.]', '', s.lower())
+
 def normalize_skills(skills):
-    return set([re.sub('[\- ]', '.', skill.lower()) for skill in skills])
+    return set([normalize(skill) for skill in skills])
 
 def process_search_results(url, current_page):
     query_url = url % (current_page)
@@ -30,16 +36,17 @@ def normalize_umlauts(s):
 def read_location(page):
     location = re.findall('class="location">(.*?)<', page)[0]
     location = re.sub('[ \t]', '', location)
-    return re.findall('([A-Z&#;\d][&#;\d\w\-]+)(?:,([A-Z&#;\d][&#;\d\w\-]+))?', location)[0]
+    return re.findall('([A-Z&#;\d][&#;\d\w\-\.]+)(?:,([A-Z&#;\d][&#;\d\w\-\.]+))?', location)[0]
 
 def read_opening(url, idx, known_skills):
     page = get(url)
     title = re.findall('class="title job-link".*?>(.*?)</a>', page)[0]
     location = read_location(page)
-    description = re.findall('<div id="jobdetail-nav">(.*?)<div id="footer">', page)[0]
+    description = normalize(re.findall('<div id="jobdetail-nav">(.*?)(?:(?:<div class="apply clear">)|(?:Joel Test score))', page)[0])
     skills = []
     for idx, skill in enumerate(known_skills):
-        if description.find(skill) >= 0:
+        skill_regex = '[ \(\:\;,\.>]' + regex_literal(skill) + '[ \)\:\;,\.<]'
+        if len(re.findall(skill_regex, description)) > 0:
             skills.append(idx)
     return [title, location, skills]
 

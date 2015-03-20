@@ -31,6 +31,10 @@ class Database:
         self._cursor.executemany('INSERT INTO opening_skill VALUES (?,?)', [[opening_id, skill_id] for skill_id in skill_ids])
         self._connection.commit()
 
+    def execute(self, statement):
+        self._cursor.execute(statement)
+        self._connection.commit()
+
     def close(self):
         self._connection.close()
         return self
