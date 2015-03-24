@@ -4,6 +4,11 @@ Analyze job openings from stackoverflow.com/careers:
 
 Visualization:
 
+- Top countries by number of job openings
+- Top cities by number of job openings
+- Top programming languages
+
+- Top countries by number of job openings with openings for different top skills highlighted
 - Top 5 skills required
 - Top 5 cities for each of top 5 skills
 - Top 10 cities in the world
