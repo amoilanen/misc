@@ -7,7 +7,7 @@ class CountryAliasesTransforms:
 
     def get_transforms(self):
         transforms = []
-        country_aliases = [
+        aliases = [
             ['Deutschland', 'Germany'],
             ['Duitsland', 'Germany'],
             ['Saksa', 'Germany'],
@@ -32,10 +32,10 @@ class CountryAliasesTransforms:
             ['TheNetherlands', 'Netherlands'],
             ['&#205;rorsz&#225;g', 'Ireland']
         ]
-        for country_alias in country_aliases:
+        for alias in aliases:
             transforms.append(UpdateDataTransform(self._db, '''
                 update opening
                 set country = '%s'
                 where country = '%s';
-            ''' % (country_alias[1], country_alias[0])))
+            ''' % (alias[1], alias[0])))
         return transforms

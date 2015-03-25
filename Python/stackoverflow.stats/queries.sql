@@ -68,3 +68,14 @@ join (select
 on opening_skill.skill_id == T.id
 group by T.language
 order by language_count desc;
+
+#Merging skill aliases with skills. html skills
+select
+  count(1) as skill_count,
+  skill.name
+from opening_skill
+join skill
+on opening_skill.skill_id == skill.id
+where skill.name like '%html%'
+group by skill.name
+order by skill_count desc;
