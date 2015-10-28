@@ -1,18 +1,19 @@
-* To run: refc palindrom.ref && refgo palindrom
-
 * Tests a few words if they are palindroms. Prints: True False True
 $ENTRY Go { = <Prout <Pal a b b a> <Pal a b c> <Pal a>>}
 
 * Determines if a word is a palindrom
-Pal { = True;
-     s.1 = True;
-     s.1 e.2 s.1 = <Pal e.2>;
-     e.1 = False;
+Pal {
+  = True;
+  s.1 = True;
+  s.1 e.2 s.1 = <Pal e.2>;
+  e.1 = False;
 }
 
+* To run: refc palindrom.ref && refgo palindrom
 * Debugging is possible by inserting <Prout> calls
-*Pal { = True<Prout "step1=" True>;
-*     s.1 = True<Prout "step2=" s.1>;
-*     s.1 e.2 s.1 = <Pal e.2><Prout "step3=" s.1 e.2 s.1>;
-*     e.1 = False<Prout "step4=" e.1>;
+*Pal {
+*  = True<Prout "step1=" True>;
+*  s.1 = True<Prout "step2=" s.1>;
+*  s.1 e.2 s.1 = <Pal e.2><Prout "step3=" s.1 e.2 s.1>;
+*  e.1 = False<Prout "step4=" e.1>;
 *}
