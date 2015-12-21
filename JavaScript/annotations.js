@@ -9,13 +9,15 @@
   }
 
   function parseAnnotation(name, body) {
-    return body.split(',').reduce(function(acc, keyValue) {
+    var annotation = {
+      name: name
+    };
+
+    return body ? body.split(',').reduce(function(acc, keyValue) {
       keyValue = keyValue.split('=');
       acc[keyValue[0]] = keyValue[1];
       return acc;
-    }, {
-      name: name
-    });
+    }, annotation) : annotation;
   }
 
   function parseAnnotations(code) {
@@ -54,5 +56,7 @@ function funcWithoutAnnotations(x, y) {
   return x - y;
 }
 
+//[{"name":"Annotation1","key1":"value1","key2":"value2","key3":"value3"},{"name":"Annotation2","key4":"value4"},{"name":"Annotation3"}]
 console.log('funcWithAnnotations = ', funcWithAnnotations._annotations);
+//[]
 console.log('funcWithoutAnnotations = ', funcWithoutAnnotations._annotations);
