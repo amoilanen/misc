@@ -30,7 +30,6 @@ Rx.Observable.merge = function() {
 
     return function() {
       unsubscribe();
-      observer.onCompleted();
     };
   });
 };
