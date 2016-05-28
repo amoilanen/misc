@@ -1,0 +1,18 @@
+- PhantomJS 1.9.8 http://phantomjs.org/
+- CasperJS http://casperjs.org/
+- Selenium https://github.com/SeleniumHQ/selenium/wiki/WebDriverJs :)
+- DalekJS http://dalekjs.com/
+
+
+Evaluation plan:
+
+- Browser support, how many browsers can be tested?
+- Availability of high level API/rich API to code scenarios
+
+
+PhantomJS:
+
+quite low level API, is supposed to be used by other tools rather than directly, no visibility at what stage the browser is
+constant switching between the context of the browser and the current page, not clear in which context the current code is being executed
+
+Overall: better not to use directly, unless a script is very simple, otherwise consider using other tools
