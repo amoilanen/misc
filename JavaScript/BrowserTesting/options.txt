@@ -1,7 +1,10 @@
 - PhantomJS 1.9.8 http://phantomjs.org/
+- Selenium https://github.com/SeleniumHQ/selenium/wiki/WebDriverJs
 - CasperJS http://casperjs.org/
-- Selenium https://github.com/SeleniumHQ/selenium/wiki/WebDriverJs :)
 - DalekJS http://dalekjs.com/
+- Zombie.js http://zombie.js.org/
+
+- *UserTrace https://usetrace.com/
 
 
 Evaluation plan:

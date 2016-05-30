@@ -1,55 +1,31 @@
 'use strict';
 
-var page = require('webpage').create();
+phantom.injectJs('bower_components/es6-promise/promise.min.js');
+phantom.injectJs('bower_components/bind-polyfill/index.js');
+phantom.injectJs('phantom/page.js');
+phantom.injectJs('amazon/home.js');
+phantom.injectJs('amazon/search.js');
 
 var bookTitle = 'Let over Lambda';
 
-page.onConsoleMessage = function(msg) {
-  console.log(msg);
-};
-
 //TODO: Case when the book does not exist should also be handled
 
-    function isBookFound() {
-      return page.evaluate(function() {
-        var results = document.querySelectorAll('.s-result-item');
-
-        return results.length > 0;
-      });
-    }
+var homePage = new HomePage(page);
 
 console.log('Searching Amazon.com for "' + bookTitle + '"');
-page.open('http://www.amazon.com/', function(status) {
-  if (status === 'success') {
-    page.evaluate(function(bookTitle) {
-      var searchBox = document.querySelector('#twotabsearchtextbox');
+homePage.open().then(function(status) {
+  var searchPage = homePage.searchFor(bookTitle);
 
-      searchBox.value = bookTitle;
+  return searchPage.waitForResults().then(function() {
+    var foundBook = searchPage.getFirstResult();
 
-      var searchButton = document.querySelector('input[value=Go]');
-
-      searchButton.click();
-    }, bookTitle);
-
-    setTimeout(function checkForResults() {
-      if (isBookFound()) {
-        page.evaluate(function() {
-          var bookElement = document.querySelector('.s-result-item');
-
-          var title = bookElement.querySelector('.s-access-title').innerHTML;
-          var price = bookElement.querySelector('.a-color-price').innerHTML;
-          var rating = bookElement.querySelector('.a-icon-star .a-icon-alt').innerHTML;
-
-          console.log('Title = ', title);
-          console.log('Price = ', price);
-          console.log('Rating = ', rating);
-        });
-        phantom.exit(0);
-      } else {
-        setTimeout(checkForResults, 100);
-      }
-    }, 100);
-  } else {
-    phantom.exit(1);
-  }
+    console.log('Title = ', foundBook.title);
+    console.log('Price = ', foundBook.price);
+    console.log('Rating = ', foundBook.rating);
+  });
+})
+.then(function() {
+  phantom.exit(0);
+}).catch(function(err) {
+  phantom.exit(1);
 });

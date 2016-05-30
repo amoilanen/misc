@@ -1,0 +1,22 @@
+{
+  "name": "PhantomJS test automation expirements",
+  "version": "0.0.1",
+  "homepage": "https://github.com/antivanov/misc",
+  "authors": [
+    "anton <anton.al.ivanov@gmail.com>"
+  ],
+  "description": "Simple browser testing experiment",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "es6-promise": "~1.0.0",
+    "bind-polyfill": "^1.0.0"
+  }
+}
