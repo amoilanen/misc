@@ -16,7 +16,7 @@ Evaluation plan:
 *PhantomJS*
 
 quite low level API, is supposed to be used by other tools rather than directly, no visibility at what stage the browser is
-constant switching between the context of the browser and the current page, not clear in which context the current code is being executed
+constant switching between the context of the browser and the current page, not clear in which context the current code is being executed, passing arguments to browser context is awkward
 
 Overall: better not to use directly, unless a script is very simple, otherwise consider using other tools
 

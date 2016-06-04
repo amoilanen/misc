@@ -1,20 +1,20 @@
 'use strict';
 
 var page = require('webpage').create();
+var args = require('system').args;
 
-var bookTitle = 'Let over Lambda';
+var bookTitle = args[1];
 
 page.onConsoleMessage = function(msg) {
   console.log(msg);
 };
 
-//TODO: Case when the book does not exist should also be handled
-
-function isBookFound() {
+function isSearchFinished() {
   return page.evaluate(function() {
+    var noResultsTitle = document.querySelector('#noResultsTitle');
     var results = document.querySelectorAll('.s-result-item');
 
-    return results.length > 0;
+    return !!noResultsTitle || (results.length > 0);
   });
 }
 
@@ -32,8 +32,15 @@ page.open('http://www.amazon.com/', function(status) {
     }, bookTitle);
 
     setTimeout(function checkForResults() {
-      if (isBookFound()) {
-        page.evaluate(function() {
+      if (isSearchFinished()) {
+        page.evaluate(function(bookTitle) {
+          var noResultsTitle = document.querySelector('#noResultsTitle');
+
+          if (noResultsTitle) {
+            console.log('No results found for "' + bookTitle + '\"');
+            return;
+          }
+
           var bookElement = document.querySelector('.s-result-item');
 
           var title = bookElement.querySelector('.s-access-title').innerHTML;
@@ -43,7 +50,7 @@ page.open('http://www.amazon.com/', function(status) {
           console.log('Title = ', title);
           console.log('Price = ', price);
           console.log('Rating = ', rating);
-        });
+        }, bookTitle);
         phantom.exit(0);
       } else {
         setTimeout(checkForResults, 100);
