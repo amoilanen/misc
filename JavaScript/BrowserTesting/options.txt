@@ -13,9 +13,41 @@ Evaluation plan:
 - Availability of high level API/rich API to code scenarios
 
 
-PhantomJS:
+*PhantomJS*
 
 quite low level API, is supposed to be used by other tools rather than directly, no visibility at what stage the browser is
 constant switching between the context of the browser and the current page, not clear in which context the current code is being executed
 
 Overall: better not to use directly, unless a script is very simple, otherwise consider using other tools
+
+*Selenium*
+
+Selenium 1, homebrewed test automation toolkit developed at Thoughtworks, now replaced by WebDriver
+
+https://github.com/SeleniumHQ/selenium umbrella project encapsulating a variety of tools and libraries enabling web browser automation using WebDriver spec
+
+https://w3c.github.io/webdriver/webdriver-spec.html remote control interface that enables introspection and control of user agents
+
+C#, Java, Python, Ruby, JavaScript
+
+Common interface for all (major) browser technologies: Chromium, Firefox, Internet Explorer, Opera, Safari, PhantomJSDriver, HtmlUnitDriver
+
+Possible to execute raw JavaScript => extensible
+
+Standards based
+
+Multiple browsers/platforms supported
+
+Remote test execution is possible, can be used to setup testing in different browsers, SeleniumGrid
+
+Several languages of choice available
+
+Mature project
+
+Rich API, for example, includes screenshot support driver.takeScreenshot()
+
+JavaScript version uses Node.js, NPM modules are available (test libraries, utilities, etc.)
+
+Supports creating custom testing DSL for a specific app
+
+Uses real browser, then not suitable for performance testing well. Is not headless, but can be a plus for debugging scripts
