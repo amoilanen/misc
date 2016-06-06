@@ -51,3 +51,9 @@ JavaScript version uses Node.js, NPM modules are available (test libraries, util
 Supports creating custom testing DSL for a specific app
 
 Uses real browser, then not suitable for performance testing well. Is not headless, but can be a plus for debugging scripts
+
+*Casper.JS*
+
+Does not run out of the box in Windows, difficulties with installation and configuration
+
+'Fatal: [Errno 2] No such file or directory; did you install phantomjs?'

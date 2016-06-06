@@ -1,0 +1,15 @@
+{
+  "name": "casperjs.study",
+  "version": "0.0.0",
+  "description": "Experiment in studying Casper.JS",
+  "main": "fetch.price.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "casperjs": "^1.1.1"
+  }
+}
