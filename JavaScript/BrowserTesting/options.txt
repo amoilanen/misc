@@ -52,6 +52,8 @@ Supports creating custom testing DSL for a specific app
 
 Uses real browser, then not suitable for performance testing well. Is not headless, but can be a plus for debugging scripts
 
+Easier debugging as the browser executing the script is open, no need to capture screenshots to figure out what is happening
+
 *Casper.JS*
 
 Does not run out of the box in Windows, difficulties with installation and configuration, then spawns a separate process, is Python required in Windows?

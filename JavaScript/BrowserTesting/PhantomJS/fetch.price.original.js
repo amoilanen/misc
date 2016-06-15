@@ -1,3 +1,7 @@
+/*
+ * phantomjs fetch.price.original.js "\"Let over Lambda\""
+ */
+
 'use strict';
 
 var page = require('webpage').create();
@@ -9,6 +13,16 @@ page.onConsoleMessage = function(msg) {
   console.log(msg);
 };
 
+function searchByTerm(term) {
+  var searchBox = document.querySelector('#twotabsearchtextbox');
+
+  searchBox.value = term;
+
+  var searchButton = document.querySelector('input[value=Go]');
+
+  searchButton.click();
+}
+
 function isSearchFinished() {
   return page.evaluate(function() {
     var noResultsTitle = document.querySelector('#noResultsTitle');
@@ -18,39 +32,42 @@ function isSearchFinished() {
   });
 }
 
+function getBookInfo() {
+  var noResultsTitle = document.querySelector('#noResultsTitle');
+
+  if (noResultsTitle) {
+    return;
+  }
+
+  var bookElement = document.querySelector('.s-result-item');
+
+  var title = bookElement.querySelector('.s-access-title').innerHTML;
+  var price = bookElement.querySelector('.a-color-price').innerHTML;
+  var rating = bookElement.querySelector('.a-icon-star .a-icon-alt').innerHTML;
+
+  return {
+    title: title,
+    price: price,
+    rating: rating
+  };
+}
+
 console.log('Searching Amazon.com for "' + bookTitle + '"');
 page.open('http://www.amazon.com/', function(status) {
   if (status === 'success') {
-    page.evaluate(function(bookTitle) {
-      var searchBox = document.querySelector('#twotabsearchtextbox');
-
-      searchBox.value = bookTitle;
-
-      var searchButton = document.querySelector('input[value=Go]');
-
-      searchButton.click();
-    }, bookTitle);
+    page.evaluate(searchByTerm, bookTitle);
 
     setTimeout(function checkForResults() {
       if (isSearchFinished()) {
-        page.evaluate(function(bookTitle) {
-          var noResultsTitle = document.querySelector('#noResultsTitle');
+        var bookInfo = page.evaluate(getBookInfo);
 
-          if (noResultsTitle) {
-            console.log('No results found for "' + bookTitle + '\"');
-            return;
-          }
-
-          var bookElement = document.querySelector('.s-result-item');
-
-          var title = bookElement.querySelector('.s-access-title').innerHTML;
-          var price = bookElement.querySelector('.a-color-price').innerHTML;
-          var rating = bookElement.querySelector('.a-icon-star .a-icon-alt').innerHTML;
-
-          console.log('Title = ', title);
-          console.log('Price = ', price);
-          console.log('Rating = ', rating);
-        }, bookTitle);
+        if (!bookInfo) {
+          console.log('No results found for "' + bookTitle + '\"');
+        } else {
+          console.log('Title = ', bookInfo.title);
+          console.log('Price = ', bookInfo.price);
+          console.log('Rating = ', bookInfo.rating);
+        }
         phantom.exit(0);
       } else {
         setTimeout(checkForResults, 100);

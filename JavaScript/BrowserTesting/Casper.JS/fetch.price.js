@@ -36,6 +36,7 @@ function getBookInfo() {
 var bookTitle = casper.cli.args[0];
 
 casper.then(function() {
+  console.log('Searching Amazon.com for "' + bookTitle + '"');
   this.sendKeys('#twotabsearchtextbox', bookTitle);
   this.mouse.click('input[value=Go]');
 });
