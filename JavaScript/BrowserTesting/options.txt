@@ -54,6 +54,20 @@ Uses real browser, then not suitable for performance testing well. Is not headle
 
 *Casper.JS*
 
-Does not run out of the box in Windows, difficulties with installation and configuration
+Does not run out of the box in Windows, difficulties with installation and configuration, then spawns a separate process, is Python required in Windows?
 
 'Fatal: [Errno 2] No such file or directory; did you install phantomjs?'
+
+Higher level API compared with PhantomJS but quite custom
+
+Nice methods to capture screen regions
+
+Opinionated API, non-standard, for example, promises are not used, instead something promise-like and not quite complete
+
+Flexible enough to allow the execution of arbitrary scripts (like Selenium and PhantomJS)
+
+Low level JavaScript execution is mostly not needed, higher level API is available instead
+
+Rich and complex API that includes assert support for testing
+
+Run as a PhantomJS script
