@@ -1,0 +1,15 @@
+{
+  "name": "dalekjs.study",
+  "version": "0.0.0",
+  "description": "Experiment in studying DalekJS",
+  "main": "fetch.price.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "dalekjs": "^0.0.9"
+  }
+}
