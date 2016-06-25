@@ -1,13 +1,19 @@
 /*
  * Running the script:
- *   node_modules/casperjs/bin/casperjs --web-security=no fetch.price.js JavaScript
+ *   dalek fetch.price.js JavaScript
  */
 
+var bookTitle = process.argv[3];
+
+console.log('Searching Amazon.com for "' + bookTitle + '"');
 module.exports = {
-  'Page title is correct': function (test) {
+  'Fetch price from Amazon': function(test) {
     test
-      .open('http://google.com')
-      .assert.title().is('Google', 'It has title')
+      .open('http://amazon.com')
+      .type('#twotabsearchtextbox', bookTitle)
+      .click('input[value=Go]')
+      .waitForElement('.s-result-item', 'There are results')
+      .screenshot('search.results.png')
       .done();
   }
 };

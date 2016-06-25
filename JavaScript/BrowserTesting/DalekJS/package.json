@@ -10,6 +10,6 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "dalekjs": "^0.0.9"
+    "dalekjs": "0.0.9"
   }
 }

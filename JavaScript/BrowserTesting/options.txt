@@ -73,3 +73,10 @@ Low level JavaScript execution is mostly not needed, higher level API is availab
 Rich and complex API that includes assert support for testing
 
 Run as a PhantomJS script
+
+*Dalek.JS*
+
+Has not been updated for a while, abandoned?
+Requires a legacy PhantomJS version 1.9.8
+More geared toward asserting simple things on well defined pages rather than modeling user interactions
+Scenarios are declarative like with Selenium, are executed by a separate runner
