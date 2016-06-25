@@ -1,0 +1,15 @@
+{
+  "name": "zombiejs.study",
+  "version": "0.0.0",
+  "description": "Experiment in studying Zombie.JS",
+  "main": "fetch.price.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "zombie": "^4.2.1"
+  }
+}

@@ -87,12 +87,22 @@ Custom APIs, imposes a bit how the test should be structured, not exactly free-f
 Error reporting is sometimes not that intuitive, just hangs without any messages
 A bit cumbersome to enable logging
 
+*Zombie.js*
+
+Uses Node.js instead of PhantomJS or connecting to a browser otherwise, built on top of JSDom,
+very lightweight
+Not possible to make screenshots - very hard to debug
+Not possible to test real browsers
+Still not a real browser, some quirks and unexpected errors can appear:
+TypeError: Cannot use 'in' operator to search for 'compareDocumentPosition' in null
+Non-intuitive and low-level error reporting
+Not real composable promises are returned, hard to nest things
 
 Evaluation matrix:
 
 - Ease of integration with 3rd party libraries
 - Ease of debugging
 - Multiple browsers supported
-- Rich high level API for browser actions
+- Rich high level API for browser actions/testing
 - Learning curve
 - Project activity
