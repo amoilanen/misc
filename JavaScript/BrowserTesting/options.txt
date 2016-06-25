@@ -1,3 +1,5 @@
+http://stackoverflow.com/questions/35414023/which-javascript-automated-testing-tool-to-use
+
 - PhantomJS 1.9.8 http://phantomjs.org/
 - Selenium https://github.com/SeleniumHQ/selenium/wiki/WebDriverJs
 - CasperJS http://casperjs.org/
@@ -77,6 +79,20 @@ Run as a PhantomJS script
 *Dalek.JS*
 
 Has not been updated for a while, abandoned?
-Requires a legacy PhantomJS version 1.9.8
+PhantomJS driver requires a legacy PhantomJS version 1.9.8
 More geared toward asserting simple things on well defined pages rather than modeling user interactions
 Scenarios are declarative like with Selenium, are executed by a separate runner
+Multiple browsers are suppoted, for example, Firefox
+Custom APIs, imposes a bit how the test should be structured, not exactly free-form
+Error reporting is sometimes not that intuitive, just hangs without any messages
+A bit cumbersome to enable logging
+
+
+Evaluation matrix:
+
+- Ease of integration with 3rd party libraries
+- Ease of debugging
+- Multiple browsers supported
+- Rich high level API for browser actions
+- Learning curve
+- Project activity
