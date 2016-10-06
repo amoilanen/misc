@@ -1,0 +1,80 @@
+<!-- Hosted version http://pastehtml.com/view/c06ceb3bi.html -->
+<html>
+<header>
+<style type="text/css">
+    canvas {
+        background-color: black;
+        border-radius: 4px;
+    }
+</style>
+<script type="text/javascript">
+
+  const MAX_VALUE = 4.0;
+  const MAX_ITERATIONS = 30;
+  const MAX_COLOR = 255;
+  const COLOR_SCALE = Math.floor(MAX_COLOR / MAX_ITERATIONS);
+
+  const getColor = (pointX, pointY) => {
+    let i = 0;
+    let x = 0;
+    let y = 0;
+    while ((i < MAX_ITERATIONS) && (x * x + y * y < MAX_VALUE)) {
+      const xOfSquare = x * x - y * y;
+      const yOfSquare = 2 * x * y;
+      x = xOfSquare + pointX;
+      y = yOfSquare + pointY;
+      i++;
+    }
+    console.log('x = ', pointX, 'y = ', pointY, 'iterations = ', i);
+    return getColorForIteration(i);
+  }
+
+  const getColorForIteration = (iterationNumber) => {
+    return Math.min(iterationNumber * COLOR_SCALE, MAX_COLOR);
+  }
+
+  const main = () => {
+    const canvas = document.querySelector("canvas");
+    const context = canvas.getContext("2d");
+    //TODO: Read screen size dimensions and initialize 
+    console.log("context = ", context);
+    const width = 400;
+    const height = 400;
+
+    var imageData = context.getImageData(0, 0, width, height);
+
+    function drawPixel(x, y, color) {
+      let index = (x + y * width) * 4;
+
+      imageData.data[index + 0] = color;
+      imageData.data[index + 1] = color;
+      imageData.data[index + 2] = color;
+      imageData.data[index + 3] = 255;
+    }
+
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        const scaledX = (4 * x / width) - 2;
+        const scaledY = (4 * y / height) - 2;
+
+        const color = getColor(scaledX, scaledY);
+        drawPixel(x, y, color);
+      }
+    }
+
+    //TODO: Optimize the computation of the iteration number
+    //TODO: Show the progress of the computation (percentage)
+    //TODO: Show the line going from up to down that tracks the computation of the set
+    context.putImageData(imageData, 0, 0);
+  }
+
+  window.addEventListener("load", main);
+</script>
+<style>
+
+</style>
+</header>
+<body>
+    <canvas id="drawingArea" width="400" height="400"></canvas>
+</body>
+</html>
