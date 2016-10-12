@@ -2,9 +2,10 @@
 <html>
 <header>
 <style type="text/css">
-    canvas {
-        background-color: black;
-        border-radius: 4px;
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
     }
 </style>
 <script type="text/javascript">
@@ -36,9 +37,14 @@
     const canvas = document.querySelector("canvas");
     const context = canvas.getContext("2d");
 
-    console.log("context = ", context);
-    const width = 1000;
-    const height = 1000;
+    canvas.setAttribute('width', window.innerWidth);
+    canvas.setAttribute('height', window.innerHeight);
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const minSize = Math.min(width, height);
+
+    const updateCanvasStep = 50;
 
     const fontSizePx = 18;
 
@@ -69,7 +75,7 @@
 
     function hideProgress(progress) {
       context.fillStyle = 'black';
-      context.fillText("", 20, 20);
+      context.fillText("Finished!", 20, 20);
     }
 
     const linePercentage = (1 / height) * 100;
@@ -81,41 +87,37 @@
 
       setTimeout((y) => {
         for (let x = 0; x < width; x++) {
-          const scaledX = (4 * x / width) - 2;
-          const scaledY = (4 * y / height) - 2;
+          const scaledX = (4 * x / minSize) - (2 * width) / minSize;
+          const scaledY = (4 * y / minSize) - (2 * height) / minSize;
 
           const color = getColor(scaledX, scaledY);
           drawPixel(x, y, color);
         }
 
         totalProgress += linePercentage;
-        updateCanvas();
-        showComputationBorder(y);
 
-        const elapsedTime = new Date().getTime() - startTime;
-        const thousandPixelsPerSecond = Math.floor((((y + 1) * width) / elapsedTime));
+        if ((y % updateCanvasStep === 0) || (y === height - 1)) {
+          updateCanvas();
+          const elapsedTime = new Date().getTime() - startTime;
+          const thousandPixelsPerSecond = Math.floor((((y + 1) * width) / elapsedTime));
 
-        if (y < height - 1) {
-          showProgress(totalProgress, thousandPixelsPerSecond);
-        } else {
-          hideProgress();
+          if (y < height - 1) {
+            showComputationBorder(y);
+            showProgress(totalProgress, thousandPixelsPerSecond);
+          } else {
+            hideProgress();
+          }
         }
       }, 0, y);
     }
 
-    //TODO: Re-factor
-    //TODO: Optimize the computation of the iteration number
-    //TODO: Use Web workers to speed up the computation?
-    //TODO: Read screen size dimensions and initialize image width and size accordingly
+    //TODO: Re-factor, set-up a small project, compile code with Babel to ES5, bundle with HTML?
   }
 
-  window.addEventListener("load", main);
+  window.addEventListener('load', main);
 </script>
-<style>
-
-</style>
 </header>
 <body>
-    <canvas id="drawingArea" width="1000" height="1000"></canvas>
+    <canvas></canvas>
 </body>
 </html>
