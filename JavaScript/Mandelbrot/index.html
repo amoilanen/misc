@@ -1,4 +1,3 @@
-<!-- Hosted version http://pastehtml.com/view/c06ceb3bi.html -->
 <html>
 <header>
 <style type="text/css">
@@ -10,111 +9,161 @@
 </style>
 <script type="text/javascript">
 
-  const MAX_VALUE = 4.0;
-  const MAX_ITERATIONS = 30;
-  const MAX_COLOR = 255;
-  const COLOR_SCALE = Math.floor(MAX_COLOR / MAX_ITERATIONS);
+(function(host) {
 
-  const getColor = (pointX, pointY) => {
-    let i = 0;
-    let x = 0;
-    let y = 0;
-    while ((i < MAX_ITERATIONS) && (x * x + y * y < MAX_VALUE)) {
+  var FULLY_OPAQUE_ALHPA = 255;
+  var FONT_SIZE_PX = 18;
+
+  function Display(canvas, width, height) {
+    this.canvas = canvas;
+    this.width = width;
+    this.height = height;
+    this.context = null;
+    this.imageData = null;
+  }
+
+  Display.prototype.initialize = function() {
+    this.canvas.setAttribute('width', window.innerWidth);
+    this.canvas.setAttribute('height', window.innerHeight);
+
+    this.context = this.canvas.getContext('2d');
+    this.context.font = FONT_SIZE_PX + 'px Arial';
+    this.imageData = this.context.getImageData(0, 0, this.width, this.height);
+  };
+
+  Display.prototype.drawPixel = function(x, y, color) {
+    var index = (x + y * this.width) * 4;
+    this.imageData.data[index + 0] = color;
+    this.imageData.data[index + 1] = color;
+    this.imageData.data[index + 2] = color;
+    this.imageData.data[index + 3] = FULLY_OPAQUE_ALHPA;
+  }
+
+  Display.prototype.showComputationBorder = function(y) {
+    this.context.fillRect(0, y, this.width, 1);
+  }
+
+  Display.prototype.repaint = function() {
+    this.context.putImageData(this.imageData, 0, 0);
+  }
+
+  Display.prototype.showProgress = function(progress, pixelsPerSecond) {
+    this.context.fillStyle = 'green';
+    this.context.fillText("Computing Mandelbrot set... " + progress.toFixed(2) + "%" + " Speed " + pixelsPerSecond + "K pixels/second ", 20, 20);
+  }
+
+  Display.prototype.hideProgress = function(progress) {
+    this.context.fillStyle = 'black';
+    this.context.fillText("Finished!", 20, 20);
+  };
+
+  host.Display = Display;
+})(this);
+
+(function(host) {
+  var MAX_COLOR = 255;
+  var MAX_VALUE = 4.0;
+  var MAX_ITERATIONS = 30;
+  var COLOR_SCALE = Math.floor(MAX_COLOR / MAX_ITERATIONS);
+
+  function getEscapeIterationsNumber(pointX, pointY) {
+    var currentIteration = 0;
+    var x = 0;
+    var y = 0;
+    while ((currentIteration < MAX_ITERATIONS) && (x * x + y * y < MAX_VALUE)) {
       const xOfSquare = x * x - y * y;
       const yOfSquare = 2 * x * y;
       x = xOfSquare + pointX;
       y = yOfSquare + pointY;
-      i++;
+      currentIteration++;
     }
-    return getColorForIteration(i);
+    return currentIteration;
   }
 
-  const getColorForIteration = (iterationNumber) => {
+  function getColorForIteration(iterationNumber) {
     return Math.min(iterationNumber * COLOR_SCALE, MAX_COLOR);
   }
 
-  const main = () => {
-    const canvas = document.querySelector("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.setAttribute('width', window.innerWidth);
-    canvas.setAttribute('height', window.innerHeight);
-
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const minSize = Math.min(width, height);
-
-    const updateCanvasStep = 50;
-
-    const fontSizePx = 18;
-
-    context.font = fontSizePx + 'px Arial';
-
-    const imageData = context.getImageData(0, 0, width, height);
-
-    function drawPixel(x, y, color) {
-      let index = (x + y * width) * 4;
-      imageData.data[index + 0] = color;
-      imageData.data[index + 1] = color;
-      imageData.data[index + 2] = color;
-      imageData.data[index + 3] = 255;
+  host.EscapeAlgorithm = {
+    getColor: function(x, y) {
+      return getColorForIteration(getEscapeIterationsNumber(x, y));
     }
+  };
+})(this);
 
-    function showComputationBorder(y) {
-      context.fillRect(0, y, width, 1);
-    }
+(function(host) {
 
-    function updateCanvas() {
-      context.putImageData(imageData, 0, 0);
-    }
+  /*
+   * Optimization: canvas will be repainted only after each UPDATE_CANVAS_STEP lines are computed
+   * because repainting is quite slow.
+   */
+  const UPDATE_CANVAS_STEP = 50;
 
-    function showProgress(progress, pixelsPerSecond) {
-      context.fillStyle = 'green';
-      context.fillText("Computing Mandelbrot set... " + progress.toFixed(2) + "%" + " Speed " + pixelsPerSecond + "K pixels/second ", 20, 20);
-    }
+  function MandelbrotSetVisualization(display, width, height) {
+    this.display = display;
+    this.width = width;
+    this.height = height;
+    this.size = Math.min(width, height);
+  }
 
-    function hideProgress(progress) {
-      context.fillStyle = 'black';
-      context.fillText("Finished!", 20, 20);
-    }
+  MandelbrotSetVisualization.prototype.computeAndDraw = function() {
+    var self = this;
+    var startTime = new Date().getTime();
+    var updateCanvasStep = 50;
+    var width = this.width;
+    var height = this.height;
 
-    const linePercentage = (1 / height) * 100;
-    let totalProgress = 0;
-    const startTime = new Date().getTime();
+    var linePercentage = (1 / height) * 100;
+    var totalProgress = 0;
 
-    for (let y = 0; y < height; y++) {
-      const lineData = context.getImageData(0, y, width, 1);
-
+    for (var y = 0; y < height; y++) {
       setTimeout((y) => {
-        for (let x = 0; x < width; x++) {
-          const scaledX = (4 * x / minSize) - (2 * width) / minSize;
-          const scaledY = (4 * y / minSize) - (2 * height) / minSize;
-
-          const color = getColor(scaledX, scaledY);
-          drawPixel(x, y, color);
+        for (var x = 0; x < width; x++) {
+          const color = EscapeAlgorithm.getColor(self.scaleX(x), self.scaleY(y));
+          self.display.drawPixel(x, y, color);
         }
 
         totalProgress += linePercentage;
 
         if ((y % updateCanvasStep === 0) || (y === height - 1)) {
-          updateCanvas();
+          self.display.repaint();
           const elapsedTime = new Date().getTime() - startTime;
           const thousandPixelsPerSecond = Math.floor((((y + 1) * width) / elapsedTime));
 
           if (y < height - 1) {
-            showComputationBorder(y);
-            showProgress(totalProgress, thousandPixelsPerSecond);
+            self.display.showComputationBorder(y);
+            self.display.showProgress(totalProgress, thousandPixelsPerSecond);
           } else {
-            hideProgress();
+            self.display.hideProgress();
           }
         }
       }, 0, y);
     }
-
-    //TODO: Re-factor, set-up a small project, compile code with Babel to ES5, bundle with HTML?
   }
 
-  window.addEventListener('load', main);
+  MandelbrotSetVisualization.prototype.scaleX = function(x) {
+    return (4 * x / this.size) - (2 * this.width) / this.size;
+  }
+
+  MandelbrotSetVisualization.prototype.scaleY = function(y) {
+    return (4 * y / this.size) - (2 * this.height) / this.size;
+  }
+
+  host.MandelbrotSetVisualization = MandelbrotSetVisualization;
+})(this);
+
+function main() {
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  var canvas = document.querySelector('canvas');
+  var display = new Display(canvas, width, height);
+  var setOfMandelbrot = new MandelbrotSetVisualization(display, width, height);
+
+  display.initialize();
+  setOfMandelbrot.computeAndDraw();
+}
+
+window.addEventListener('load', main);
 </script>
 </header>
 <body>
