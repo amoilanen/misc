@@ -49,13 +49,10 @@
 
   Display.prototype.showProgress = function(progress, pixelsPerSecond) {
     this.context.fillStyle = 'green';
-    this.context.fillText("Computing Mandelbrot set... " + progress.toFixed(2) + "%" + " Speed " + pixelsPerSecond + "K pixels/second ", 20, 20);
+    var progressInfo = progress.toFixed(2) + '%';
+    var speedInfo = 'Speed ' + pixelsPerSecond + 'K pixels/second';
+    this.context.fillText("Drawing Mandelbrot set... " + progressInfo + ' ' + speedInfo, 20, 20);
   }
-
-  Display.prototype.hideProgress = function(progress) {
-    this.context.fillStyle = 'black';
-    this.context.fillText("Finished!", 20, 20);
-  };
 
   host.Display = Display;
 })(this);
@@ -98,55 +95,59 @@
    * because repainting is quite slow.
    */
   const UPDATE_CANVAS_STEP = 50;
+  const SCALED_SIZE = 4;
 
   function MandelbrotSetVisualization(display, width, height) {
     this.display = display;
     this.width = width;
     this.height = height;
     this.size = Math.min(width, height);
+    this.totalProgressPercent = 0;
+    this.progressPerLinePercent = (1 / height) * 100;
   }
 
   MandelbrotSetVisualization.prototype.computeAndDraw = function() {
     var self = this;
-    var startTime = new Date().getTime();
-    var updateCanvasStep = 50;
+    this.startTime = new Date().getTime();
     var width = this.width;
     var height = this.height;
+    this.totalProgress = 0;
 
-    var linePercentage = (1 / height) * 100;
-    var totalProgress = 0;
-
+    var promises = [];
     for (var y = 0; y < height; y++) {
-      setTimeout((y) => {
-        for (var x = 0; x < width; x++) {
-          const color = EscapeAlgorithm.getColor(self.scaleX(x), self.scaleY(y));
-          self.display.drawPixel(x, y, color);
-        }
-
-        totalProgress += linePercentage;
-
-        if ((y % updateCanvasStep === 0) || (y === height - 1)) {
-          self.display.repaint();
-          const elapsedTime = new Date().getTime() - startTime;
-          const thousandPixelsPerSecond = Math.floor((((y + 1) * width) / elapsedTime));
-
-          if (y < height - 1) {
-            self.display.showComputationBorder(y);
-            self.display.showProgress(totalProgress, thousandPixelsPerSecond);
-          } else {
-            self.display.hideProgress();
+      promises.push(new Promise(function(resolve, reject) {
+        setTimeout(function(y) {
+          for (var x = 0; x < width; x++) {
+            const color = EscapeAlgorithm.getColor(self.scaleX(x), self.scaleY(y));
+            self.display.drawPixel(x, y, color);
           }
-        }
-      }, 0, y);
+          self.totalProgressPercent += self.progressPerLinePercent;
+          self.drawCurrentState(y);
+          resolve();
+        }, 0, y);
+      }));
     }
+    Promise.all(promises).then(function() {
+      self.display.repaint();
+    });
   }
 
+  MandelbrotSetVisualization.prototype.drawCurrentState = function(y) {
+    if (y % UPDATE_CANVAS_STEP === 0) {
+      this.display.repaint();
+      const elapsedTime = new Date().getTime() - this.startTime;
+      const thousandPixelsPerSecond = Math.floor((((y + 1) * this.width) / elapsedTime));
+      this.display.showComputationBorder(y);
+      this.display.showProgress(this.totalProgressPercent, thousandPixelsPerSecond);
+    }
+  };
+
   MandelbrotSetVisualization.prototype.scaleX = function(x) {
-    return (4 * x / this.size) - (2 * this.width) / this.size;
+    return (SCALED_SIZE * x / this.size) - (SCALED_SIZE * this.width) / (2 * this.size);
   }
 
   MandelbrotSetVisualization.prototype.scaleY = function(y) {
-    return (4 * y / this.size) - (2 * this.height) / this.size;
+    return (SCALED_SIZE * y / this.size) - (SCALED_SIZE * this.height) / (2 * this.size);
   }
 
   host.MandelbrotSetVisualization = MandelbrotSetVisualization;
@@ -165,6 +166,9 @@ function main() {
 
 window.addEventListener('load', main);
 </script>
+<title>
+  Mandelbrot Set Visualization
+</title>
 </header>
 <body>
     <canvas></canvas>
