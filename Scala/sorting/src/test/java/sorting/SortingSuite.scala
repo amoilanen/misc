@@ -15,5 +15,9 @@ class SortingSuite extends FunSuite {
   test("quick sort") {
     assert(quickSort(List(3, 2, 4, 1, 5)) === List(1, 2, 3, 4, 5))
   }
+
+  test("merge sort") {
+    assert(mergeSort(List(3, 2, 4, 1, 5)) === List(1, 2, 3, 4, 5))
+  }
 }
 
