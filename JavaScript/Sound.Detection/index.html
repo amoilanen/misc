@@ -1,0 +1,117 @@
+<html>
+<head>
+  <style type="text/css">
+    div {
+      font-size: 2em;
+    }
+  </style>
+  <script src="bower_components/highcharts/highcharts.js"></script>
+  <script>
+
+    //TODO: Re-factor, extract functions/constants
+    function listenToMicrophone() {
+      var context = new AudioContext();
+      var chartContainer = document.querySelector('div');
+
+      function sound(stream) {
+        var analyser = context.createAnalyser();
+        analyser.smoothingTimeConstant = 0.3;
+        analyser.fftSize = 512;
+
+        var input = context.createMediaStreamSource(stream);
+
+        var processorNode = context.createScriptProcessor(2048, 1, 1);
+
+        input.connect(analyser);
+        analyser.connect(processorNode);
+        processorNode.connect(context.destination);
+        processorNode.onaudioprocess = function() {
+          var frequencyValues = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(frequencyValues);
+
+          var normalizedValues = Array.from(frequencyValues).map(function(value) {
+            return value / frequencyValues.length;
+          });
+
+          renderChart(normalizedValues);
+          /*
+          var averageVolume = frequencyValues.reduce(function(x, y) {
+            return Math.max(x, y);
+          }, 0) / frequencyValues.length;
+
+          console.log('volume = ', averageVolume);
+          */
+        }
+        analyser.connect(context.destination);
+      }
+
+      function error() {
+        console.log('Error occurred');
+      }
+
+      navigator.getUserMedia({
+        audio: true
+      }, sound, error);
+    }
+
+    function renderChart(values) {
+      var chartContainer = document.querySelector('div');
+
+      new Highcharts.Chart({
+        chart: {
+          renderTo: chartContainer,
+          animation: false
+        },
+        title: {
+          text: 'Microphone'
+        },
+        credits: {
+          enabled: false
+        },
+        xAxis: {
+          labels: {
+            enabled: false
+          }
+        },
+        yAxis: {
+          allowDecimals: true,
+          title: {
+            text: null
+          },
+          min: 0,
+          max: 1
+        },
+        legend: {
+          enabled: false
+        },
+        series: [{
+          data: values
+        }]
+      })
+    }
+
+    window.addEventListener('load', function(event) {
+      /*
+      var values = [];
+      for (var i = 0; i < 256; i++) {
+        values.push(Math.random());
+      }
+      renderChart(values);
+      */
+      Highcharts.setOptions({
+        plotOptions: {
+          series: {
+            animation: false
+          }
+        }
+      });
+
+      listenToMicrophone();
+    });
+  </script>
+</head>
+<body>
+  <div>
+  </div>
+</body>
+</html>

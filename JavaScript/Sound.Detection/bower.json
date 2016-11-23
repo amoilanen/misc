@@ -1,0 +1,21 @@
+{
+  "name": "Sound.Detection",
+  "homepage": "https://github.com/antivanov/misc",
+  "authors": [
+    "Anton Ivanov <anton.al.ivanov@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "highcharts": "^5.0.4"
+  }
+}
