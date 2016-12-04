@@ -1,8 +1,11 @@
- TODO: Detect if the sound has changed
  TODO: Visualize the sound/volume
+ TODO: Detect if the sound has changed
+  -- Set individually the volume level for every sensor that would alert if sound level was exceeded
+
  TODO: Extract the code to sensor.js
+ 
  TODO: Serve the page with the express server
  TODO: Submit data back to the server every 5 seconds (maximum sound value during that period)
  TODO: Server stores data for the last 10 minutes
- TODO: Server can accepts data from several sensors
+ TODO: Server can accepts data from several sensors which can register with the server
  TODO: Server provides an analytics page that can show several sensors connected with the latest 10 minutes volume chart/graph

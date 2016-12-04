@@ -8,110 +8,80 @@
   <script src="bower_components/highcharts/highcharts.js"></script>
   <script>
 
-    //TODO: Re-factor, extract functions/constants
-    function listenToMicrophone() {
+    function getUserAudio(onAudioCallback, onErrorCallback) {
+      var FFT_SIZE = 512;
       var context = new AudioContext();
-      var chartContainer = document.querySelector('div');
 
-      function sound(stream) {
-        var analyser = context.createAnalyser();
-        analyser.smoothingTimeConstant = 0.3;
-        analyser.fftSize = 512;
+      function connectToStream(stream) {
+        var mediaStreamSource = context.createMediaStreamSource(stream);
 
-        var input = context.createMediaStreamSource(stream);
-
-        var processorNode = context.createScriptProcessor(2048, 1, 1);
-
-        input.connect(analyser);
-        analyser.connect(processorNode);
+        var processorNode = context.createScriptProcessor();
         processorNode.connect(context.destination);
         processorNode.onaudioprocess = function() {
-          var frequencyValues = new Uint8Array(analyser.frequencyBinCount);
-          analyser.getByteFrequencyData(frequencyValues);
+          onAudioCallback(analyzer);
+        };
 
-          var normalizedValues = Array.from(frequencyValues).map(function(value) {
-            return value / frequencyValues.length;
-          });
-
-          renderChart(normalizedValues);
-          /*
-          var averageVolume = frequencyValues.reduce(function(x, y) {
-            return Math.max(x, y);
-          }, 0) / frequencyValues.length;
-
-          console.log('volume = ', averageVolume);
-          */
-        }
-        analyser.connect(context.destination);
+        var analyzer = context.createAnalyser();
+        analyzer.fftSize = FFT_SIZE;
+        mediaStreamSource.connect(analyzer);
+        analyzer.connect(processorNode);
+        analyzer.connect(context.destination);
       }
 
-      function error() {
-        console.log('Error occurred');
-      }
-
-      navigator.getUserMedia({
+      navigator.mediaDevices.getUserMedia({
         audio: true
-      }, sound, error);
+      }).then(connectToStream).catch(onErrorCallback);
     }
 
-    function renderChart(values) {
-      var chartContainer = document.querySelector('div');
+    function sensorStart() {
+      getUserAudio(function(analyzer) {
+        var frequencyValues = new Uint8Array(analyzer.frequencyBinCount);
+        analyzer.getByteFrequencyData(frequencyValues);
 
-      new Highcharts.Chart({
-        chart: {
-          renderTo: chartContainer,
-          animation: false
-        },
-        title: {
-          text: 'Microphone'
-        },
-        credits: {
-          enabled: false
-        },
-        xAxis: {
-          labels: {
-            enabled: false
-          }
-        },
-        yAxis: {
-          allowDecimals: true,
-          title: {
-            text: null
-          },
-          min: 0,
-          max: 1
-        },
-        legend: {
-          enabled: false
-        },
-        series: [{
-          data: values
-        }]
-      })
+        var averageFrequencyValue = Array.from(frequencyValues).reduce(function(acc, value) {
+          return acc + value / frequencyValues.length;
+        }, 0) / frequencyValues.length;
+
+        var volumeValue = Math.floor(averageFrequencyValue * 100);
+        display(volumeValue);
+      }, function error(e) {
+        var errorMessageNode = document.createTextNode(
+          'Error while trying to listen to the microphone...' + JSON.stringify(e)
+        );
+        document.body.appendChild(errorMessageNode);
+      });
+    }
+
+    function display(volumeValue) {
+      setTimeout(function() {
+        drawVolumeBar(volumeValue)
+      });
+    }
+
+    var canvasContainer;
+    var renderContext;
+
+    function initRenderContext() {
+      canvasContainer = document.getElementById('sensorCanvas');
+      renderContext = canvasContainer.getContext('2d');
+    }
+
+    function drawVolumeBar(volumeValue) {
+      renderContext.fillStyle = '#fff';
+      renderContext.fillRect(0, 0, 20, 100);
+      renderContext.fillStyle = '#777';
+      renderContext.fillRect(0, 100 - volumeValue, 20, 100);
+      renderContext.rect(0, 0, 20, 100);
+      renderContext.stroke();
     }
 
     window.addEventListener('load', function(event) {
-      /*
-      var values = [];
-      for (var i = 0; i < 256; i++) {
-        values.push(Math.random());
-      }
-      renderChart(values);
-      */
-      Highcharts.setOptions({
-        plotOptions: {
-          series: {
-            animation: false
-          }
-        }
-      });
-
-      listenToMicrophone();
+      initRenderContext();
+      sensorStart();
     });
   </script>
 </head>
 <body>
-  <div>
-  </div>
+  <canvas id="sensorCanvas" width="20" height="100"></canvas>
 </body>
 </html>

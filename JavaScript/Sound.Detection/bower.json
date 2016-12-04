@@ -16,6 +16,5 @@
     "tests"
   ],
   "dependencies": {
-    "highcharts": "^5.0.4"
   }
 }
