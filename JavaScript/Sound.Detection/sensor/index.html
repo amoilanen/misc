@@ -1,0 +1,44 @@
+<html>
+<head>
+  <style type="text/css">
+    body {
+      font-family: "Arial Black", Gadget, sans-serif;
+      font-size: 14px;
+    }
+    canvas {
+      display: block;
+    }
+    section {
+      width: 200px;
+    }
+    section > * {
+      display: block;
+      margin-bottom: 8px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+  </style>
+  <script src="sensor/js/volumeBar.js"></script>
+  <script src="sensor/js/microphone.js"></script>
+  <script src="sensor/js/sensor.js"></script>
+  <script>
+    window.addEventListener('load', function(event) {
+      var volumeBar = new VolumeBar(document.getElementById("sensorCanvas"), 60, 200).init();
+      var sensor = new Sensor();
+
+      sensor.listen(function(volumeValue) {
+        setTimeout(function() {
+          volumeBar.setVolume(volumeValue).render();
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <section>
+    <span>Volume</span>
+    <canvas id="sensorCanvas"></canvas>
+  </section>
+</body>
+</html>
