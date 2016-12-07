@@ -1,11 +1,17 @@
  TODO: Visualize the sound/volume
- TODO: Detect if the sound has changed
-  -- Set individually the volume level for every sensor that would alert if sound level was exceeded
+  -- Show the threshold in the volume bar, if exceeded the bar becomes red
+  -- Threshold can be re-configured for a sensor
 
- TODO: Extract the code to sensor.js
- 
+1. Sound sensors control panel:
+
  TODO: Serve the page with the express server
  TODO: Submit data back to the server every 5 seconds (maximum sound value during that period)
  TODO: Server stores data for the last 10 minutes
  TODO: Server can accepts data from several sensors which can register with the server
  TODO: Server provides an analytics page that can show several sensors connected with the latest 10 minutes volume chart/graph
+ TODO Visualize which sensors detect a volume level in the room
+
+2. Single sound sensor gathering volume profile over an extended period of time (~1 day)
+
+ TODO: Serve page with the express server
+ TODO: Store JSON data for the volume level, plot volume data on the screen against the time (volume timeline)
