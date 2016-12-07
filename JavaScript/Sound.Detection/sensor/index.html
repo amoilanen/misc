@@ -25,13 +25,17 @@
   <script>
     window.addEventListener('load', function(event) {
       var volumeBar = new VolumeBar(document.getElementById("sensorCanvas"), 60, 200).init();
-      var sensor = new Sensor();
 
-      sensor.listen(function(volumeValue) {
-        setTimeout(function() {
-          volumeBar.setVolume(volumeValue).render();
-        });
-      });
+      var sensor = new Sensor({
+        onVolume: function(data) {
+          var volume = data.volume;
+          var threshold = data.threshold;
+
+          setTimeout(function() {
+            volumeBar.setVolume(volume).render();
+          });
+        }
+      }).listen();
     });
   </script>
 </head>
