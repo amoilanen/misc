@@ -10,7 +10,7 @@
     }
     this.lastMeasurementTime = null;
     this.measurementIntervalMs = 5000;
-    this.soundDetectionThreshold = 0.2; //TODO: Should be configurable
+    this.soundDetectionThreshold = 0.1; //TODO: Should be configurable
     this.measurements = [];
   }
 

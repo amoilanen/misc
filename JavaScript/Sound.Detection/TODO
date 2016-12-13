@@ -1,6 +1,9 @@
  TODO: Visualize the sound/volume
-  -- Show the threshold in the volume bar, if exceeded the bar becomes red
-  -- Threshold can be re-configured for a sensor
+  -- Show the threshold in the volume bar, if exceeded the bar becomes red - OK
+  -- Threshold can be re-configured for a sensor - OK
+  -- Pass the sound detection threshold value back to the sensor
+  -- Re-factor volume bar implementation
+  -- When sound exceeds threshold it is reported to the sensor client using an additional callback
 
 1. Sound sensors control panel:
 
