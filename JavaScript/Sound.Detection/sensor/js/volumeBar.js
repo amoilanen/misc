@@ -1,34 +1,40 @@
 (function(host) {
 
-  var canvasWidth = 200;
+  var DEFAULT_SOUND_DETECTION_THRESHOLD = 0.1;
+
+  var canvasWidth = 250;
   var canvasHeight = 200;
   var margin = 20;
 
-  function VolumeBar(container, options) {
+  function VolumeBar(container, listeners) {
     this.context = null;
     this.container = container;
     this.volume = 0;
-    this.detectionLimit = 0.1;
+    this.listeners = listeners  || {};
+    if (!this.listeners.onSoundDetectionThresholdChange) {
+      this.listeners.onSoundDetectionThresholdChange = function() {};
+    }
+    this.setSoundDetectionThreshold(DEFAULT_SOUND_DETECTION_THRESHOLD);
   }
 
   VolumeBar.prototype.init = function() {
     var self = this;
 
-    var limitLabel = document.createElement('label');
-    limitLabel.setAttribute('for', 'limit');
-    var labelText = document.createTextNode('Detection limit (percent)');
-    limitLabel.appendChild(labelText);
-    this.container.appendChild(limitLabel);
-    var limitInput = document.createElement('input');
-    limitInput.setAttribute('name', 'limit');
-    limitInput.setAttribute('value', '10');
-    limitInput.addEventListener('keyup', function(event) {
-      var limitValuePercent = event.target.value;
-      var limitValue = limitValuePercent / 100;
+    var thresholdLabel = document.createElement('label');
+    thresholdLabel.setAttribute('for', 'threshold');
+    var labelText = document.createTextNode('Sound detection threshold (percent)');
+    thresholdLabel.appendChild(labelText);
+    this.container.appendChild(thresholdLabel);
+    var thresholdInput = document.createElement('input');
+    thresholdInput.setAttribute('name', 'threshold');
+    thresholdInput.setAttribute('value', '10');
+    thresholdInput.addEventListener('keyup', function(event) {
+      var thresholdValuePercent = event.target.value;
+      var thresholdValue = thresholdValuePercent / 100;
 
-      self.setDetectionLimit(limitValue);
+      self.setSoundDetectionThreshold(thresholdValue);
     });
-    this.container.appendChild(limitInput);
+    this.container.appendChild(thresholdInput);
 
     var canvas = document.createElement('canvas');
     this.container.appendChild(canvas);
@@ -44,9 +50,9 @@
     return this;
   };
 
-  VolumeBar.prototype.setDetectionLimit = function(detectionLimit) {
-    console.log('Setting detection limit: ', detectionLimit);
-    this.detectionLimit = detectionLimit;
+  VolumeBar.prototype.setSoundDetectionThreshold = function(soundDetectionThreshold) {
+    this.soundDetectionThreshold = soundDetectionThreshold;
+    this.listeners.onSoundDetectionThresholdChange(soundDetectionThreshold);
     return this;
   };
 
@@ -58,7 +64,7 @@
 
     this.context.fillStyle = '#fff';
     this.context.fillRect(0, 0, canvasWidth, canvasHeight);
-    if (this.volume > this.detectionLimit) {
+    if (this.volume > this.soundDetectionThreshold) {
       this.context.fillStyle = '#696969';
     } else {
       this.context.fillStyle = '#DCDCDC';
@@ -71,7 +77,7 @@
     this.context.font = '12px serif';
     this.context.fillText(volumeInPercent + '%', margin, barHeight - margin);
     this.context.fillText('Volume level (percent)', barWidth + margin, margin);
-    if (this.volume > this.detectionLimit) {
+    if (this.volume > this.soundDetectionThreshold) {
       this.context.fillText('Sound detected!', barWidth + margin, 2 * margin);
     }
     this.context.rect(0, 0, barWidth, barHeight);

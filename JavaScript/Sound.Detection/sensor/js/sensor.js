@@ -2,15 +2,16 @@
 
   function Sensor(listeners) {
     this.listeners = listeners;
-    if (!this.listeners.onVolume) {
-      this.listeners.onVolume = function() {};
+    if (!this.listeners.onVolumeMeasured) {
+      this.listeners.onVolumeMeasured = function() {};
     }
-    if (!this.listeners.onMaxAverageVolume) {
-      this.listeners.onMaxAverageVolume = function() {};
+    if (!this.listeners.onAverageVolumeMeasured) {
+      this.listeners.onAverageVolumeMeasured = function() {};
+    }
+    if (!this.listeners.onSoundDetected) {
+      this.listeners.onSoundDetected = function() {};
     }
     this.lastMeasurementTime = null;
-    this.measurementIntervalMs = 5000;
-    this.soundDetectionThreshold = 0.1; //TODO: Should be configurable
     this.measurements = [];
   }
 
@@ -23,12 +24,21 @@
     }, 0) / frequencyValues.length;
   }
 
-  function recordValue(self, volumeValue) {
+  function measureVolumeValue(self, volumeValue) {
+    self.listeners.onVolumeMeasured(volumeValue);
+
+    if (volumeValue > self.soundDetectionThreshold) {
+      self.listeners.onSoundDetected(volumeValue);
+    }
+
+    if (!self.averageMeasurementIntervalMs) {
+      return;
+    }
     self.measurements.push(volumeValue);
     var currentMeasurementTime = new Date().getTime();
     if (currentMeasurementTime - self.lastMeasurementTime >= self.measurementIntervalMs) {
       var maxVolume = Math.max.apply(null, self.measurements);
-      self.listeners.onMaxAverageVolume({
+      self.listeners.onAverageVolumeMeasured({
         volume: maxVolume,
         threshold: self.soundDetectionThreshold
       });
@@ -37,6 +47,16 @@
     }
   }
 
+  Sensor.prototype.setAverageMeasurementIntervalMs = function(averageMeasurementIntervalMs) {
+    this.averageMeasurementIntervalMs = averageMeasurementIntervalMs;
+    return this;
+  };
+
+  Sensor.prototype.setSoundDetectionThreshold = function(soundDetectionThreshold) {
+    this.soundDetectionThreshold = soundDetectionThreshold;
+    return this;
+  };
+
   Sensor.prototype.listen = function() {
     var self = this;
 
@@ -44,11 +64,7 @@
     Audio.processMicrophoneInput(function(analyzer) {
       var volumeValue = getVolume(self, analyzer);
 
-      recordValue(self, volumeValue);
-      self.listeners.onVolume({
-        volume: volumeValue,
-        threshold: self.soundDetectionThreshold
-      });
+      measureVolumeValue(self, volumeValue);
     }, function error(e) {
       var errorMessageNode = document.createTextNode(
         'Error while trying to listen to the microphone...' + JSON.stringify(e)

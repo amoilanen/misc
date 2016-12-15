@@ -20,18 +20,23 @@
   <script src="sensor/js/sensor.js"></script>
   <script>
     window.addEventListener('load', function(event) {
-      var volumeBar = new VolumeBar(document.querySelector("section")).init();
-
       var sensor = new Sensor({
-        onVolume: function(data) {
-          var volume = data.volume;
-          var threshold = data.threshold;
-
+        onVolumeMeasured: function(volume) {
           setTimeout(function() {
-            volumeBar.setVolume(volume).render();
+            if (volumeBar) {
+              volumeBar.setVolume(volume).render();
+            }
           });
+        },
+        onSoundDetected: function(volume) {
+          console.log('Detected sound = ', volume);
         }
       }).listen();
+      var volumeBar = new VolumeBar(document.querySelector("section"), {
+        onSoundDetectionThresholdChange: function(soundDetectionThreshold) {
+          sensor.setSoundDetectionThreshold(soundDetectionThreshold);
+        }
+      }).init();
     });
   </script>
 </head>
