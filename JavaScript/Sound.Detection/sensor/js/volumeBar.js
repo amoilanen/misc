@@ -2,9 +2,13 @@
 
   var DEFAULT_SOUND_DETECTION_THRESHOLD = 0.1;
 
-  var canvasWidth = 250;
-  var canvasHeight = 200;
-  var margin = 20;
+  var CANVAS_WIDTH = 250;
+  var CANVAS_HEIGHT = 200;
+  var MARGIN = 20;
+  var BAR_WIDTH = 60;
+  var BAR_HEIGHT = 200;
+  var NORMAL_COLOR = '#DCDCDC';
+  var SOUND_DETECTED_COLOR = '#696969';
 
   function VolumeBar(container, listeners) {
     this.context = null;
@@ -18,13 +22,18 @@
   }
 
   VolumeBar.prototype.init = function() {
-    var self = this;
+    initializeThresholdInput(this);
+    initializeBarCanvas(this);
+    return this;
+  };
 
+  function initializeThresholdInput(self) {
     var thresholdLabel = document.createElement('label');
     thresholdLabel.setAttribute('for', 'threshold');
     var labelText = document.createTextNode('Sound detection threshold (percent)');
     thresholdLabel.appendChild(labelText);
-    this.container.appendChild(thresholdLabel);
+    self.container.appendChild(thresholdLabel);
+
     var thresholdInput = document.createElement('input');
     thresholdInput.setAttribute('name', 'threshold');
     thresholdInput.setAttribute('value', '10');
@@ -34,16 +43,17 @@
 
       self.setSoundDetectionThreshold(thresholdValue);
     });
-    this.container.appendChild(thresholdInput);
+    self.container.appendChild(thresholdInput);
+  }
 
+  function initializeBarCanvas(self) {
     var canvas = document.createElement('canvas');
-    this.container.appendChild(canvas);
-    canvas.setAttribute('width', canvasWidth + 'px');
-    canvas.setAttribute('height', canvasHeight + 'px');
-    this.context = canvas.getContext('2d');
 
-    return this;
-  };
+    canvas.setAttribute('width', CANVAS_WIDTH + 'px');
+    canvas.setAttribute('height', CANVAS_HEIGHT + 'px');
+    self.context = canvas.getContext('2d');
+    self.container.appendChild(canvas);
+  }
 
   VolumeBar.prototype.setVolume = function(volume) {
     this.volume = volume;
@@ -57,33 +67,47 @@
   };
 
   VolumeBar.prototype.render = function() {
-    var barWidth = 60;
-    var barHeight = 200;
+    eraseCanvas(this);
+
+    var volumeBarColor = NORMAL_COLOR;
+    if (this.volume > this.soundDetectionThreshold) {
+      volumeBarColor = SOUND_DETECTED_COLOR;
+    }
+    renderVolumeBar(this, volumeBarColor);
 
     var volumeInPercent = (this.volume * 100).toFixed(0);
+    renderVolumePercentLabel(this, volumeInPercent);
 
-    this.context.fillStyle = '#fff';
-    this.context.fillRect(0, 0, canvasWidth, canvasHeight);
     if (this.volume > this.soundDetectionThreshold) {
-      this.context.fillStyle = '#696969';
-    } else {
-      this.context.fillStyle = '#DCDCDC';
+      renderSoundDetectedLabel(this);
     }
-    this.context.fillRect(0, 0, barWidth, barHeight);
-    this.context.fillStyle = '#fff';
-    this.context.fillRect(0, 0, barWidth, barHeight - this.volume * barHeight);
-
-    this.context.fillStyle = 'black';
-    this.context.font = '12px serif';
-    this.context.fillText(volumeInPercent + '%', margin, barHeight - margin);
-    this.context.fillText('Volume level (percent)', barWidth + margin, margin);
-    if (this.volume > this.soundDetectionThreshold) {
-      this.context.fillText('Sound detected!', barWidth + margin, 2 * margin);
-    }
-    this.context.rect(0, 0, barWidth, barHeight);
-    this.context.stroke();
     return this;
   };
+
+  function eraseCanvas(self) {
+    self.context.fillStyle = '#fff';
+    self.context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
+
+  function renderVolumeBar(self, volumeBarColor) {
+    self.context.fillStyle = volumeBarColor;
+    self.context.fillRect(0, 0, BAR_WIDTH, BAR_HEIGHT);
+    self.context.fillStyle = '#fff';
+    self.context.fillRect(0, 0, BAR_WIDTH, BAR_HEIGHT - self.volume * BAR_HEIGHT);
+    self.context.rect(0, 0, BAR_WIDTH, BAR_HEIGHT);
+    self.context.stroke();
+  }
+
+  function renderVolumePercentLabel(self, volumePercent) {
+    self.context.fillStyle = 'black';
+    self.context.font = '12px serif';
+    self.context.fillText(volumePercent + '%', MARGIN, BAR_HEIGHT - MARGIN);
+    self.context.fillText('Volume level (percent)', BAR_WIDTH + MARGIN, MARGIN);
+  }
+
+  function renderSoundDetectedLabel(self) {
+    self.context.fillText('Sound detected!', BAR_WIDTH + MARGIN, 2 * MARGIN);
+  }
 
   host.VolumeBar = VolumeBar;
 })(this);
