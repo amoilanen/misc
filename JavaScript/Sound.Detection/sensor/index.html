@@ -15,9 +15,9 @@
       width: 40px;
     }
   </style>
-  <script src="sensor/js/volumeBar.js"></script>
-  <script src="sensor/js/microphone.js"></script>
-  <script src="sensor/js/sensor.js"></script>
+  <script src="js/volumeBar.js"></script>
+  <script src="js/microphone.js"></script>
+  <script src="js/sensor.js"></script>
   <script>
     window.addEventListener('load', function(event) {
       var sensor = new Sensor({
@@ -30,7 +30,8 @@
         },
         onSoundDetected: function(volume) {
           console.log('Detected sound = ', volume);
-        }
+        },
+        measurementIntervalMs: 5000
       }).listen();
       var volumeBar = new VolumeBar(document.querySelector("section"), {
         onSoundDetectionThresholdChange: function(soundDetectionThreshold) {

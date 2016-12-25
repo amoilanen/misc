@@ -1,16 +1,9 @@
 (function(host) {
 
-  function Sensor(listeners) {
-    this.listeners = listeners;
-    if (!this.listeners.onVolumeMeasured) {
-      this.listeners.onVolumeMeasured = function() {};
-    }
-    if (!this.listeners.onAverageVolumeMeasured) {
-      this.listeners.onAverageVolumeMeasured = function() {};
-    }
-    if (!this.listeners.onSoundDetected) {
-      this.listeners.onSoundDetected = function() {};
-    }
+  function Sensor(options) {
+    this.measurementIntervalMs = options.measurementIntervalMs || 0;
+    this.onVolumeMeasured = options.onVolumeMeasured || function() {};
+    this.onSoundDetected = options.onSoundDetected || function() {};
     this.lastMeasurementTime = null;
     this.measurements = [];
   }
@@ -25,32 +18,26 @@
   }
 
   function measureVolumeValue(self, volumeValue) {
-    self.listeners.onVolumeMeasured(volumeValue);
-
-    if (volumeValue > self.soundDetectionThreshold) {
-      self.listeners.onSoundDetected(volumeValue);
-    }
-
-    if (!self.averageMeasurementIntervalMs) {
-      return;
-    }
-    self.measurements.push(volumeValue);
-    var currentMeasurementTime = new Date().getTime();
-    if (currentMeasurementTime - self.lastMeasurementTime >= self.measurementIntervalMs) {
-      var maxVolume = Math.max.apply(null, self.measurements);
-      self.listeners.onAverageVolumeMeasured({
-        volume: maxVolume,
-        threshold: self.soundDetectionThreshold
-      });
-      self.measurements = [];
-      self.lastMeasurementTime = currentMeasurementTime;
+    if (self.measurementIntervalMs > 0) {
+      self.measurements.push(volumeValue);
+      var currentMeasurementTime = new Date().getTime();
+      if (currentMeasurementTime - self.lastMeasurementTime >= self.measurementIntervalMs) {
+        var maxVolume = Math.max.apply(null, self.measurements);
+        fireCallbacks(self, maxVolume);
+        self.measurements = [];
+        self.lastMeasurementTime = currentMeasurementTime;
+      }
+    } else {
+      fireCallbacks(self, volumeValue);
     }
   }
 
-  Sensor.prototype.setAverageMeasurementIntervalMs = function(averageMeasurementIntervalMs) {
-    this.averageMeasurementIntervalMs = averageMeasurementIntervalMs;
-    return this;
-  };
+  function fireCallbacks(self, volumeValue) {
+    self.onVolumeMeasured(volumeValue);
+    if (volumeValue > self.soundDetectionThreshold) {
+      self.onSoundDetected(volumeValue);
+    }
+  }
 
   Sensor.prototype.setSoundDetectionThreshold = function(soundDetectionThreshold) {
     this.soundDetectionThreshold = soundDetectionThreshold;

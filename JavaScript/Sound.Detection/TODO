@@ -2,8 +2,9 @@
   -- Show the threshold in the volume bar, if exceeded the bar becomes red - OK
   -- Threshold can be re-configured for a sensor - OK
   -- Pass the configured sound detection threshold value back to the sensor - OK
-  -- Re-factor volume bar implementation
+  -- Re-factor volume bar implementation - OK
   -- When sound exceeds threshold it is reported to the sensor client using an additional callback - OK
+  -- Sensor can be configured to report only average values: sound detected, volume value - OK
 
 1. Sound sensors control panel:
 
