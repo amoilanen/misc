@@ -1,7 +1,7 @@
 import Html exposing (..)
 import Html.Attributes exposing (..)
 
--- TODO: Evaluate tests
+-- TODO: Evaluate tests 
 -- TODO: Expectations instead of (() -> Bool)
 -- TODO: Before spec - setup
 -- TODO: After spec - teardown
@@ -19,6 +19,21 @@ describe: String -> List Test -> Test
 describe description suites =
   Suite description suites
 
+-- Styles
+commonCssStyles: Html msg
+commonCssStyles = 
+  let
+    styleContent = """
+      .pass {
+        color: green;
+      }
+      .fail {
+        color: red;
+      }
+    """
+  in node "style" [] [text(styleContent)]
+
+
 -- Runner (generate result HTML from the test tree)
 run: Test -> Html msg
 run test =
@@ -35,8 +50,12 @@ run test =
         else
           "fail"
       in
-        div [class testClass]
-          [text(description)]
+        div []
+          [
+            commonCssStyles
+            , div [class testClass]
+                [text(description)]
+          ]
 
 -- Test example
 all : Test
