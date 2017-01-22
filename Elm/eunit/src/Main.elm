@@ -1,10 +1,12 @@
 import Html exposing (..)
 import Html.Attributes exposing (..)
 
--- TODO: Evaluate tests 
--- TODO: Expectations instead of (() -> Bool)
+-- TODO: Evaluate tests
+-- TODO: Report overall results? (number of failed, passed tests)
 -- TODO: Before spec - setup
 -- TODO: After spec - teardown
+-- TODO: Expectations instead of (() -> Bool)
+
 -- TODO: Report results in other ways? Like a value that will contained passed, failed fields, etc.
 
 -- Constructing the test tree
@@ -24,6 +26,9 @@ commonCssStyles: Html msg
 commonCssStyles = 
   let
     styleContent = """
+      .describe, .pass, .fail {
+        margin-left: 1rem;
+      }
       .pass {
         color: green;
       }
@@ -50,22 +55,49 @@ run test =
         else
           "fail"
       in
-        div []
-          [
-            commonCssStyles
-            , div [class testClass]
-                [text(description)]
-          ]
+        div [class testClass]
+          [text(description)]
+
+runAll: Test -> Html msg
+runAll test =
+  div []
+    [
+      commonCssStyles
+      , h3 [] [text("Test results")]
+      , run test
+    ]
 
 -- Test example
 all : Test
-all = describe "first spec"
-  [ describe "subspec 1"
-    [ it "should add two numbers" <|
+all = describe "Arithmetic operations"
+  [ describe "Plus"
+    [ it "should add two positive numbers" <|
         \() -> (1 + 2) == 3
+      , it "should be commutative" <|
+        \() -> (1 + 2) == (2 + 1)
+      , it "should be associative" <|
+        \() -> (1 + 2) + 3 == 1 + (2 + 3)
+    ]
+    , describe "Multiplication"
+    [
+      it "should multiply two positive numbers" <|
+        \() -> 2 * 3  == 6
+      , it "should be commutative" <|
+        \() -> 2 * 3  == 3 * 2
+      , it "should be associative" <|
+        \() -> (2 * 3) * 4 == 2 * (3 * 4)
+    ]
+    , describe "Subtraction"
+    [
+      it "should subtract two  numbers" <|
+        \() -> 2 - 3  == -1
+      , it "should be commutative?" <| -- Failing test, subtraction is not commutative!
+        \() -> 2 - 3  == 3 - 2
+      , it "should be associative?" <| -- Failing test, subtraction is not associative!
+        \() -> (2 - 3) - 4 == 2 - (3 - 4)
     ]
   ]
 
 main : Html msg
 main =
-  run all
+  runAll all
