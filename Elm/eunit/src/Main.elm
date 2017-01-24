@@ -1,8 +1,8 @@
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import List exposing (..)
 
 -- TODO: Evaluate tests
--- TODO: Report overall results? (number of failed, passed tests)
 -- TODO: Before spec - setup
 -- TODO: After spec - teardown
 -- TODO: Expectations instead of (() -> Bool)
@@ -40,32 +40,64 @@ commonCssStyles =
 
 
 -- Runner (generate result HTML from the test tree)
-run: Test -> Html msg
+type alias SuiteStats =
+  { passed: Int
+   , failed: Int
+  }
+
+type alias RunnerResult msg =
+  { suiteStats: SuiteStats
+    , report: Html msg 
+  }
+
+run: Test -> RunnerResult msg
 run test =
   case test of
     (Suite description tests) ->
       let
-        childTests = List.map run tests
+        childResults = List.map run tests
+        childReports = List.map .report childResults
+        suiteStats = childResults
+          |> List.map .suiteStats
+          |> List.foldl
+               (\stats total ->
+                 SuiteStats (stats.passed + total.passed) (stats.failed + total.failed)
+               )
+               (SuiteStats 0 0)
+        suiteReport = div [class "describe"] ([text(description)] ++ childReports)
       in
-        div [class "describe"] ([text(description)] ++ childTests)
+        RunnerResult suiteStats suiteReport
     (Test description expectation) ->
       let
-        testClass = if expectation() then
+        hasPassed = expectation()
+        testClass = if hasPassed then
           "pass"
         else
           "fail"
+        testStats = if hasPassed then
+          SuiteStats 1 0
+        else
+          SuiteStats 0 1
+        testReport = (div [class testClass] [text(description)])
       in
-        div [class testClass]
-          [text(description)]
+        RunnerResult testStats testReport
 
 runAll: Test -> Html msg
 runAll test =
-  div []
-    [
-      commonCssStyles
-      , h3 [] [text("Test results")]
-      , run test
-    ]
+  let
+    runnerResult = run test
+    suiteStats = runnerResult.suiteStats
+    statusString = String.join " " ["Passed: ", toString suiteStats.passed,
+                                  "Failed: ", toString suiteStats.failed]
+    htmlReport = runnerResult.report
+  in
+    div []
+      [
+        commonCssStyles
+        , h3 [] [text("Test results")]
+        , h4 [] [text(statusString)]
+        , htmlReport
+      ]
 
 -- Test example
 all : Test
