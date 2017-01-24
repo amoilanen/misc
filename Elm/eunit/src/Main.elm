@@ -5,9 +5,12 @@ import List exposing (..)
 -- TODO: Evaluate tests
 -- TODO: Before spec - setup
 -- TODO: After spec - teardown
--- TODO: Expectations instead of (() -> Bool)
+-- TODO: Expectations instead of (() -> Bool). Different expectations
 
 -- TODO: Report results in other ways? Like a value that will contained passed, failed fields, etc.
+-- Different runners?
+
+-- TODO: Re-factor parts, extract modules, provide examples, publish the package
 
 -- Constructing the test tree
 
