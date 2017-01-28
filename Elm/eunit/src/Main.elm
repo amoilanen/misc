@@ -2,23 +2,40 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import List exposing (..)
 
--- TODO: Evaluate tests
--- TODO: Before spec - setup
--- TODO: After spec - teardown
--- TODO: Expectations instead of (() -> Bool). Different expectations
-
 -- TODO: Report results in other ways? Like a value that will contained passed, failed fields, etc.
--- Different runners?
+-- Different runners? Command line runner?
 
 -- TODO: Re-factor parts, extract modules, provide examples, publish the package
 
 -- Constructing the test tree
 
-type Test = Suite String (List Test) | Test String (() -> Bool)
+type alias Expectation = {
+  errorMessage: String,
+  check: () -> Bool
+}
+type Test = Suite String (List Test) | Test String Expectation
 
-it: String -> (() -> Bool) -> Test
-it message assertion =
-  Test message assertion
+eql: a -> a -> Expectation
+eql expected actual =
+  let
+    errorMessage = "Expected " ++ toString expected ++ " instead encountered " ++ toString actual
+  in Expectation errorMessage (\() -> expected == actual)
+
+isTrue: Bool -> Expectation
+isTrue actual =
+  let
+    errorMessage = "Expected to be True, instead False"
+  in Expectation errorMessage (\() -> actual)
+
+isFalse: Bool -> Expectation
+isFalse actual =
+  let
+    errorMessage = "Expected to be False, instead True"
+  in Expectation errorMessage (\() -> not actual)
+
+it: String -> Expectation -> Test
+it message expectation =
+  Test message expectation
 
 describe: String -> List Test -> Test
 describe description suites =
@@ -37,6 +54,15 @@ commonCssStyles =
       }
       .fail {
         color: red;
+      }
+      .fail:before {
+        content: "x - ";
+      }
+      .errorMessage {
+        font-style: italic;
+        font-size: 0.8rem;
+        margin-left: 1rem;
+        margin-bottom: 1rem;
       }
     """
   in node "style" [] [text(styleContent)]
@@ -72,7 +98,7 @@ run test =
         RunnerResult suiteStats suiteReport
     (Test description expectation) ->
       let
-        hasPassed = expectation()
+        hasPassed = expectation.check()
         testClass = if hasPassed then
           "pass"
         else
@@ -81,7 +107,11 @@ run test =
           SuiteStats 1 0
         else
           SuiteStats 0 1
-        testReport = (div [class testClass] [text(description)])
+        testDetails = if hasPassed then
+          [text(description)]
+        else
+          [text(description), div [class "errorMessage"] [text(expectation.errorMessage)]]
+        testReport = (div [class testClass] testDetails)
       in
         RunnerResult testStats testReport
 
@@ -107,29 +137,29 @@ all : Test
 all = describe "Arithmetic operations"
   [ describe "Plus"
     [ it "should add two positive numbers" <|
-        \() -> (1 + 2) == 3
+        eql (1 + 2) 3
       , it "should be commutative" <|
-        \() -> (1 + 2) == (2 + 1)
+        eql (1 + 2) (2 + 1)
       , it "should be associative" <|
-        \() -> (1 + 2) + 3 == 1 + (2 + 3)
+        eql ((1 + 2) + 3) (1 + (2 + 3))
     ]
     , describe "Multiplication"
     [
       it "should multiply two positive numbers" <|
-        \() -> 2 * 3  == 6
+        eql (2 * 3) 6
       , it "should be commutative" <|
-        \() -> 2 * 3  == 3 * 2
+        eql (2 * 3) (3 * 2)
       , it "should be associative" <|
-        \() -> (2 * 3) * 4 == 2 * (3 * 4)
+        eql ((2 * 3) * 4) (2 * (3 * 4))
     ]
     , describe "Subtraction"
     [
       it "should subtract two  numbers" <|
-        \() -> 2 - 3  == -1
+        eql (2 - 3) -1
       , it "should be commutative?" <| -- Failing test, subtraction is not commutative!
-        \() -> 2 - 3  == 3 - 2
+        eql (2 - 3) (3 - 2)
       , it "should be associative?" <| -- Failing test, subtraction is not associative!
-        \() -> (2 - 3) - 4 == 2 - (3 - 4)
+        isTrue (((2 - 3) - 4) == (2 - (3 - 4)))
     ]
   ]
 
