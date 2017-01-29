@@ -1,0 +1,4 @@
+-- TODO: Different runners? Command line runner? Can be written as a node script that will try to launch elm-reactor,
+-- access the web page with tests (in test/Main.elm) and gather the results of the tests. What if elm-reactor is already launched for development?
+-- TODO: Report results in other ways? Like a value that will contained passed, failed fields, etc.
+-- TODO: Publish the package
