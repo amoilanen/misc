@@ -2,10 +2,14 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import List exposing (..)
 
--- TODO: Report results in other ways? Like a value that will contained passed, failed fields, etc.
--- Different runners? Command line runner?
+-- TODO: Re-factor parts, extract modules, provide examples
 
--- TODO: Re-factor parts, extract modules, provide examples, publish the package
+-- TODO: Different runners? Command line runner? Can be written as a node script that will try to launch elm-reactor,
+-- access the web page with tests (in test/Main.elm) and gather the results of the tests. What if elm-reactor is already launched for development?
+
+-- TODO: Report results in other ways? Like a value that will contained passed, failed fields, etc.
+
+-- TODO: Publish the package
 
 -- Constructing the test tree
 
@@ -25,8 +29,8 @@ isTrue: Bool -> Expectation
 isTrue actual =
   let
     errorMessage = "Expected to be True, instead False"
-  in Expectation errorMessage (\() -> actual)
 
+  in Expectation errorMessage (\() -> actual)
 isFalse: Bool -> Expectation
 isFalse actual =
   let
@@ -122,12 +126,16 @@ runAll test =
     suiteStats = runnerResult.suiteStats
     statusString = String.join " " ["Passed: ", toString suiteStats.passed,
                                   "Failed: ", toString suiteStats.failed]
+    testReportTitle = if suiteStats.failed > 0 then
+      h3 [class "fail"] [text("Tests failed!")]
+    else
+      h3 [] [text("All tests passed")]
     htmlReport = runnerResult.report
   in
     div []
       [
         commonCssStyles
-        , h3 [] [text("Test results")]
+        , testReportTitle
         , h4 [] [text(statusString)]
         , htmlReport
       ]
