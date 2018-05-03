@@ -4,6 +4,7 @@
 #
 import re
 import os
+import glob
 import click
 import time
 import math
@@ -28,16 +29,16 @@ def show_progress_bar(completed, total, extra_progress_info, bar_length = PROGRE
         print(extra_progress_info, end='\r')
 
 def download_url(url, destination_file):
-    #TODO: Skip the file only if its size is the same as specified in Content-Length?
     if (Path(destination_file).is_file()):
         print(f'{destination_file} was already downloaded, skipping...')
         return
+    destination_file_part = f'{destination_file}._part'
     open_url = urlopen(url)
     url_info = open_url.info()
     content_length = int(url_info.get('Content-Length', -1))
     print(f'Downloading {url} as {destination_file}, {content_length} bytes...')
     start_time = datetime.now()
-    with open(destination_file, 'bw') as target:
+    with open(destination_file_part, 'bw') as target:
         read_length = 0
         while True:
             buffer = open_url.read(READ_BUFFER_SIZE_BYTES)
@@ -52,11 +53,16 @@ def download_url(url, destination_file):
                 formatted_speed = "0.000"
             show_progress_bar(read_length, content_length, f'{formatted_speed} Mb/s')
             target.write(buffer)
+    os.rename(destination_file_part, destination_file)
     print('\n')
 
 def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+def remove_partial_downloads(directory):
+    for partial_download in glob.glob("*._part"):
+        os.remove(partial_download)
 
 def extensions_to_regex(extensions):
     extension_groups = [f'(?:{extension})' for extension in extensions.split(',')]
@@ -85,6 +91,7 @@ def download_urls(urls, save_to_dir):
 @click.option('--ext', help='Link extensions to fetch, comma-separated')
 def fetch_links(url, save_to_dir, ext):
     ensure_directory_exists(save_to_dir)
+    remove_partial_downloads(save_to_dir)
     print("Reading links...")
     urls = get_link_urls(url, ext)
     print("Fetching links...")
