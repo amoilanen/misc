@@ -28,7 +28,7 @@ def read_repos_api_results_page(api_url):
     repo_urls = [repo["html_url"] for repo in repos]
 
     link_header = response.info().get('Link')
-    next_page_url = re.search(r"<(.*?)>; rel=\"next\"", link_header)
+    next_page_url = re.search(r"<([^;]*?)>; rel=\"next\"", link_header)
     if next_page_url is not None:
       next_page_url = next_page_url.group(1)
     else:
