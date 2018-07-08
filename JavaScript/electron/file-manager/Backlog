@@ -1,4 +1,4 @@
- - Show list of files in the directory passed as an argument
+ - Show list of files in the directory passed as an argument - OK
  - Show folders and files differently (use Vue.js)
  - Allow to open a folders
  - Allow to rename files
