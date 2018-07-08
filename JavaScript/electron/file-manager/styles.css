@@ -1,0 +1,13 @@
+html, body, .container-fluid {
+  height: 100%;
+  color: black;
+  background-color: white;
+}
+
+html {
+  -webkit-app-region: drag;
+}
+
+.file-manager {
+  padding: 25px;
+}
