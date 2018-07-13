@@ -1,6 +1,6 @@
  - Show list of files in the directory passed as an argument - OK
  - Show folders and files differently (use Vue.js)
- - Allow to open a folders
+ - Allow to open a folder, navigate inside it
  - Allow to rename files
  - Allow to copy/paste/cut files, both shortcuts and menu items
  - Allow navigating to a directory

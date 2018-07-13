@@ -1,20 +1,6 @@
 const Vue = require('vue/dist/vue');
 const Vuex = require('vuex');
-
-const fs = require('fs');
-const readdir = promisify(fs.readdir);
-
-//TODO: Extract this to a separate file system access layer
-const listFiles = async dir => {
-  const files = await readdir(dir);
-
-  /*
-  files.forEach(file => {
-    console.log(file);
-  });
-  */
-  return files;
-};
+const { listFiles } = require('../filesystem/filesystem');
 
 Vue.use(Vuex);
 
