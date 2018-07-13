@@ -1,6 +1,6 @@
 const Vue = require('vue/dist/vue');
 const Vuex = require('vuex');
-const { listFiles } = require('../filesystem/filesystem');
+const { listFiles } = require('api/filesystem');
 
 Vue.use(Vuex);
 

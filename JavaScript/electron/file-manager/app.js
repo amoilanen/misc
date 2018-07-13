@@ -1,8 +1,8 @@
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
-const url = require('url')
+const {app, BrowserWindow} = require('electron');
+const path = require('path');
+const url = require('url');
 
-let window = null
+let window = null;
 
 // Wait until the app is ready
 app.once('ready', () => {
@@ -18,7 +18,7 @@ app.once('ready', () => {
     //backgroundColor: "#111",
     // Don't show the window until it's ready, this prevents any white flickering
     show: false
-  })
+  });
 
   const directory = process.argv[2] || '.';
 
@@ -33,5 +33,5 @@ app.once('ready', () => {
 
   window.once('ready-to-show', () => {
     window.show()
-  })
-})
+  });
+});
