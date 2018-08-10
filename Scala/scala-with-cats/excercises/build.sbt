@@ -2,7 +2,6 @@ name := "scala-with-cats-excercises"
 version := "0.0.1-SNAPSHOT"
 
 scalaVersion := "2.12.3"
-
 scalacOptions ++= Seq(
   "-encoding", "UTF-8",   // source files are in UTF-8
   "-deprecation",         // warn about use of deprecated APIs
