@@ -23,9 +23,18 @@ class EitherErrorHandlingSpec extends WordSpec with Matchers  {
   }
 
   "should handle series of operations" in {
-    List(8, 2, 2, 2).map(_.asResult).fold(1.0.asResult)(
-      (acc: Result[Double], number: Int) =>
-        acc.flatMap[AppError, Double](accValue => App.divide(accValue, number))
+    val result = List(2, 3).foldLeft(24.0.asResult)(
+      (acc, number) =>
+        acc.flatMap(App.divide(_, number))
     )
+    result shouldEqual 4.0.asResult
+  }
+
+  "should handle series of operations with errors" in {
+    val result = List(2, 0, 3).foldLeft(24.0.asResult)(
+      (acc, number) =>
+        acc.flatMap(App.divide(_, number))
+    )
+    result shouldEqual Left(CalculationError("Cannot divide by 0"))
   }
 }

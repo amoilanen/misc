@@ -14,18 +14,18 @@ object App {
 
   implicit final class ResultOps[A](val value: A) {
 
-    def asResult[A]: Result[A] = Either.asRight[AppError](value)
+    def asResult: Result[A] = value.asRight[AppError]
   }
 
-  def divide[A <: Number, B <: Number](x: A, y: B): Either[AppError, Double] = {
+  def divide(x: Double, y: Double): Either[AppError, Double] = {
     if (y == 0) {
       CalculationError("Cannot divide by 0").asLeft[Double]
     } else {
-      (x.doubleValue / y.doubleValue).asRight[CalculationError]
+      (x / y).asRight[CalculationError]
     }
   }
 
-  def multiply[A <: Number, B <: Number](x: A, y: B): Either[AppError, Double] = {
-    (x.doubleValue * y.doubleValue).asInstanceOf[A].asRight[CalculationError]
+  def multiply(x: Double, y: Double): Either[AppError, Double] = {
+    (x * y).asRight[AppError]
   }
 }
