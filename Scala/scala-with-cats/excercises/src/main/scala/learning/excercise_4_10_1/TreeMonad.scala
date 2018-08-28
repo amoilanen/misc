@@ -29,16 +29,10 @@ object TreeInstances {
 
     override def pure[A](x: A): Tree[A] = Leaf(x)
 
-    override def tailRecM[A, B](a: A)(f: A => Tree[Either[A, B]]): Tree[B] = f(a) match {
-      case Branch(left, right) =>
-        for {
-          leftA <- left
-          rightA <- right
-        } yield Branch(leftA, rightA) //TODO
-      case Leaf(x) => x match {
-        case Right(value) => Leaf(value)
-        case Left(error) => tailRecM(error)(f)
+    override def tailRecM[A, B](a: A)(f: A => Tree[Either[A, B]]): Tree[B] =
+      flatMap(f(a)) {
+        case Left(a) => tailRecM(a)(f)
+        case Right(b) => Leaf(b)
       }
-    }
   }
 }

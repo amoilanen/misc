@@ -11,13 +11,13 @@ class TreeSpec extends WordSpec with Matchers {
   "Tree map" should {
 
     "should work with Leaf" in {
-      val leaf: Tree[Int] = Leaf(1)
+      val tree: Tree[Int] = Leaf(1)
 
-      leaf.map(_ * 2) shouldEqual Leaf(2)
+      tree.map(_ * 2) shouldEqual Leaf(2)
     }
 
     "should work with Branch" in {
-      val branch: Tree[String] = Branch(
+      val tree: Tree[String] = Branch(
         Branch(
           Leaf("abc"),
           Leaf("bc")
@@ -32,7 +32,7 @@ class TreeSpec extends WordSpec with Matchers {
         Leaf(1)
       )
 
-      branch.map(_.length) shouldEqual expected
+      tree.map(_.length) shouldEqual expected
     }
   }
 
@@ -63,5 +63,21 @@ class TreeSpec extends WordSpec with Matchers {
     }
   }
 
-  //TODO: Tree tailRecM
+  "Tree tailRecM" should {
+
+    "work" in {
+      def increment(x: Int): Tree[Either[Int, Int]] =
+        if (x < 2)
+          Branch(Leaf(Left(x + 1)), Leaf(Left(x + 1)))
+        else
+          Leaf(Right(x))
+
+      val expected = Branch(
+        Leaf(2),
+        Leaf(2)
+      )
+
+      treeMonad.tailRecM(1)(increment _) shouldEqual expected
+    }
+  }
 }
