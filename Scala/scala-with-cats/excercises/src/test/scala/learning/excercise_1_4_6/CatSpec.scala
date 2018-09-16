@@ -12,7 +12,7 @@ class CatSpec extends WordSpec with Matchers {
       val cat = Cat("Missa", 5, "gray")
 
       cat.show shouldEqual "Missa is a 5 year-old gray cat."
-      Show.ops.toAllShowOps(cat).show shouldEqual "Missa is a 5 year-old gray cat."
+      (new Show.ToShowOps {}).toShow(cat).show shouldEqual "Missa is a 5 year-old gray cat."
     }
   }
 }
