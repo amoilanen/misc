@@ -1,24 +1,26 @@
 package learning.case_study_data_validation
 
-import cats.Monoid
+import cats.data.Validated
+import cats.Semigroupal
+import cats.Semigroup
+import cats.syntax.semigroupal._
 
 object Validation {
 
   trait Check[E, A] { self =>
 
-    def apply(value: A): Either[E, A]
+    def apply(value: A): Validated[E, A]
 
-    def and(that: Check[E, A])(implicit m: Monoid[E]): Check[E, A] = new Check[E, A] {
+    def and(that: Check[E, A])(implicit me: Semigroup[E]): Check[E, A] = new Check[E, A] {
 
-      def apply(value: A): Either[E, A] = {
-        val selfResult = self(value)
-        val thatResult = that(value)
-        (selfResult, thatResult) match {
-          case (Left(selfError), Left(thatError)) => Left(m.combine(selfError, thatError))
-          case (Left(selfError), Right(_)) => Left(selfError)
-          case (Right(_), Left(thatError)) => Left(thatError)
-          case (Right(_), Right(_)) => Right(value)
-        }
+      def apply(value: A): Validated[E, A] = {
+        val validationResult = Semigroupal.tuple2(
+          self(value),
+          that(value)
+        )
+        validationResult.map({
+          case (_, _) => value
+        })
       }
     }
 
