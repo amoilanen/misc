@@ -26,4 +26,5 @@ object SemigroupalDemo extends App {
   ).tupled
 
   println(x)
+
 }
