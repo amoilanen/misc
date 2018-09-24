@@ -7,42 +7,81 @@ import cats.Semigroup
 
 object Validation {
 
-  trait Check[E, A] { self =>
+  sealed trait Predicate[E, A] {
 
     type ValidatedValue[A] = Validated[E, A]
 
     def apply(value: A): ValidatedValue[A]
 
-    def map[B](check: Check[E, A])(func: A => B): Check[E, B]= ???
+    def and(that: Predicate[E, A])(implicit me: Semigroup[E]): Predicate[E, A] = And(this, that)
 
-    def and(that: Check[E, A])(implicit me: Semigroup[E]): Check[E, A] = new Check[E, A] {
+    def or(that: Predicate[E, A]): Predicate[E, A] = Or(this, that)
+  }
 
-      def apply(value: A): Validated[E, A] = {
-        val validationResult = Semigroupal.tuple2(
-          self(value),
-          that(value)
-        )
-        validationResult.map({
-          case (_, _) => value
-        })
-      }
+  final case class And[E, A](left: Predicate[E, A], right: Predicate[E, A]) extends Predicate[E, A] {
+
+    def apply(value: A)(implicit me: Semigroup[E]): Validated[E, A] = {
+      val validationResult = Semigroupal.tuple2(
+        left(value),
+        right(value)
+      )
+      validationResult.map({
+        case (_, _) => value
+      })
     }
+  }
 
-    def or(that: Check[E, A])(implicit me: Semigroup[E]): Check[E, A] = new Check[E, A] {
+  final case class Or[E, A](left: Predicate[E, A], right: Predicate[E, A]) extends Predicate[E, A] {
 
-      override def apply(value: A): ValidatedValue[A] = {
-        self(value) match {
-          case Valid(selfValid) => Valid(selfValid)
-          case Invalid(selfError) => {
-            that(value) match {
-              case Valid(thatValid) => Valid(thatValid)
-              case Invalid(thatError) => Invalid(me.combine(selfError, thatError))
-            }
+    def apply(value: A)(implicit me: Semigroup[E]): ValidatedValue[A] = {
+      left(value) match {
+        case Valid(selfValid) => Valid(selfValid)
+        case Invalid(selfError) => {
+          right(value) match {
+            case Valid(thatValid) => Valid(thatValid)
+            case Invalid(thatError) => Invalid(me.combine(selfError, thatError))
           }
         }
       }
     }
   }
 
+  final case class Pure[E, A](func: A => Validated[E, A]) extends Predicate[E, A] {
 
+    def apply(value: A): ValidatedValue[A] = func(value)
+  }
+
+  sealed trait Check[E, A, B] { self =>
+
+    def apply(a: A): Validated[E, B]
+
+    def map[C](func: B => C): Check[E, A, C] = MapCheck(self, func)
+
+    def flatMap[C](func: B => Check[E, A, C]): Check[E, A, C] = FlatMapCheck(self, func)
+
+    def andThen[C](that: Check[E, B, C]): Check[E, A, C] = AndThenCheck(self, that)
+
+  final case class MapCheck[E, A, B, C](check: Check[E, A, B], func: B => C) extends Check[E, A, C] {
+
+    def apply(a: A): Validated[E, C] =
+      check(a).map(func)
+  }
+
+  final case class FlatMapCheck[E, A, B, C](check: Check[E, A, B], func: B => Check[E, A, C]) extends Check[E, A, C] {
+
+    def apply(a: A): Validated[E, C] =
+      check(a).map(func) match {
+        case Invalid(error) => Invalid(error)
+        case Valid(check) => check(a)
+      }
+  }
+
+  final case class AndThenCheck[E, A, B, C](left: Check[E, A, B], right: Check[E, B, C]) extends Check[E, A, C] {
+
+    def apply(a: A): Validated[E, C] =
+      left(a) match {
+        case Invalid(error) => Invalid(error)
+        case Valid(b) => right(b)
+      }
+  }
 }
