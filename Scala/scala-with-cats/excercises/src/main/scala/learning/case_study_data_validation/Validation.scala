@@ -2,20 +2,34 @@ package learning.case_study_data_validation
 
 import cats.data.Validated
 import cats.data.Validated._
-import cats.Semigroupal
-import cats.Semigroup
+import cats.{Semigroup, Semigroupal}
 
 object Validation {
 
   sealed trait Predicate[E, A] {
 
-    type ValidatedValue[A] = Validated[E, A]
+    type ValidatedValue[B] = Validated[E, B]
 
-    def apply(value: A): ValidatedValue[A]
+    def apply(value: A)(implicit me: Semigroup[E]): ValidatedValue[A]
 
-    def and(that: Predicate[E, A])(implicit me: Semigroup[E]): Predicate[E, A] = And(this, that)
+    def and(that: Predicate[E, A]): Predicate[E, A] = And(this, that)
 
     def or(that: Predicate[E, A]): Predicate[E, A] = Or(this, that)
+  }
+
+  object Predicate {
+
+    def pure[E, A](func: A => Validated[E, A]): Predicate[E, A] = Pure(func)
+
+    def lift[E, A](error: E, func: A => Boolean): Predicate[E, A] = new Predicate[E, A] {
+
+      override def apply(value: A)(implicit me: Semigroup[E]): ValidatedValue[A] =
+        if (func(value)) {
+          Valid(value)
+        } else {
+          Invalid(error)
+        }
+    }
   }
 
   final case class And[E, A](left: Predicate[E, A], right: Predicate[E, A]) extends Predicate[E, A] {
@@ -48,7 +62,7 @@ object Validation {
 
   final case class Pure[E, A](func: A => Validated[E, A]) extends Predicate[E, A] {
 
-    def apply(value: A): ValidatedValue[A] = func(value)
+    def apply(value: A)(implicit me: Semigroup[E]): ValidatedValue[A] = func(value)
   }
 
   sealed trait Check[E, A, B] { self =>
@@ -60,6 +74,7 @@ object Validation {
     def flatMap[C](func: B => Check[E, A, C]): Check[E, A, C] = FlatMapCheck(self, func)
 
     def andThen[C](that: Check[E, B, C]): Check[E, A, C] = AndThenCheck(self, that)
+  }
 
   final case class MapCheck[E, A, B, C](check: Check[E, A, B], func: B => C) extends Check[E, A, C] {
 
@@ -84,4 +99,9 @@ object Validation {
         case Valid(b) => right(b)
       }
   }
+
+}
+
+object Main extends App {
+  println("Main")
 }
