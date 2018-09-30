@@ -15,7 +15,6 @@ class ValidationSpec extends WordSpec with Matchers {
   def errors(first: String, rest: String*): NonEmptyList[String] =
     NonEmptyList(first, rest.toList)
 
-
   def longerThan(n: Int): Predicate[Errors, String] =
     Predicate.lift(
       error(s"Must be longer than $n characters"),
@@ -63,5 +62,43 @@ class ValidationSpec extends WordSpec with Matchers {
     }
   }
 
-  //email validation
+  "email validation" should {
+
+    val splitEmailByAtSign: Check[NonEmptyList[String], String, (String, String)] = Check.lift(error("Should contain @ sign"), {
+      case (left: String) ++ "@" ++ (right: String) => Some((left, right))
+      case _ => None
+    })
+
+    val validateEmailLeftPart: Predicate[Errors, String] = longerThan(0)
+    val validateEmailRightPart: Predicate[Errors, String] = longerThan(3).and(contains('.'))
+
+    val checkLeftEmailPart: Check[Errors, (String, String), (String, String)] = Check.pure(
+      (emailParts: (String, String)) => {
+        val (left, _) = emailParts
+        validateEmailLeftPart(left).map(_ => emailParts)
+      }
+    )
+
+    val checkRightEmailPart: Check[Errors, (String, String), (String, String)] = Check.pure(
+      (emailParts: (String, String)) => {
+        val (_, right) = emailParts
+        validateEmailRightPart(right).map(_ => emailParts)
+      }
+    )
+
+    def joinEmailParts(emailParts: (String, String)): String = {
+      val (left, right) = emailParts
+      s"$left@$right"
+    }
+
+    val emailValidation: Check[NonEmptyList[String], String, String] = splitEmailByAtSign
+      .andThen(checkLeftEmailPart)
+      .andThen(checkRightEmailPart)
+      .map(joinEmailParts(_))
+
+    //TODO: Several @ signs
+    "TODO" in {
+
+    }
+  }
 }
