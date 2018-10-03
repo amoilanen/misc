@@ -78,18 +78,14 @@ class ValidationSpec extends WordSpec with Matchers {
     val validateEmailLeftPart: Predicate[Errors, String] = longerThan(0)
     val validateEmailRightPart: Predicate[Errors, String] = longerThan(3).and(contains('.'))
 
-    val checkLeftEmailPart: Check[Errors, (String, String), (String, String)] = Check.pure(
-      (emailParts: (String, String)) => {
-        val (left, _) = emailParts
-        validateEmailLeftPart(left).leftMap(errors => errors.map("Left part: " ++ _)).map(_ => emailParts)
-      }
+    val checkLeftEmailPart = Check.fromPredicate(validateEmailLeftPart)(
+      parse = (emailParts: (String, String)) => emailParts._1,
+      convertError = errors => errors.map("Left part: " ++ _)
     )
 
-    val checkRightEmailPart: Check[Errors, (String, String), (String, String)] = Check.pure(
-      (emailParts: (String, String)) => {
-        val (_, right) = emailParts
-        validateEmailRightPart(right).leftMap(errors => errors.map("Right part: " ++ _)).map(_ => emailParts)
-      }
+    val checkRightEmailPart = Check.fromPredicate(validateEmailRightPart)(
+      parse = (emailParts: (String, String)) => emailParts._2,
+      convertError = errors => errors.map("Right part: " ++ _)
     )
 
     def joinEmailParts(emailParts: (String, String)): String = {

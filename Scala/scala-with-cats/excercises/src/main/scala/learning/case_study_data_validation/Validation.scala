@@ -86,6 +86,9 @@ object Validation {
       override def apply(value: A): Validated[E, B] =
         func(value).fold(error.invalid[B])(_.valid[E])
     }
+
+    def fromPredicate[E, P, A](predicate: Predicate[E, P])(parse: A => P, convertError: E => E)(implicit me: Semigroup[E]): Check[E, A, A] =
+      new PredicateCheck[E, P, A](predicate)(parse, convertError)
   }
 
   final case class MapCheck[E, A, B, C](check: Check[E, A, B], func: B => C) extends Check[E, A, C] {
@@ -116,6 +119,12 @@ object Validation {
 
     def apply(a: A): Validated[E, B] =
       check(a)
+  }
+
+  final case class PredicateCheck[E, P, A](predicate: Predicate[E, P])(parse: A => P, convertError: E => E)(implicit me: Semigroup[E]) extends Check[E, A, A] {
+
+    def apply(a: A): Validated[E, A] =
+      predicate(parse(a)).leftMap(convertError).map(_ => a)
   }
 }
 
