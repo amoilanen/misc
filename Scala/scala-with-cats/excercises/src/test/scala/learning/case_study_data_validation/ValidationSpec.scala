@@ -64,9 +64,15 @@ class ValidationSpec extends WordSpec with Matchers {
 
   "email validation" should {
 
-    val splitEmailByAtSign: Check[NonEmptyList[String], String, (String, String)] = Check.lift(error("Should contain @ sign"), {
-      case (left: String) ++ "@" ++ (right: String) => Some((left, right))
-      case _ => None
+    val splitEmailByAtSign: Check[NonEmptyList[String], String, (String, String)] = Check.lift(error("Should contain @ sign"), (value: String) => {
+      val atSignIndex = value.indexOf('@')
+      if (atSignIndex >= 0) {
+        val leftPart = value.substring(0, atSignIndex)
+        val rightPart = value.substring(atSignIndex + 1)
+        Some((leftPart, rightPart))
+      } else {
+        None
+      }
     })
 
     val validateEmailLeftPart: Predicate[Errors, String] = longerThan(0)
@@ -75,14 +81,14 @@ class ValidationSpec extends WordSpec with Matchers {
     val checkLeftEmailPart: Check[Errors, (String, String), (String, String)] = Check.pure(
       (emailParts: (String, String)) => {
         val (left, _) = emailParts
-        validateEmailLeftPart(left).map(_ => emailParts)
+        validateEmailLeftPart(left).leftMap(errors => errors.map("Left part: " ++ _)).map(_ => emailParts)
       }
     )
 
     val checkRightEmailPart: Check[Errors, (String, String), (String, String)] = Check.pure(
       (emailParts: (String, String)) => {
         val (_, right) = emailParts
-        validateEmailRightPart(right).map(_ => emailParts)
+        validateEmailRightPart(right).leftMap(errors => errors.map("Right part: " ++ _)).map(_ => emailParts)
       }
     )
 
@@ -96,9 +102,32 @@ class ValidationSpec extends WordSpec with Matchers {
       .andThen(checkRightEmailPart)
       .map(joinEmailParts(_))
 
-    //TODO: Several @ signs
-    "TODO" in {
+    "valid email" in {
+      emailValidation("john.smith@example.com") shouldEqual Valid("john.smith@example.com")
+    }
 
+    "invalid email" should {
+
+      "no @ sign" in {
+        emailValidation("john.smith") shouldEqual Invalid(errors("Should contain @ sign"))
+      }
+
+      "left part is empty" in {
+        emailValidation("@example.com") shouldEqual Invalid(errors("Left part: Must be longer than 0 characters"))
+      }
+
+      "right part is too short and without a dot" in {
+        emailValidation("john.smith@e") shouldEqual
+          Invalid(errors("Right part: Must be longer than 3 characters", "Right part: Must contain the character ."))
+      }
+
+      "right part is long but does not contain a dot" in {
+        emailValidation("john.smith@example") shouldEqual Invalid(errors("Right part: Must contain the character ."))
+      }
+
+      "just @ sign" in {
+        emailValidation("@") shouldEqual Invalid(errors("Left part: Must be longer than 0 characters"))
+      }
     }
   }
 }
