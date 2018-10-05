@@ -12,4 +12,4 @@ https://cdn.rawgit.com/WebAssembly/wabt/e0719fe0/demo/wat2wasm/
 
 3. Launch a server in the current directory, open add.html, WebAssembly binary of the addition function should be loaded and numbers should be added
 
-For example `php -S localhost:8080`
+`node server.js`
