@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <script>
+
+async function loadAndCompileWasm(fileName) {
+  const response = await fetch(fileName);
+  const bytes = await response.arrayBuffer();
+  const compiledModule = await WebAssembly.compile(bytes);
+
+  return new WebAssembly.Instance(compiledModule);
+}
+
+async function addNumbers(x, y) {
+  const add = (await loadAndCompileWasm('add.wasm')).exports.add;
+  return add(x, y);
+}
+
+addNumbers(1, 2).then(result => {
+  console.log(`Added numbers ${result}`);
+});
+
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
