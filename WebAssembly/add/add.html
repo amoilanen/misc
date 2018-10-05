@@ -4,10 +4,9 @@
 
 async function loadAndCompileWasm(fileName) {
   const response = await fetch(fileName);
-  const bytes = await response.arrayBuffer();
-  const compiledModule = await WebAssembly.compile(bytes);
+  const compiledModule = await WebAssembly.compileStreaming(response);
 
-  return new WebAssembly.Instance(compiledModule);
+  return WebAssembly.instantiate(compiledModule, {});
 }
 
 async function addNumbers(x, y) {
