@@ -4,6 +4,8 @@ import org.scalatest.{WordSpec, _}
 import cats.data.NonEmptyList
 import cats.data.Validated._
 import cats.data.Kleisli
+import cats.syntax.either._
+import cats.instances.either._
 import Validation._
 
 class ValidationSpec extends WordSpec with Matchers {
@@ -12,18 +14,18 @@ class ValidationSpec extends WordSpec with Matchers {
 
   type Result[A] = Either[Errors, A]
 
-  type KCheck[A, B] = Kleisli[Result, A, B]
+  type KleisliCheck[A, B] = Kleisli[Result, A, B]
 
-  def check[A, B](func: A => Result[B]): KCheck[A, B] =
+  def check[A, B](func: A => Result[B]): KleisliCheck[A, B] =
     Kleisli(func)
 
-  def checkPred[A](pred: Predicate[Errors, A]): KCheck[A, A] =
+  def checkPred[A](pred: Predicate[Errors, A]): KleisliCheck[A, A] =
     Kleisli[Result, A, A](pred.run)
 
   def error(s: String): NonEmptyList[String] =
     NonEmptyList(s, Nil)
 
-  def errors(first: String, rest: String*): NonEmptyList[String] =
+  def errors(first: String, rest: String*): Errors =
     NonEmptyList(first, rest.toList)
 
   def longerThan(n: Int): Predicate[Errors, String] =
@@ -160,6 +162,73 @@ class ValidationSpec extends WordSpec with Matchers {
 
       "just @ sign" in {
         emailValidation("@") shouldEqual Invalid(errors("Left part: Must be longer than 0 characters"))
+      }
+    }
+
+    "Kleisli instead of Check" should {
+
+      val splitEmailByAtSign = Kleisli[Result, String, (String, String)]((value: String) => {
+        val atSignIndex = value.indexOf('@')
+        if (atSignIndex >= 0) {
+          val leftPart = value.substring(0, atSignIndex)
+          val rightPart = value.substring(atSignIndex + 1)
+          (leftPart, rightPart).asRight[Errors]
+        } else {
+          errors("Should contain @ sign").asLeft[(String, String)]
+        }
+      })
+
+      val validateEmailLeftPart: Predicate[Errors, String] = longerThan(0)
+      val validateEmailRightPart: Predicate[Errors, String] = longerThan(3).and(contains('.'))
+
+      val checkLeftEmailPart = Kleisli[Result, (String, String), (String, String)]((value: (String, String)) =>
+        validateEmailLeftPart.run(value._1)
+          .leftMap(errors => errors.map("Left part: " ++ _))
+          .map(_ => value)
+      )
+
+      val checkRightEmailPart = Kleisli[Result, (String, String), (String, String)]((value: (String, String)) =>
+        validateEmailRightPart.run(value._2)
+          .leftMap(errors => errors.map("Right part: " ++ _))
+          .map(_ => value)
+      )
+
+      def joinEmailParts(emailParts: (String, String)): String = {
+        val (left, right) = emailParts
+        s"$left@$right"
+      }
+
+      val emailValidation: Kleisli[Result, String, String] = splitEmailByAtSign
+        .andThen(checkLeftEmailPart)
+        .andThen(checkRightEmailPart)
+        .map(joinEmailParts(_))
+
+      "valid email" in {
+        emailValidation("john.smith@example.com") shouldEqual Right("john.smith@example.com")
+      }
+
+      "invalid email" should {
+
+        "no @ sign" in {
+          emailValidation("john.smith") shouldEqual Left(errors("Should contain @ sign"))
+        }
+
+        "left part is empty" in {
+          emailValidation("@example.com") shouldEqual Left(errors("Left part: Must be longer than 0 characters"))
+        }
+
+        "right part is too short and without a dot" in {
+          emailValidation("john.smith@e") shouldEqual
+            Left(errors("Right part: Must be longer than 3 characters", "Right part: Must contain the character ."))
+        }
+
+        "right part is long but does not contain a dot" in {
+          emailValidation("john.smith@example") shouldEqual Left(errors("Right part: Must contain the character ."))
+        }
+
+        "just @ sign" in {
+          emailValidation("@") shouldEqual Left(errors("Left part: Must be longer than 0 characters"))
+        }
       }
     }
   }
