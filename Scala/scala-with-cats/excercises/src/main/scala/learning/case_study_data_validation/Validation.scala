@@ -16,6 +16,9 @@ object Validation {
     def and(that: Predicate[E, A]): Predicate[E, A] = And(this, that)
 
     def or(that: Predicate[E, A]): Predicate[E, A] = Or(this, that)
+
+    def run(value: A)(implicit me: Semigroup[E]): Either[E, A] =
+      apply(value).toEither
   }
 
   object Predicate {

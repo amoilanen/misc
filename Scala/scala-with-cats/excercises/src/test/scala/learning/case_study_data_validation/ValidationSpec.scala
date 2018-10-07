@@ -3,11 +3,22 @@ package learning.case_study_data_validation
 import org.scalatest.{WordSpec, _}
 import cats.data.NonEmptyList
 import cats.data.Validated._
+import cats.data.Kleisli
 import Validation._
 
 class ValidationSpec extends WordSpec with Matchers {
 
   type Errors = NonEmptyList[String]
+
+  type Result[A] = Either[Errors, A]
+
+  type KCheck[A, B] = Kleisli[Result, A, B]
+
+  def check[A, B](func: A => Result[B]): KCheck[A, B] =
+    Kleisli(func)
+
+  def checkPred[A](pred: Predicate[Errors, A]): KCheck[A, A] =
+    Kleisli[Result, A, A](pred.run)
 
   def error(s: String): NonEmptyList[String] =
     NonEmptyList(s, Nil)
@@ -59,6 +70,32 @@ class ValidationSpec extends WordSpec with Matchers {
           s"Must be longer than $minimumCharacters characters"
         )
       )
+    }
+
+    "Kleisli instead of Check" should {
+
+      val userNameValidation = checkPred(alphanumeric.and(longerThan(minimumCharacters)))
+
+      s"should be valid when consists of at least $minimumCharacters alphanumeric characters" in {
+        userNameValidation("Edward") shouldEqual Right("Edward")
+      }
+
+      "should be invalid if contains non-alphanumeric characters" in {
+        userNameValidation("@Edward") shouldEqual Left(error("Must be all alphanumeric characters"))
+      }
+
+      "should be invalid if too short" in {
+        userNameValidation("Ed") shouldEqual Left(error(s"Must be longer than $minimumCharacters characters"))
+      }
+
+      "should be invalid if both too short and contains non-alphanumeric characters" in {
+        userNameValidation("@#") shouldEqual Left(
+          errors(
+            "Must be all alphanumeric characters",
+            s"Must be longer than $minimumCharacters characters"
+          )
+        )
+      }
     }
   }
 
