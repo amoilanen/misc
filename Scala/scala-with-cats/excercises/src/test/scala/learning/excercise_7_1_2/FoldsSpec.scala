@@ -2,7 +2,6 @@ package learning.excercise_7_1_2
 
 import org.scalatest._
 
-
 class FoldsSpec extends WordSpec with Matchers {
 
   "empty accumulator and cons ::" should {
