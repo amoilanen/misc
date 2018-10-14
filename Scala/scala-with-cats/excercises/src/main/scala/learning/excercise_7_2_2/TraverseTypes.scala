@@ -15,6 +15,8 @@ trait Traverse[F[_]] {
 
 object Traverse {
 
+  def apply[F[_]: Traverse]: Traverse[F] = implicitly[Traverse[F]]
+
   def traverse[G[_]: Applicative, F[_]: Traverse, A, B](inputs: F[A])(func: A => G[B]): G[F[B]] =
     implicitly[Traverse[F]].traverse(inputs)(func)
 
