@@ -7,19 +7,20 @@ import cats.instances.vector._ // for Applicative
 import cats.instances.option._ // for Applicative
 import cats.instances.list._ // for Applicative
 
-import TraverseTypes._
+import TraverseInstances._
+import Traverse._
 
 class TraverseTypesSpec extends WordSpec with Matchers {
 
   "vector" should {
 
     "should return cartesian product when two vectors" in {
-      listSequence(List(Vector(1, 2), Vector(3, 4))) shouldEqual
+      sequence(List(Vector(1, 2), Vector(3, 4))) shouldEqual
         Vector(List(1, 3), List(1, 4), List(2, 3), List(2, 4))
     }
 
     "should return cartesian product when three vectors" in {
-      listSequence(List(Vector(1, 2), Vector(3, 4), Vector(5, 6))) shouldEqual
+      Traverse[List].sequence(List(Vector(1, 2), Vector(3, 4), Vector(5, 6))) shouldEqual
         Vector(List(1, 3, 5), List(1, 3, 6), List(1, 4, 5), List(1, 4, 6),
                List(2, 3, 5), List(2, 3, 6), List(2, 4, 5), List(2, 4, 6))
     }
@@ -28,7 +29,7 @@ class TraverseTypesSpec extends WordSpec with Matchers {
   "option" should {
 
     def process(inputs: List[Int]): Option[List[Int]] =
-      listTraverse(inputs)(n => if(n % 2 == 0) Some(n) else None)
+      traverse(inputs)(n => if(n % 2 == 0) Some(n) else None)
 
     "should return None if contains odd numbers" in {
       process(List(1, 2, 3, 4, 5)) shouldEqual None
@@ -44,7 +45,7 @@ class TraverseTypesSpec extends WordSpec with Matchers {
     type ErrorsOr[A] = Validated[List[String], A]
 
     def process(inputs: List[Int]): ErrorsOr[List[Int]] =
-      listTraverse(inputs) { n =>
+      traverse(inputs) { n =>
         if(n % 2 == 0) {
           Validated.valid(n)
         } else {
