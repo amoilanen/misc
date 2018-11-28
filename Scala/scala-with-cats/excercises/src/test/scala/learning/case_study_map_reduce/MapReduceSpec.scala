@@ -35,4 +35,14 @@ class MapReduceSpec extends WordSpec with Matchers {
       parallelFoldMap((1 to 200).toVector)(identity) shouldEqual 20100
     }
   }
+
+  "parallelCatsFoldMap" should {
+
+    val parallelism = Runtime.getRuntime.availableProcessors()
+    implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(parallelism))
+
+    "should work with a vector of Integers" in {
+      parallelCatsFoldMap((1 to 200).toVector)(identity) shouldEqual 20100
+    }
+  }
 }

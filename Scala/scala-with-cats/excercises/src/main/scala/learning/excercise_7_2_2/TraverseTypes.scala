@@ -26,7 +26,7 @@ object Traverse {
 
 object TraverseInstances {
 
-  implicit val listTraverse = ListTraverse
+  implicit val listTraverse: Traverse[List] = ListTraverse
 }
 
 object ListTraverse extends Traverse[List] {
