@@ -15,6 +15,20 @@ function isOperator(character) {
 var precedences = {
   '+': 1,
   '*': 2
+};
+
+function pushOperator(operator) {
+  const rightOperand = output.pop();
+  const leftOperand = output.pop();
+  output.push({
+    left: leftOperand,
+    right: rightOperand,
+    op: operator
+  });
+}
+
+function pushOperand(operand) {
+  output.push(operand);
 }
 
 characters.forEach(character => {
@@ -22,7 +36,7 @@ characters.forEach(character => {
     let currentOperator = character;
     let topOperator = peek(operators);
     while (!!topOperator && topOperator !== '(' && (precedences[topOperator] >= precedences[currentOperator])) {
-      output.push(topOperator);
+      pushOperator(topOperator);
       operators.pop();
       topOperator = peek(operators);
     }
@@ -30,7 +44,7 @@ characters.forEach(character => {
   } else if (character === ')') {
     let topOperator = peek(operators);
     while (!!topOperator && topOperator !== '(') {
-      output.push(topOperator);
+      pushOperator(topOperator);
       operators.pop();
       topOperator = peek(operators);
     }
@@ -40,10 +54,33 @@ characters.forEach(character => {
   } else if (character === '(') {
     operators.push(character);
   } else {
-    output.push(character);
+    pushOperand(character);
   }
 });
 
-output = output.concat(operators.reverse());
+while (operators.length > 0) {
+  pushOperator(operators.pop());
+}
 
-console.log('output = ', output);
+// Abstract Syntax Tree representation of the expression
+var ast = output.pop();
+
+//abc*+de+f*+
+console.log('output = ', JSON.stringify(ast, null, 2));
+
+function isTree(node) {
+  return node.op !== undefined;
+}
+
+function toInfixForm(ast) {
+  if (isTree(ast)) {
+    const { left, right, op } = ast;
+    return `(${toInfixForm(left)}${op}${toInfixForm(right)})`;
+  } else {
+    return ast;
+  }
+}
+
+//a+b*c+(d+e)*f
+//((a+(b*c))+((d+e)*f))
+console.log('with parentheses = ', toInfixForm(ast));
