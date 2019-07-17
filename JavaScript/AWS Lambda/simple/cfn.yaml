@@ -1,8 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -24,15 +21,14 @@ Resources:
   LambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties: 
+      FunctionName: "simple-lambda-demo"
       Handler: "index.handler"
       Role: 
         Fn::GetAtt: 
           - "LambdaExecutionRole"
           - "Arn"
       Code: 
-        S3Bucket: !Ref 'S3Bucket'
+        S3Bucket: "anton.al.ivanov-lambda-src"
         S3Key: "simple-lambda-demo.zip"
       Runtime: "nodejs10.x"
       Timeout: 25
-      TracingConfig:
-        Mode: "Active"

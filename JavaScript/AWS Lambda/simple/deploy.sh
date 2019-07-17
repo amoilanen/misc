@@ -1,1 +1,0 @@
-aws cloudformation deploy --template-file cfn.yaml --stack-name simple-lambda-demo --capabilities CAPABILITY_NAMED_IAM
