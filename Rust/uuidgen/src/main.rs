@@ -1,4 +1,5 @@
 use std::vec::Vec;
+use std::ops::Add;
 
 fn digit_to_hex(digit: u8) -> char {
     let digit = digit % 16;
