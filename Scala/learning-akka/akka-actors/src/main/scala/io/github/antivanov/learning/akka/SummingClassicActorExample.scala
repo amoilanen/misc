@@ -30,6 +30,7 @@ object SummingClassicActorExample extends App {
 
   class ClassicMainActor(values: Seq[Int]) extends Actor with ActorLogging {
 
+    var valuesSummed = 0
     var sum = 0
 
     val summingActor: ActorRef =
@@ -39,7 +40,11 @@ object SummingClassicActorExample extends App {
 
     def receive = {
       case Sum(value) =>
-        log.info(s"Sum = ${value}")
+        valuesSummed = valuesSummed + 1
+        if (valuesSummed == values.size) {
+          sum = value
+          log.info(s"Final sum = ${sum}")
+        }
     }
   }
 

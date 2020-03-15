@@ -22,25 +22,33 @@ object SummingActorExample extends App {
         val newSum = sum + value
         ref ! Sum(newSum)
         SummingActor(newSum)
-    }
+      }
     }
   }
 
   object MainActor {
 
-    def apply(values: Seq[Int]): Behavior[Sum] =  Behaviors.setup { context =>
+    def init(values: Seq[Int]): Behavior[Sum] =  Behaviors.setup { context =>
       val summingActor = context.spawn(SummingActor(), "summing-actor")
 
       values.foreach(summingActor ! AddValue(context.self, _))
+      computeSum(values, 0)
+    }
 
+    def computeSum(values: Seq[Int], valuesProcessed: Int): Behavior[Sum] = Behaviors.setup { context =>
       Behaviors.receiveMessage[Sum] {
         case Sum(value) =>
-          context.log.debug(s"Sum = ${value}")
-          Behaviors.same
+          val updatedValuesProcessed = valuesProcessed + 1
+          if (updatedValuesProcessed == values.size) {
+            context.log.debug(s"Final sum = ${value}")
+            Behaviors.same
+          } else {
+            computeSum(values, updatedValuesProcessed)
+          }
       }
     }
   }
 
   val values = Seq(1, 2, 3, 4, 5)
-  ActorSystem(MainActor(values), "main-actor")
+  ActorSystem(MainActor.init(values), "main-actor")
 }
