@@ -9,17 +9,13 @@ import scala.util.{Failure, Success}
 
 object SummingActorAskExample extends App {
 
-  object Events {
+  object SummingActor {
+
     trait SummingEvent
     case class AddValue(ref: ActorRef[Sum], value: Int) extends SummingEvent
     case class Sum(value: Int) extends SummingEvent
-  }
 
-  import Events._
-
-  object SummingActor {
-
-    def apply(sum: Int = 0): Behavior[SummingEvent] = Behaviors.receive { (context, message) => message match {
+    def apply(sum: Int = 0): Behavior[SummingActor.SummingEvent] = Behaviors.receive { (context, message) => message match {
       case AddValue(ref, value) =>
         context.log.debug(s"Adding ${value}")
         val newSum = sum + value
@@ -31,31 +27,48 @@ object SummingActorAskExample extends App {
 
   object MainActor {
 
-    def apply(values: Seq[Int]): Behavior[Sum] =  Behaviors.setup { context =>
+    implicit val askTimeout: Timeout = 2.seconds
+
+    sealed trait MainActorEvent
+    case class SummingFailed(reason: Throwable) extends MainActorEvent
+    case class OngoingSumming(sum: Int) extends MainActorEvent
+
+    def init(values: Seq[Int]): Behavior[MainActor.MainActorEvent] =  Behaviors.setup { context =>
+
       val summingActor = context.spawn(SummingActor(), "summing-actor")
 
-      implicit val timeout: Timeout = 2.seconds
       values.foreach({ value =>
-        context.ask(summingActor, (ref: ActorRef[Sum]) => AddValue(ref, value)) {
-          case Success(Sum(value)) =>
-            context.log.debug(s"Received sum from SummingActor ${value}")
-            Sum(value)
-          case Failure(_) =>
+        context.ask(summingActor, (ref: ActorRef[SummingActor.Sum]) => SummingActor.AddValue(ref, value)) {
+          case Success(SummingActor.Sum(sum)) =>
+            context.log.debug(s"Received sum from SummingActor ${sum}")
+            OngoingSumming(sum)
+          case Failure(e) =>
             context.log.debug(s"Failed to compute the sum")
-            Sum(0)
+            SummingFailed(e)
         }
       })
-      Behaviors.same
-      /*
-      Behaviors.receiveMessage[Sum] {
-        case Sum(value) =>
-          context.log.debug(s"Sum = ${value}")
+
+      computeSum(summingActor, values, 0)
+    }
+
+    def computeSum(summingActor: ActorRef[SummingActor.SummingEvent], values: Seq[Int], valuesProcessed: Int): Behavior[MainActor.MainActorEvent] = Behaviors.setup { context =>
+      Behaviors.receiveMessage[MainActor.MainActorEvent] {
+        case OngoingSumming(sum) =>
+          val updatedValuesProcessed = valuesProcessed + 1
+          if (values.size == updatedValuesProcessed) {
+            context.log.debug(s"Final sum = ${sum}")
+            Behaviors.same
+          } else {
+            context.log.debug(s"valuesProcessed = ${valuesProcessed}, running sum = ${sum}")
+            MainActor.computeSum(summingActor, values, updatedValuesProcessed)
+          }
+        case SummingFailed(reason) =>
+          context.log.error(s"MainActor failed to compute the sum", reason)
           Behaviors.same
       }
-      */
     }
   }
 
   val values = Seq(1, 2, 3, 4, 5)
-  ActorSystem(MainActor(values), "main-actor")
+  ActorSystem(MainActor.init(values), "main-actor")
 }
