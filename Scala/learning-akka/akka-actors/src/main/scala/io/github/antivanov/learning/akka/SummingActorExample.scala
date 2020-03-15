@@ -43,6 +43,7 @@ object SummingActorExample extends App {
             context.log.debug(s"Final sum = ${value}")
             Behaviors.same
           } else {
+            context.log.debug(s"valuesProcessed = ${valuesProcessed}, running sum = ${value}")
             computeSum(values, updatedValuesProcessed)
           }
       }
