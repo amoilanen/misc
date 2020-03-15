@@ -1,11 +1,14 @@
 package io.github.antivanov.learning.akka
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
+import scala.concurrent.duration._
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.util.Timeout
 
-object SummingActorExample extends App {
+import scala.util.{Failure, Success}
+
+object SummingActorAskExample extends App {
+
   object Events {
     trait SummingEvent
     case class AddValue(ref: ActorRef[Sum], value: Int) extends SummingEvent
@@ -22,7 +25,7 @@ object SummingActorExample extends App {
         val newSum = sum + value
         ref ! Sum(newSum)
         SummingActor(newSum)
-    }
+      }
     }
   }
 
@@ -31,13 +34,25 @@ object SummingActorExample extends App {
     def apply(values: Seq[Int]): Behavior[Sum] =  Behaviors.setup { context =>
       val summingActor = context.spawn(SummingActor(), "summing-actor")
 
-      values.foreach(summingActor ! AddValue(context.self, _))
-
+      implicit val timeout: Timeout = 2.seconds
+      values.foreach({ value =>
+        context.ask(summingActor, (ref: ActorRef[Sum]) => AddValue(ref, value)) {
+          case Success(Sum(value)) =>
+            context.log.debug(s"Received sum from SummingActor ${value}")
+            Sum(value)
+          case Failure(_) =>
+            context.log.debug(s"Failed to compute the sum")
+            Sum(0)
+        }
+      })
+      Behaviors.same
+      /*
       Behaviors.receiveMessage[Sum] {
         case Sum(value) =>
           context.log.debug(s"Sum = ${value}")
           Behaviors.same
       }
+      */
     }
   }
 
