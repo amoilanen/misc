@@ -28,23 +28,24 @@ object SummingActorExample extends App {
 
   object MainActor {
 
-    def init(values: Seq[Int]): Behavior[Sum] =  Behaviors.setup { context =>
+    def init(values: Seq[Int], replyTo: Option[ActorRef[Sum]] = None): Behavior[Sum] =  Behaviors.setup { context =>
       val summingActor = context.spawn(SummingActor(), "summing-actor")
 
       values.foreach(summingActor ! AddValue(context.self, _))
-      computeSum(values, 0)
+      computeSum(values, 0, replyTo)
     }
 
-    def computeSum(values: Seq[Int], valuesProcessed: Int): Behavior[Sum] = Behaviors.setup { context =>
+    def computeSum(values: Seq[Int], valuesProcessed: Int, replyTo: Option[ActorRef[Sum]]): Behavior[Sum] = Behaviors.setup { context =>
       Behaviors.receiveMessage[Sum] {
         case Sum(value) =>
           val updatedValuesProcessed = valuesProcessed + 1
           if (updatedValuesProcessed == values.size) {
             context.log.debug(s"Final sum = ${value}")
+            replyTo.foreach(_ ! Sum(value))
             Behaviors.same
           } else {
             context.log.debug(s"valuesProcessed = ${valuesProcessed}, running sum = ${value}")
-            computeSum(values, updatedValuesProcessed)
+            computeSum(values, updatedValuesProcessed, replyTo)
           }
       }
     }
