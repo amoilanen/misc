@@ -10,7 +10,7 @@ object SummingClassicActorExample extends App {
   }
   import Events._
 
-  class ClassicSummingActor extends Actor with ActorLogging {
+  class SummingActor extends Actor with ActorLogging {
 
     var sum = 0
 
@@ -22,19 +22,19 @@ object SummingClassicActorExample extends App {
     }
   }
 
-  object ClassicSummingActor {
+  object SummingActor {
 
     def props =
-      Props(new ClassicSummingActor())
+      Props(new SummingActor())
   }
 
-  class ClassicMainActor(values: Seq[Int]) extends Actor with ActorLogging {
+  class MainActor(values: Seq[Int], replyTo: Option[ActorRef]) extends Actor with ActorLogging {
 
     var valuesSummed = 0
     var sum = 0
 
     val summingActor: ActorRef =
-      context.actorOf(ClassicSummingActor.props, "summing-actor")
+      context.actorOf(SummingActor.props, "summing-actor")
 
     values.foreach(summingActor ! AddValue(_))
 
@@ -44,17 +44,18 @@ object SummingClassicActorExample extends App {
         if (valuesSummed == values.size) {
           sum = value
           log.info(s"Final sum = ${sum}")
+          replyTo.foreach(_ ! Sum(value))
         }
     }
   }
 
-  object ClassicMainActor {
+  object MainActor {
 
-    def props(values: Seq[Int]) =
-      Props(new ClassicMainActor(values))
+    def props(values: Seq[Int], replyTo: Option[ActorRef] = None) =
+      Props(new MainActor(values, replyTo))
   }
 
   val values = Seq(1, 2, 3, 4, 5)
   val system = ActorSystem()
-  system.actorOf(Props(new ClassicMainActor(values)), "main-actor")
+  system.actorOf(MainActor.props(values), "main-actor")
 }

@@ -5,7 +5,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.freespec.AnyFreeSpec
 
-import io.github.antivanov.learning.akka.SummingActorExample._
+import SummingActorExample._
+import SummingActorExample.Events._
 
 class SummingActorExampleSpec extends AnyFreeSpec with BeforeAndAfterAll with Matchers {
 
@@ -14,7 +15,6 @@ class SummingActorExampleSpec extends AnyFreeSpec with BeforeAndAfterAll with Ma
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   "SummingActor" - {
-    import SummingActorExample.Events._
 
     "should reply with the current sum" in {
       val summingActor = testKit.spawn(SummingActor(), "summing-actor")
@@ -30,7 +30,6 @@ class SummingActorExampleSpec extends AnyFreeSpec with BeforeAndAfterAll with Ma
   }
 
   "MainActor" - {
-    import SummingActorExample.Events._
 
     "should reply with the final sum" in {
       val values = Seq(1, 2, 3)
