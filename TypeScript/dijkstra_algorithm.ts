@@ -1,141 +1,150 @@
-interface Array {
-    remove(element: any): void;
-    contains(element: any): bool;
+/*
+ * clear && ts-node dijkstra_algorithm.ts
+ */
+
+interface Array<T> {
+  remove(element: any): void;
 }
 
 Array.prototype.remove = Array.prototype.remove || function(element) {
-    var index = this.indexOf(element);
+  const index = this.indexOf(element);
 
-    if (index >= 0) {
-        this.splice(index, 1);
-    };
+  if (index >= 0) {
+    this.splice(index, 1);
+  };
 };
 
-Array.prototype.contains = Array.prototype.contains || function(element) {
-    return this.indexOf(element) >= 0;
-};
-
-module graphs {
-    export class Graph {
-    
-        edges: number[][];
-    
-        constructor(public nodesNumber: number, edges: number[][]) {
-            this.initEdges(edges);
-        }
-        
-        initEdges(edges: number[][]): void {
-            var oThis = this,
-            i = 0;
-
-            this.edges = [];
-            for (; i < this.nodesNumber; i++) {
-                this.edges[i] = [];
-            };        
-            if (edges) {
-                edges.forEach(function (edge) {
-                    oThis.edge.apply(oThis, edge);
-                });
-            };
-        }
-        
-        edge(from: number, to: number, weight: number): Graph {
-            this.edges[from - 1][to - 1] = weight;
-            return this;
-        }
-
-        //Dijkstra algorithm http://en.wikipedia.org/wiki/Dijkstra's_algorithm
-        getShortestPath(from: number, to: number): {path: number[]; length: number;} {
-            var unvisited = [],
-                current = null,
-                distances = [],
-                previous = [];
-
-            from = from - 1;        
-            to = to - 1;
-            //Initialization
-            for (var i = 0; i < this.nodesNumber; i++) {
-                unvisited.push(i);
-                //Infinity
-                distances.push(Number.MAX_VALUE);
-            };
-            distances[from] = 0;
-        
-            while (true) {
-                if (!unvisited.contains(to)) {
-                    return this._constructShortestPath(distances, previous, unvisited, to);
-                };
-                current = this._getUnvisitedVertexWithShortestPath(distances, previous, unvisited);
-        
-                //No path exists
-                if ((null == current) || (Number.MAX_VALUE == distances[current])) {
-                    return {
-                        path: [],
-                        length: Number.MAX_VALUE
-                    };
-                };
-                this._updateDistancesForCurrent(distances, previous, unvisited, current);            
-                unvisited.remove(current);
-            };
-        }
-
-        private _constructShortestPath(distances: number[], previous: number[],
-             unvisited: number[], to: number): { path: number[]; length: number; } {
-            var vertex = to,
-            path = [];
-
-            while (undefined != vertex) {
-                path.unshift(vertex + 1);
-                vertex = previous[vertex];
-            };
-            
-            return {
-                path: path,
-                length: distances[to]
-            };
-        }
-
-        private _getUnvisitedVertexWithShortestPath(distances: number[], previous: number[], unvisited: number[]): number {
-            var minimumDistance = Number.MAX_VALUE,
-                vertex = null;
-            
-            unvisited.forEach(function (unvisitedVertex) {
-                if (distances[unvisitedVertex] < minimumDistance) {
-                    vertex = unvisitedVertex;
-                    minimumDistance = distances[vertex];
-                };
-            });
-            return vertex;
-        }
-
-        private _updateDistancesForCurrent(distances: number[], previous: number[], unvisited: number[], current: number): void {    
-            for (var i = 0; i < this.edges[current].length; i++) {
-                var currentEdge = this.edges[current][i];
-            
-                if ((undefined != currentEdge) && unvisited.contains(i)) {
-                    if (distances[current] + currentEdge < distances[i]) {
-                        distances[i] = distances[current] + currentEdge;
-                        previous[i] = current;
-                    };
-                };            
-            };
-        }
-    }
+function rangeTo(upTo: number) {
+  return Array.from(Array(upTo).keys());
 }
 
-var graph = new graphs.Graph(8, [
-    [1, 2, 5], [1, 3, 1], [1, 4, 3],
-    [2, 3, 2], [2, 5, 2],
-    [3, 4, 1], [3, 5, 8],
-    [4, 6, 2],
-    [5, 7, 1],
-    [6, 5, 1]
+class GraphNode {
+  constructor(public id: number) {}
+}
+
+class Edge {
+  constructor(public from: GraphNode, public to: GraphNode, public weight: number) {}
+
+  static edge(from: GraphNode, to: GraphNode, weight: number): Edge {
+    return new Edge(from, to, weight);
+  }
+}
+
+const edge = Edge.edge;
+
+interface GraphPath {
+  path: number[];
+  length: number;
+}
+
+
+class Graph {
+
+  edgeWeights: Array<Array<number>>;
+
+  constructor(public nodesNumber: number, edges: Array<Edge>) {
+    this.initEdges(edges);
+  }
+
+  private initEdges(edges: Array<Edge>): void {
+    this.edgeWeights = rangeTo(this.nodesNumber)
+      .map(_ => []);
+    edges.forEach(edge =>
+      this.addEdge(edge)
+    );
+  }
+
+  private addEdge(edge: Edge): void {
+    this.edgeWeights[edge.from.id][edge.to.id] = edge.weight;
+  }
+
+  //Dijkstra algorithm http://en.wikipedia.org/wiki/Dijkstra's_algorithm
+  getShortestPath(startNode: GraphNode, destinationNode: GraphNode): GraphPath {
+    const notVisitedNodes: Array<number> = rangeTo(this.nodesNumber);
+    const distancesFromStart: Array<number> = rangeTo(this.nodesNumber).map(_ => Number.MAX_VALUE);
+    distancesFromStart[startNode.id] = 0;
+
+    let current: number | null = null;
+
+    const backReferences: Array<number> = [];
+
+    while (true) {
+      if (notVisitedNodes.includes(destinationNode.id)) {
+        current = this.getNotVisitedNodeWithShortestPath(distancesFromStart, notVisitedNodes);
+
+        //No path exists
+        if ((null === current) || (Number.MAX_VALUE == distancesFromStart[current])) {
+          return {
+            path: [],
+            length: Number.MAX_VALUE
+          };
+        } else {
+          this.updateDistancesForCurrent(distancesFromStart, backReferences, notVisitedNodes, current);
+          notVisitedNodes.remove(current);
+        }
+      } else {
+        return this.constructShortestPath(distancesFromStart, backReferences, destinationNode.id);
+      }
+    };
+  }
+
+  private constructShortestPath(distancesFromStart: number[], nodeBackReferences: number[], destinationNode: number): GraphPath {
+    let currentNode = destinationNode;
+    const path = [];
+
+    while (undefined !== currentNode) {
+      path.unshift(currentNode);
+      currentNode = nodeBackReferences[currentNode];
+    }
+
+    return {
+      path,
+      length: distancesFromStart[destinationNode]
+    };
+  }
+
+  private getNotVisitedNodeWithShortestPath(distancesFromStart: number[], notVisitedNodes: number[]): number {
+    let minimumDistance: number = Number.MAX_VALUE;
+    let node: number | null = null;
+
+    notVisitedNodes.forEach(function (unvisitedVertex) {
+      if (distancesFromStart[unvisitedVertex] < minimumDistance) {
+        node = unvisitedVertex;
+        minimumDistance = distancesFromStart[node];
+      };
+    });
+    return node;
+  }
+
+  private updateDistancesForCurrent(distancesFromStart: number[], nodeBackReferences: number[], notVisitedNodes: number[], currentNode: number): void {
+    for (let node = 0; node < this.edgeWeights[currentNode].length; node++) {
+      const weightOfEdgeToNode = this.edgeWeights[currentNode][node];
+
+      if ((undefined != weightOfEdgeToNode) && notVisitedNodes.includes(node)) {
+        if (distancesFromStart[currentNode] + weightOfEdgeToNode < distancesFromStart[node]) {
+          distancesFromStart[node] = distancesFromStart[currentNode] + weightOfEdgeToNode;
+          nodeBackReferences[node] = currentNode;
+        };
+      };
+    };
+  }
+}
+
+const nodeNumber = 8;
+const nodes: Array<GraphNode> = rangeTo(nodeNumber).map(id => new GraphNode(id));
+
+const graph = new Graph(8, [
+  edge(nodes[0], nodes[1], 5), edge(nodes[0], nodes[2], 1), edge(nodes[0], nodes[3], 3),
+  edge(nodes[1], nodes[2], 2), edge(nodes[1], nodes[4], 2),
+  edge(nodes[2], nodes[3], 1), edge(nodes[2], nodes[4], 8),
+  edge(nodes[3], nodes[5], 2),
+  edge(nodes[4], nodes[6], 1),
+  edge(nodes[5], nodes[4], 1)
 ]);
 
-var shortestPath = graph.getShortestPath(1, 7);
+// Shortest path to the vertex '6'
+// { path: [ 0, 2, 3, 5, 4, 6 ], length: 6 }
+console.log(graph.getShortestPath(nodes[0], nodes[6]));
 
-console.log("path = ", shortestPath.path.join(","));
-console.log("length = ", shortestPath.length);
-
-//No shortest path to the vertex '8'
-console.log(graph.getShortestPath(1, 8));
+// No shortest path to the vertex '7'
+console.log(graph.getShortestPath(nodes[0], nodes[7]));
