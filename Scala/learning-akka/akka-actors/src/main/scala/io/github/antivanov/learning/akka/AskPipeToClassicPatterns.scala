@@ -29,8 +29,6 @@ object AskPipeToClassicPatterns extends App {
 
   class UserRegistry extends Actor {
 
-    import context._
-
     def receive = {
       case FindUser(id) =>
         pipe(Users.find(id)) to sender()
