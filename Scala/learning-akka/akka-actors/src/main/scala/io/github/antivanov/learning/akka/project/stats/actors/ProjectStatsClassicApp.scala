@@ -4,31 +4,12 @@ import java.io.File
 
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
-import akka.pattern.ask
 import akka.routing.RoundRobinPool
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Promise}
-import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source
 
-object FileWalker {
-
-  val DefaultExcludePaths = List(".idea", "target", "project", "node_modules", ".gitignore").map(pathPart => f"/$pathPart")
-
-  def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File] =
-    if (file.isDirectory) {
-      file.listFiles().map(listFiles(_)).flatten
-        .filter(file =>
-          !excludePaths.exists(file.getAbsolutePath.contains(_))
-        ).toList
-    } else {
-      List(file)
-    }
-}
-
 object ProjectStatsClassicApp extends App {
-
-  case class FileExtension(value: String) extends AnyVal
 
   class StatsSummaryComputer(ref: ActorRef) extends Actor with ActorLogging {
 
