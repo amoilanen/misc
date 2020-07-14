@@ -2,11 +2,11 @@ package io.github.antivanov.learning.akka.project.stats.actors.stream
 
 import java.io.File
 
-import scala.io.{ Source => IOSource }
+import scala.io.{Source => IOSource}
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
-
 import io.github.antivanov.learning.akka.project.stats.actors.FileExtension
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object ProjectStatsStreamApp extends App {
 
@@ -24,17 +24,23 @@ object ProjectStatsStreamApp extends App {
     FileStats(FileExtension(extension), lineCount)
   }
 
-  implicit val system = ActorSystem("compute-project-stats")
+  implicit val system: ActorSystem = ActorSystem("compute-project-stats")
+  implicit val ec: ExecutionContext = system.dispatcher
 
   val source = FilesSource.fromDirectory(new File("."))
 
-  source
+  val result: Future[Map[FileExtension, Long]] = source
     .map(fileToFileStats)
     .groupBy(MaxExtensions, _.extension)
     .reduce(_.add(_))
     .mergeSubstreams
-    .fold(Map[FileExtension, Long]())((map, fileStats) =>
+    .runFold(Map[FileExtension, Long]())((map, fileStats) =>
       map + (fileStats.extension -> fileStats.linesCount)
     )
-    .runWith(Sink.foreach(println))
+
+  result.andThen { lineCounts =>
+    println("Final line counts:")
+    println(lineCounts)
+    system.terminate()
+  }
 }

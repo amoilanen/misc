@@ -20,11 +20,8 @@ class FilesSource(directoryRoot: File) extends GraphStage[SourceShape[File]] {
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
-          if (fileIterator.hasNext) {
-            push(out, fileIterator.next)
-          } else {
-            complete(out)
-          }
+          fileIterator.nextOption
+            .fold(complete(out))(push(out, _))
         }
       })
     }
