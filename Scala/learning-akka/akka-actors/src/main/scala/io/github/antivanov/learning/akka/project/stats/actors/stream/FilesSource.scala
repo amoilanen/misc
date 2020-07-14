@@ -9,7 +9,7 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import io.github.antivanov.learning.akka.project.stats.actors.FileWalker
 
 class FilesSource(directoryRoot: File) extends GraphStage[SourceShape[File]] {
-  val out: Outlet[File] = Outlet("NumbersSource")
+  val out: Outlet[File] = Outlet("FilesSource")
   override val shape: SourceShape[File] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
