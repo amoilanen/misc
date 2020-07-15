@@ -1,9 +1,10 @@
-package io.github.antivanov.learning.akka.project.stats.actors
+package io.github.antivanov.learning.akka.project.stats.actors.typed
 
 import java.io.File
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source

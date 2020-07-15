@@ -1,4 +1,4 @@
-package io.github.antivanov.learning.akka.project.stats.actors.stream
+package io.github.antivanov.learning.akka.project.stats.stream
 
 import java.io.File
 
@@ -6,7 +6,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-import io.github.antivanov.learning.akka.project.stats.actors.FileWalker
+import io.github.antivanov.learning.akka.project.stats.util.FileWalker
 
 class FilesSource(directoryRoot: File) extends GraphStage[SourceShape[File]] {
   val out: Outlet[File] = Outlet("FilesSource")

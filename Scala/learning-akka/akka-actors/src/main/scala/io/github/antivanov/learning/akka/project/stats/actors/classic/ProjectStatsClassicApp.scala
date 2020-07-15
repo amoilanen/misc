@@ -1,13 +1,15 @@
-package io.github.antivanov.learning.akka.project.stats.actors
+package io.github.antivanov.learning.akka.project.stats.actors.classic
 
 import java.io.File
 
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source
+import scala.util.Try
 
 object ProjectStatsClassicApp extends App {
 
@@ -98,13 +100,15 @@ object ProjectStatsClassicApp extends App {
 
     def props: Props = Props(new ProjectReader)
   }
+  val defaultProjectDirectory = "."
+  val projectDirectory = Try(args(1)).getOrElse(defaultProjectDirectory)
 
   val system = ActorSystem()
   implicit val ec: ExecutionContext = system.dispatcher
 
   val lineCountsPromise = Promise[Map[FileExtension, Long]]()
   val projectReader = system.actorOf(ProjectReader.props, "project-reader")
-  projectReader ! ProjectReader.ReadProject(".", lineCountsPromise)
+  projectReader ! ProjectReader.ReadProject(projectDirectory, lineCountsPromise)
   lineCountsPromise.future.andThen { lineCounts =>
     println("Final line counts:")
     println(lineCounts)

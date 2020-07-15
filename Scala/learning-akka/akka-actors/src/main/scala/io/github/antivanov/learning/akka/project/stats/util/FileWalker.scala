@@ -1,8 +1,6 @@
-package io.github.antivanov.learning.akka.project.stats.actors
+package io.github.antivanov.learning.akka.project.stats.util
 
 import java.io.File
-
-case class FileExtension(value: String) extends AnyVal
 
 object FileWalker {
 

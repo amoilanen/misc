@@ -1,10 +1,11 @@
-package io.github.antivanov.learning.akka.project.stats.actors.stream
+package io.github.antivanov.learning.akka.project.stats.stream
 
 import java.io.File
 
 import scala.io.{Source => IOSource}
 import akka.actor.ActorSystem
-import io.github.antivanov.learning.akka.project.stats.actors.FileExtension
+import akka.stream.scaladsl.Sink
+import io.github.antivanov.learning.akka.project.stats.util.FileExtension
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,13 +35,15 @@ object ProjectStatsStreamApp extends App {
     .groupBy(MaxExtensions, _.extension)
     .reduce(_.add(_))
     .mergeSubstreams
-    .runFold(Map[FileExtension, Long]())((map, fileStats) =>
-      map + (fileStats.extension -> fileStats.linesCount)
-    )
+    .runWith(
+      Sink.fold(Map[FileExtension, Long]())((map, fileStats) =>
+        map + (fileStats.extension -> fileStats.linesCount)))
 
   result.andThen { lineCounts =>
     println("Final line counts:")
     println(lineCounts)
     system.terminate()
   }
+  //TODO: Error handling
+  //TODO: Handle arguments
 }
