@@ -5,13 +5,13 @@ import java.io.File
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
-import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker}
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, LineCounts, ProjectStatsArgs}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source
-import scala.util.Try
+import scala.util.{Success, Try}
 
-object ProjectStatsClassicApp extends App {
+object ProjectStatsClassicApp extends App with ProjectStatsArgs {
 
   class StatsSummaryComputer(ref: ActorRef) extends Actor with ActorLogging {
 
@@ -46,7 +46,9 @@ object ProjectStatsClassicApp extends App {
 
     override def receive: Receive = {
       case ComputeStatsFor(file) =>
-        val lineCount = Source.fromFile(file).getLines.size
+        val lineCount = Try(Source.fromFile(file).getLines.size)
+          .toOption
+          .getOrElse(0)
         val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
 
         ref ! StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
@@ -75,7 +77,7 @@ object ProjectStatsClassicApp extends App {
 
     val fileStatsReader: ActorRef =
       context.actorOf(RoundRobinPool(FileStatsReader.FileReaderCount).props(FileStatsReader.props(statsSummaryComputer)), "file-stats-reader-router")
-    var promise: Option[Promise[Map[FileExtension, Long]]] = None
+    var promise: Option[Promise[LineCounts]] = None
     var finalLineCounts: Map[FileExtension, Long] = Map()
 
     override def receive: Receive = {
@@ -88,30 +90,28 @@ object ProjectStatsClassicApp extends App {
         statsSummaryComputer ! StatsSummaryComputer.TotalNumberOfFiles(files.size)
       case StatsReady(lineCounts) =>
         finalLineCounts = lineCounts
-        promise.map(_.success(lineCounts))
+        promise.map(_.success(LineCounts(lineCounts)))
     }
 
   }
 
   object ProjectReader {
     sealed trait Event
-    case class ReadProject(projectPath: String, lineCountsPromise: Promise[Map[FileExtension, Long]])
+    case class ReadProject(projectPath: String, lineCountsPromise: Promise[LineCounts])
     case class StatsReady(lineCounts: Map[FileExtension, Long]) extends Event
 
     def props: Props = Props(new ProjectReader)
   }
-  val defaultProjectDirectory = "."
-  val projectDirectory = Try(args(1)).getOrElse(defaultProjectDirectory)
 
   val system = ActorSystem()
   implicit val ec: ExecutionContext = system.dispatcher
 
-  val lineCountsPromise = Promise[Map[FileExtension, Long]]()
+  val lineCountsPromise = Promise[LineCounts]()
   val projectReader = system.actorOf(ProjectReader.props, "project-reader")
-  projectReader ! ProjectReader.ReadProject(projectDirectory, lineCountsPromise)
-  lineCountsPromise.future.andThen { lineCounts =>
+  projectReader ! ProjectReader.ReadProject(getProjectDirectory, lineCountsPromise)
+  lineCountsPromise.future.andThen { case Success(lineCounts) =>
     println("Final line counts:")
-    println(lineCounts)
+    println(lineCounts.report)
     system.terminate()
   }
 }

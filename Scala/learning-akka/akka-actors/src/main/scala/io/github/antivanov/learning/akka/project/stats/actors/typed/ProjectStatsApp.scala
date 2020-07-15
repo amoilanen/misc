@@ -4,12 +4,13 @@ import java.io.File
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker}
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, LineCounts, ProjectStatsArgs}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source
+import scala.util.{Success, Try}
 
-object ProjectStatsApp extends App {
+object ProjectStatsApp extends App with ProjectStatsArgs {
 
   object FileStatsReader {
 
@@ -18,7 +19,9 @@ object ProjectStatsApp extends App {
 
     def apply(ref: ActorRef[StatsSummaryComputer.FileStats]): Behavior[ComputeStatsFor] = Behaviors.receiveMessage[ComputeStatsFor] { computeStatsFor =>
       val file = computeStatsFor.file
-      val lineCount = Source.fromFile(file).getLines.size
+      val lineCount = Try(Source.fromFile(file).getLines.size)
+        .toOption
+        .getOrElse(0)
       val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
 
       ref ! StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
@@ -55,7 +58,7 @@ object ProjectStatsApp extends App {
   object ProjectReader {
 
     sealed trait Event
-    case class ReadProject(projectPath: String, lineCountsPromise: Promise[Map[FileExtension, Long]]) extends Event
+    case class ReadProject(projectPath: String, lineCountsPromise: Promise[LineCounts]) extends Event
     case class StatsReady(lineCounts: Map[FileExtension, Long]) extends Event
 
     def apply(): Behavior[Event] = readProject
@@ -80,22 +83,22 @@ object ProjectStatsApp extends App {
       }
     }
 
-    def waitForStatsReady(promise: Promise[Map[FileExtension, Long]]): Behavior[Event] = Behaviors.receiveMessage[Event] {
+    def waitForStatsReady(promise: Promise[LineCounts]): Behavior[Event] = Behaviors.receiveMessage[Event] {
       case StatsReady(lineCounts) =>
-        promise.success(lineCounts)
+        promise.success(LineCounts(lineCounts))
         Behaviors.same
     }
 
   }
 
   val values = Seq(1, 2, 3, 4, 5)
-  val lineCountsPromise = Promise[Map[FileExtension, Long]]()
+  val lineCountsPromise = Promise[LineCounts]()
   val actorSystem = ActorSystem(ProjectReader(), "main-actor")
   implicit val ec: ExecutionContext = actorSystem.executionContext
-  actorSystem ! ProjectReader.ReadProject(".", lineCountsPromise)
-  lineCountsPromise.future.andThen { lineCounts =>
+  actorSystem ! ProjectReader.ReadProject(getProjectDirectory, lineCountsPromise)
+  lineCountsPromise.future.andThen { case Success(lineCounts) =>
     println("Final line counts:")
-    println(lineCounts)
+    println(lineCounts.report)
     actorSystem.terminate()
   }
 }
