@@ -4,17 +4,28 @@ import java.io.File
 
 import scala.io.{Source => IOSource}
 import akka.actor.ActorSystem
+import akka.stream.{ActorAttributes, Supervision}
 import akka.stream.scaladsl.Sink
+import com.typesafe.scalalogging.Logger
 import io.github.antivanov.learning.akka.project.stats.stream.util.FilesSource
 import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, LineCounts, ProjectStatsArgs}
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
 object ProjectStatsStreamApp extends App with ProjectStatsArgs {
 
+  val logger = Logger(LoggerFactory.getLogger(ProjectStatsStreamApp.getClass))
   val MaxExtensions = Integer.MAX_VALUE
+
+  val streamDecider: Supervision.Decider = {
+    case NonFatal(e) =>
+      logger.error("Error in the stream", e)
+      Supervision.Resume
+    case _ => Supervision.Stop
+  }
 
   case class FileStats(extension: FileExtension, linesCount: Long) {
     def add(other: FileStats) =
@@ -22,9 +33,7 @@ object ProjectStatsStreamApp extends App with ProjectStatsArgs {
   }
 
   def fileToFileStats(file: File): FileStats = {
-    val lineCount = Try(IOSource.fromFile(file).getLines.size)
-      .toOption
-      .getOrElse(0)
+    val lineCount = IOSource.fromFile(file).getLines.size
     val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
 
     FileStats(FileExtension(extension), lineCount)
@@ -40,6 +49,7 @@ object ProjectStatsStreamApp extends App with ProjectStatsArgs {
     .groupBy(MaxExtensions, _.extension)
     .reduce(_.add(_))
     .mergeSubstreams
+    .withAttributes(ActorAttributes.supervisionStrategy(streamDecider))
     .runWith(
       Sink.fold(Map[FileExtension, Long]())((map, fileStats) =>
         map + (fileStats.extension -> fileStats.linesCount)))
@@ -53,6 +63,4 @@ object ProjectStatsStreamApp extends App with ProjectStatsArgs {
     case Failure(e) =>
       e.printStackTrace()
   })
-
-  //TODO: Error handling
 }

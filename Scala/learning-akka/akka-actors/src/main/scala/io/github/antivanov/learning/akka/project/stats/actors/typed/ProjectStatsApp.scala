@@ -101,4 +101,6 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
     println(lineCounts.report)
     actorSystem.terminate()
   }
+
+  //TODO: Add error handling
 }

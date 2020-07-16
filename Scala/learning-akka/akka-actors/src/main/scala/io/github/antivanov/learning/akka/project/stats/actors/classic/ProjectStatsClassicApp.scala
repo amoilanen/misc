@@ -114,4 +114,6 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
     println(lineCounts.report)
     system.terminate()
   }
+
+  //TODO: Fix error handling
 }
