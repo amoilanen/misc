@@ -5,13 +5,17 @@ import java.io.File
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
+import com.typesafe.scalalogging.Logger
 import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, LineCounts, ProjectStatsArgs}
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source
 import scala.util.{Success, Try}
 
 object ProjectStatsClassicApp extends App with ProjectStatsArgs {
+
+  val logger = Logger(LoggerFactory.getLogger(ProjectStatsClassicApp.getClass))
 
   class StatsSummaryComputer(ref: ActorRef) extends Actor with ActorLogging {
 
@@ -21,15 +25,21 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
     var handledFileNumber = 0L
     var lineCounts: Map[FileExtension, Long] = Map().withDefaultValue(0L)
 
+    def onFileHandled(): Unit = {
+      handledFileNumber += 1
+      if (handledFileNumber == totalFileNumber) {
+        ref ! ProjectReader.StatsReady(lineCounts)
+      }
+    }
+
     override def receive: Receive = {
       case TotalNumberOfFiles(fileNumber) =>
         totalFileNumber = fileNumber
       case FileStats(_, extension, linesCount) =>
         lineCounts += extension -> (lineCounts(extension) + linesCount)
-        handledFileNumber += 1
-        if (handledFileNumber == totalFileNumber) {
-          ref ! ProjectReader.StatsReady(lineCounts)
-        }
+        onFileHandled()
+      case NoFileStats(_) =>
+        onFileHandled()
     }
   }
 
@@ -37,6 +47,7 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
     sealed trait Event
     case class TotalNumberOfFiles(fileNumber: Long) extends Event
     case class FileStats(file: File, extension: FileExtension, linesCount: Long) extends Event
+    case class NoFileStats(file: File) extends Event
 
     def props(ref: ActorRef): Props = Props(new StatsSummaryComputer(ref))
   }
@@ -46,12 +57,18 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
 
     override def receive: Receive = {
       case ComputeStatsFor(file) =>
-        val lineCount = Try(Source.fromFile(file).getLines.size)
-          .toOption
-          .getOrElse(0)
-        val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
-
-        ref ! StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
+        val event: StatsSummaryComputer.Event = Try {
+          val lineCount = Source.fromFile(file).getLines.size
+          val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
+          StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
+        }.fold(
+          e => {
+            logger.error(f"Error occurred when trying to count lines in file $file", e)
+            StatsSummaryComputer.NoFileStats(file)
+          },
+          identity
+        )
+        ref ! event
     }
   }
 
@@ -114,6 +131,4 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
     println(lineCounts.report)
     system.terminate()
   }
-
-  //TODO: Fix error handling
 }
