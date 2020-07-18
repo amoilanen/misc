@@ -3,7 +3,7 @@ package io.github.antivanov.learning.akka.project.stats.actors.typed
 import java.io.File
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, SupervisorStrategy}
 import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, LineCounts, ProjectStatsArgs}
 
 import scala.concurrent.{ExecutionContext, Promise}
@@ -15,18 +15,28 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
   object FileStatsReader {
 
     sealed trait Event
+
     case class ComputeStatsFor(file: File) extends Event
 
-    def apply(ref: ActorRef[StatsSummaryComputer.FileStats]): Behavior[ComputeStatsFor] = Behaviors.receiveMessage[ComputeStatsFor] { computeStatsFor =>
-      val file = computeStatsFor.file
-      val lineCount = Try(Source.fromFile(file).getLines.size)
-        .toOption
-        .getOrElse(0)
-      val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
-
-      ref ! StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
-      Behaviors.same
-    }
+    def apply(ref: ActorRef[StatsSummaryComputer.Event]): Behavior[ComputeStatsFor] = Behaviors.supervise[ComputeStatsFor](
+      Behaviors.setup[ComputeStatsFor] { context =>
+        Behaviors.receiveMessage[ComputeStatsFor] { computeStatsFor =>
+          val file = computeStatsFor.file
+          val event: StatsSummaryComputer.Event = Try {
+            val lineCount = Source.fromFile(file).getLines.size
+            val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
+            StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
+          }.fold(
+            e => {
+              context.log.error(f"Error occurred when trying to count lines in file $file", e)
+              StatsSummaryComputer.NoFileStats(file)
+            },
+            identity
+          )
+          ref ! event
+          Behaviors.same
+        }
+      }).onFailure(SupervisorStrategy.resume)
   }
 
   object StatsSummaryComputer {
@@ -34,6 +44,7 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
     sealed trait Event
     case class TotalNumberOfFiles(fileNumber: Long) extends Event
     case class FileStats(file: File, extension: FileExtension, linesCount: Long) extends Event
+    case class NoFileStats(file: File) extends Event
 
     def apply(ref: ActorRef[ProjectReader.Event]): Behavior[Event] =
       receive(ref, totalFileNumber = 0L, handledFileNumber = 0L, lineCounts = Map().withDefaultValue(0L))
@@ -51,6 +62,13 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
           }
           context.log.debug(s"File stats ${file.getAbsolutePath}, $linesCount")
           receive(ref, totalFileNumber, updatedHandledFileNumber, updatedlineCounts)
+        case NoFileStats(file) =>
+          val updatedHandledFileNumber = handledFileNumber + 1
+          if (updatedHandledFileNumber == totalFileNumber) {
+            ref ! ProjectReader.StatsReady(lineCounts)
+          }
+          context.log.debug(s"No file stats for ${file.getAbsolutePath}")
+          receive(ref, totalFileNumber, updatedHandledFileNumber, lineCounts)
       }
     }
   }
@@ -63,27 +81,32 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
 
     def apply(): Behavior[Event] = readProject
 
-    def readProject: Behavior[Event] = Behaviors.setup { context =>
-      val statsSummaryComputer = context.spawn(StatsSummaryComputer(context.self), "stats-summary-computer")
-      val fileStatsReader = context.spawn(FileStatsReader(statsSummaryComputer), "file-stats-reader")
+    def readProject: Behavior[Event] = Behaviors
+      .supervise(
+        Behaviors.setup[Event] { context =>
+          val statsSummaryComputer = context.spawn(StatsSummaryComputer(context.self), "stats-summary-computer")
+          val fileStatsReader = context.spawn(FileStatsReader(statsSummaryComputer), "file-stats-reader")
 
-      Behaviors.receiveMessage[Event] {
-        case ReadProject(projectPath, lineCountsPromise) =>
-          context.log.debug(f"Reading project structure at $projectPath")
-          val files = FileWalker.listFiles(new File(projectPath))
-          statsSummaryComputer ! StatsSummaryComputer.TotalNumberOfFiles(files.size)
-          files.foreach(file => {
-            fileStatsReader ! FileStatsReader.ComputeStatsFor(file)
-          })
+          Behaviors.receiveMessage[Event] {
+            case ReadProject(projectPath, lineCountsPromise) =>
+              context.log.debug(f"Reading project structure at $projectPath")
+              val files = FileWalker.listFiles(new File(projectPath))
+              statsSummaryComputer ! StatsSummaryComputer.TotalNumberOfFiles(files.size)
+              files.foreach(file => {
+                fileStatsReader ! FileStatsReader.ComputeStatsFor(file)
+              })
 
-          waitForStatsReady(lineCountsPromise)
-        case StatsReady(_) =>
-          context.log.error("Project reading has not started yet...")
-          Behaviors.same
-      }
-    }
+              waitForStatsReady(lineCountsPromise)
+            case StatsReady(_) =>
+              context.log.error("Project reading has not started yet...")
+              Behaviors.same
+          }
+        }
+      ).onFailure(SupervisorStrategy.restart)
 
     def waitForStatsReady(promise: Promise[LineCounts]): Behavior[Event] = Behaviors.receiveMessage[Event] {
+      case _: ReadProject =>
+        Behaviors.same
       case StatsReady(lineCounts) =>
         promise.success(LineCounts(lineCounts))
         Behaviors.same
@@ -101,6 +124,4 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
     println(lineCounts.report)
     actorSystem.terminate()
   }
-
-  //TODO: Add error handling
 }
