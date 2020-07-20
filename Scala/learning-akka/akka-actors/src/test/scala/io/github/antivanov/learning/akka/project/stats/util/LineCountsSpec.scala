@@ -1,6 +1,6 @@
 package io.github.antivanov.learning.akka.project.stats.util
 
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.freespec.AnyFreeSpec
 
 class LineCountsSpec extends AnyFreeSpec with Matchers {

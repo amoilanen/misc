@@ -4,7 +4,7 @@ import java.io.File
 
 object FileWalker {
 
-  val DefaultExcludePaths = List(".idea", ".git", "target", "project", "node_modules", ".gitignore").map(pathPart => f"/$pathPart")
+  val DefaultExcludePaths = List(".idea", ".git", "target", "project", "node_modules", ".gitignore").map(pathPart => f"$pathPart/")
 
   def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File] =
     if (file.isDirectory) {
