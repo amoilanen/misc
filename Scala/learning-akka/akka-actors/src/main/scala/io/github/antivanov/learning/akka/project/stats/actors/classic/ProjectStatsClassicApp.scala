@@ -15,7 +15,16 @@ import scala.util.{Success, Try}
 
 object ProjectStatsClassicApp extends App with ProjectStatsArgs {
 
-  val logger = Logger(LoggerFactory.getLogger(ProjectStatsClassicApp.getClass))
+
+  trait FileLineCounter {
+
+    def countLines(file: File): Long
+  }
+
+  val defaultFileLineCounter = new FileLineCounter {
+    override def countLines(file: File): Long =
+      Source.fromFile(file).getLines.size
+  }
 
   class StatsSummaryComputer(ref: ActorRef) extends Actor with ActorLogging {
 
@@ -52,13 +61,16 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
     def props(ref: ActorRef): Props = Props(new StatsSummaryComputer(ref))
   }
 
-  class FileStatsReader(ref: ActorRef) extends Actor with ActorLogging {
+  class FileStatsReader(ref: ActorRef, counter: FileLineCounter) extends Actor with ActorLogging {
+
+    val logger = Logger(LoggerFactory.getLogger(FileStatsReader.getClass))
+
     import FileStatsReader._
 
     override def receive: Receive = {
       case ComputeStatsFor(file) =>
         val event: StatsSummaryComputer.Event = Try {
-          val lineCount = Source.fromFile(file).getLines.size
+          val lineCount = counter.countLines(file)
           val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
           StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
         }.fold(
@@ -78,7 +90,7 @@ object ProjectStatsClassicApp extends App with ProjectStatsArgs {
     sealed trait Event
     case class ComputeStatsFor(file: File) extends Event
 
-    def props(ref: ActorRef): Props = Props(new FileStatsReader(ref))
+    def props(ref: ActorRef, counter: FileLineCounter = defaultFileLineCounter): Props = Props(new FileStatsReader(ref, counter))
   }
 
   class ProjectReader extends Actor with ActorLogging {

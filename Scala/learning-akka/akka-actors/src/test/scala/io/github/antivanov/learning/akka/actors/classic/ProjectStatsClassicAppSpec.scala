@@ -4,16 +4,17 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestKit}
-import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.{ProjectReader, StatsSummaryComputer}
+import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.FileStatsReader.ComputeStatsFor
+import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.StatsSummaryComputer.{FileStats, NoFileStats}
+import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.{FileLineCounter, FileStatsReader, ProjectReader, StatsSummaryComputer}
 import io.github.antivanov.learning.akka.project.stats.util.FileExtension
+import io.github.antivanov.learning.akka.testutil.FileMocks
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.freespec.AnyFreeSpecLike
 
-class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with Matchers with AnyFreeSpecLike with BeforeAndAfterAll with MockFactory  {
-
-  class MockFile extends File("")
+class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with Matchers with AnyFreeSpecLike with BeforeAndAfterAll with FileMocks with MockFactory  {
 
   override protected def afterAll(): Unit = {
     system.terminate()
@@ -75,6 +76,34 @@ class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with
       ref.underlyingActor.totalFileNumber shouldEqual numberOfFiles
       ref.underlyingActor.handledFileNumber shouldEqual 1
       ref.underlyingActor.lineCounts shouldEqual expectedLineCounts
+    }
+  }
+
+  "FileStatsReader" - {
+
+    trait FileStatsReaderTestCase {
+      val mockLineCounter = mock[FileLineCounter]
+      val ref = TestActorRef(FileStatsReader.props(testActor, mockLineCounter))
+
+      val fileExtension = "java"
+      val fileToComputeStatsFor = file(s"abc.$fileExtension")
+    }
+
+    "should send file stats to the reference actor" in new FileStatsReaderTestCase {
+      (mockLineCounter.countLines _).expects(fileToComputeStatsFor).returning(fileToComputeStatsFor.getPath.length)
+
+      ref ! ComputeStatsFor(fileToComputeStatsFor)
+
+      expectMsg(FileStats(fileToComputeStatsFor, FileExtension(fileExtension), fileToComputeStatsFor.getPath.length))
+    }
+
+    "should send 'no stats' message in case an error happens when computing file line count" in new FileStatsReaderTestCase {
+      val error = new IllegalStateException("Failed to compute file line count")
+      (mockLineCounter.countLines _).expects(fileToComputeStatsFor).throwing(error)
+
+      ref ! ComputeStatsFor(fileToComputeStatsFor)
+
+      expectMsg(NoFileStats(fileToComputeStatsFor))
     }
   }
 }

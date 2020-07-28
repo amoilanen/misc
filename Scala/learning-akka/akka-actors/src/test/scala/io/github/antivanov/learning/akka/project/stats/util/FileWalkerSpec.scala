@@ -1,31 +1,11 @@
 package io.github.antivanov.learning.akka.project.stats.util
 
-import java.io.File
-
+import io.github.antivanov.learning.akka.testutil.FileMocks
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalamock.scalatest.MockFactory
 
-class FileWalkerSpec extends AnyFreeSpec with Matchers with MockFactory {
-
-  class MockFile extends File("")
-
-  def dir(name: String, files: File*): File = {
-    val directory = mock[MockFile]
-    (directory.getName _).expects().returning(name).anyNumberOfTimes()
-    (directory.listFiles: () => Array[File]).expects().returning(files.toArray).anyNumberOfTimes()
-    (directory.isDirectory _).expects().returning(true).anyNumberOfTimes()
-    directory
-  }
-
-  def file(absolutePath: String): File = {
-    val name = absolutePath.substring(absolutePath.lastIndexOf("/") + 1)
-    val file = mock[MockFile]
-    (file.getName _).expects().returning(name).anyNumberOfTimes()
-    (file.getAbsolutePath _).expects().returning(absolutePath).anyNumberOfTimes()
-    (file.isDirectory _).expects().returning(false).anyNumberOfTimes()
-    file
-  }
+class FileWalkerSpec extends AnyFreeSpec with Matchers with FileMocks with MockFactory {
 
   "listFiles" - {
 
