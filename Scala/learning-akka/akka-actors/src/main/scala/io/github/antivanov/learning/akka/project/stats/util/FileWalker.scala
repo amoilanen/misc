@@ -4,12 +4,12 @@ import java.io.File
 
 trait FileWalkerLike {
 
-  val DefaultExcludePaths = List(".idea", ".git", "target", "project", "node_modules", ".gitignore").map(pathPart => f"$pathPart/")
-
-  def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File]
+  def listFiles(file: File, excludePaths: List[String] = FileWalker.DefaultExcludePaths): List[File]
 }
 
 object FileWalker extends FileWalkerLike {
+
+  val DefaultExcludePaths = List(".idea", ".git", "target", "project", "node_modules", ".gitignore").map(pathPart => f"$pathPart/")
 
   override def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File] =
     if (file.isDirectory) {

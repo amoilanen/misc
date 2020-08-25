@@ -117,15 +117,14 @@ class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with
       val lineCountsPromise = Promise[LineCounts]()
       val statsSummaryComputer = TestProbe()
       val fileStatsReader = TestProbe()
-      val projectRoot = mock[MockFile]
-      (projectRoot.getAbsolutePath _).expects().returning("")
-      val projectFiles = List(mock[MockFile], mock[MockFile], mock[MockFile])
+      val projectRoot = file("")
+      val projectFiles = (1 to 3).map(idx => file(idx.toString)).toList
       val fileWalker = mock[FileWalkerLike]
-      (fileWalker.listFiles _).expects(projectRoot, FileWalker.DefaultExcludePaths).returning(projectFiles).once()
+      (fileWalker.listFiles _).expects(projectRoot, FileWalker.DefaultExcludePaths).returning(projectFiles).anyNumberOfTimes()
     }
 
     "should ask fileStatsReader to read stats for every file and send the total number of files to statsSummaryComputer" in new ProjectReaderTestCase {
-      val ref = TestActorRef(ProjectReader.props(Option(statsSummaryComputer.ref), Option(fileStatsReader.ref), fileWalker))
+      val ref = TestActorRef(ProjectReader.props(Some(statsSummaryComputer.ref), Some(fileStatsReader.ref), fileWalker))
 
       ref ! ReadProject(projectRoot, lineCountsPromise)
 
