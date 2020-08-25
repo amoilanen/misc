@@ -2,11 +2,16 @@ package io.github.antivanov.learning.akka.project.stats.util
 
 import java.io.File
 
-object FileWalker {
+trait FileWalkerLike {
 
   val DefaultExcludePaths = List(".idea", ".git", "target", "project", "node_modules", ".gitignore").map(pathPart => f"$pathPart/")
 
-  def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File] =
+  def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File]
+}
+
+object FileWalker extends FileWalkerLike {
+
+  override def listFiles(file: File, excludePaths: List[String] = DefaultExcludePaths): List[File] =
     if (file.isDirectory) {
       file.listFiles().map(listFiles(_)).flatten
         .filter(file =>
