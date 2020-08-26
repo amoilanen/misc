@@ -1,24 +1,27 @@
 package io.github.antivanov.learning.akka.actors.classic
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.FileStatsReader.ComputeStatsFor
-import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.ProjectReader.ReadProject
+import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.ProjectReader.{ReadProject, StatsReady}
 import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.StatsSummaryComputer.{FileStats, NoFileStats, TotalNumberOfFiles}
 import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.{FileLineCounter, FileStatsReader, ProjectReader, StatsSummaryComputer}
 import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts}
 import io.github.antivanov.learning.akka.testutil.FileMocks
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.freespec.AnyFreeSpecLike
+import org.scalatest.time.Span
+import org.scalatest.time.Milliseconds
 
 import scala.concurrent.Promise
 
 class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with Matchers
-  with AnyFreeSpecLike with BeforeAndAfterAll with FileMocks with MockFactory {
+  with AnyFreeSpecLike with BeforeAndAfterAll with FileMocks with MockFactory with ScalaFutures {
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(1000, Milliseconds), interval = Span(100, Milliseconds))
 
   override protected def afterAll(): Unit = {
     system.terminate()
@@ -121,11 +124,10 @@ class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with
       val projectFiles = (1 to 3).map(idx => file(idx.toString)).toList
       val fileWalker = mock[FileWalkerLike]
       (fileWalker.listFiles _).expects(projectRoot, FileWalker.DefaultExcludePaths).returning(projectFiles).anyNumberOfTimes()
+      val ref = TestActorRef(ProjectReader.props(Some(statsSummaryComputer.ref), Some(fileStatsReader.ref), fileWalker))
     }
 
     "should ask fileStatsReader to read stats for every file and send the total number of files to statsSummaryComputer" in new ProjectReaderTestCase {
-      val ref = TestActorRef(ProjectReader.props(Some(statsSummaryComputer.ref), Some(fileStatsReader.ref), fileWalker))
-
       ref ! ReadProject(projectRoot, lineCountsPromise)
 
       projectFiles.foreach({ projectFile =>
@@ -134,6 +136,16 @@ class ProjectStatsClassicAppSpec extends TestKit(ActorSystem("testsystem")) with
       statsSummaryComputer.expectMsg(TotalNumberOfFiles(projectFiles.size))
     }
 
-    //TODO: handle StatsReady
+    "should complete the provided promise on StatsReady" in new ProjectReaderTestCase {
+      val expectedStats = Map(
+        FileExtension(".txt") -> 1L
+      )
+
+      ref ! ReadProject(projectRoot, lineCountsPromise)
+      ref ! StatsReady(expectedStats)
+
+      val received: LineCounts = lineCountsPromise.future.futureValue
+      received shouldEqual LineCounts(expectedStats)
+    }
   }
 }
