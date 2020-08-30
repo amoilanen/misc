@@ -45,15 +45,18 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
     case class TotalNumberOfFiles(fileNumber: Long) extends Event
     case class FileStats(file: File, extension: FileExtension, linesCount: Long) extends Event
     case class NoFileStats(file: File) extends Event
+    case object GetCurrentState extends Event
 
-    def apply(ref: ActorRef[ProjectReader.Event]): Behavior[Event] =
-      receive(ref, totalFileNumber = 0L, handledFileNumber = 0L, lineCounts = Map().withDefaultValue(0L))
+    case class CurrentState(totalFileNumber: Long, handledFileNumber: Long, lineCounts: Map[FileExtension, Long])
 
-    def receive(ref: ActorRef[ProjectReader.Event], totalFileNumber: Long, handledFileNumber: Long, lineCounts: Map[FileExtension, Long]): Behavior[Event] = Behaviors.setup { context =>
+    def apply(ref: ActorRef[ProjectReader.Event], testProbe: Option[ActorRef[CurrentState]] = None): Behavior[Event] =
+      receive(ref, testProbe, totalFileNumber = 0L, handledFileNumber = 0L, lineCounts = Map().withDefaultValue(0L))
+
+    def receive(ref: ActorRef[ProjectReader.Event], testProbe: Option[ActorRef[CurrentState]], totalFileNumber: Long, handledFileNumber: Long, lineCounts: Map[FileExtension, Long]): Behavior[Event] = Behaviors.setup { context =>
       Behaviors.receiveMessage[Event] {
         case TotalNumberOfFiles(updatedTotalFileNumber) =>
           context.log.debug(s"Total number of files $updatedTotalFileNumber")
-          receive(ref, updatedTotalFileNumber, handledFileNumber, lineCounts)
+          receive(ref, testProbe, updatedTotalFileNumber, handledFileNumber, lineCounts)
         case FileStats(file, extension, linesCount) =>
           val updatedlineCounts = lineCounts + (extension -> (lineCounts(extension) + linesCount))
           val updatedHandledFileNumber = handledFileNumber + 1
@@ -61,14 +64,17 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
             ref ! ProjectReader.StatsReady(lineCounts)
           }
           context.log.debug(s"File stats ${file.getAbsolutePath}, $linesCount")
-          receive(ref, totalFileNumber, updatedHandledFileNumber, updatedlineCounts)
+          receive(ref, testProbe, totalFileNumber, updatedHandledFileNumber, updatedlineCounts)
         case NoFileStats(file) =>
           val updatedHandledFileNumber = handledFileNumber + 1
           if (updatedHandledFileNumber == totalFileNumber) {
             ref ! ProjectReader.StatsReady(lineCounts)
           }
           context.log.debug(s"No file stats for ${file.getAbsolutePath}")
-          receive(ref, totalFileNumber, updatedHandledFileNumber, lineCounts)
+          receive(ref, testProbe, totalFileNumber, updatedHandledFileNumber, lineCounts)
+        case GetCurrentState =>
+          testProbe.foreach(_ ! CurrentState(totalFileNumber, handledFileNumber, lineCounts))
+          Behaviors.same
       }
     }
   }
