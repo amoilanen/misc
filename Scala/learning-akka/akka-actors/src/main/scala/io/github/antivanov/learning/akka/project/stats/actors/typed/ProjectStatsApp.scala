@@ -61,7 +61,7 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
           val updatedlineCounts = lineCounts + (extension -> (lineCounts(extension) + linesCount))
           val updatedHandledFileNumber = handledFileNumber + 1
           if (updatedHandledFileNumber == totalFileNumber) {
-            ref ! ProjectReader.StatsReady(lineCounts)
+            ref ! ProjectReader.StatsReady(updatedlineCounts)
           }
           context.log.debug(s"File stats ${file.getAbsolutePath}, $linesCount")
           receive(ref, testProbe, totalFileNumber, updatedHandledFileNumber, updatedlineCounts)

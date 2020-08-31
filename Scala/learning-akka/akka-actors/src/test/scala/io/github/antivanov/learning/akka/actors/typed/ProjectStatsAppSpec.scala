@@ -8,15 +8,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.freespec.AnyFreeSpecLike
 import org.scalatest.time.Span
 import org.scalatest.time.Milliseconds
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.typed._
-import akka.actor.typed.scaladsl._
-import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.StatsSummaryComputer.{CurrentState, TotalNumberOfFiles}
+import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.StatsSummaryComputer.{CurrentState, FileStats, NoFileStats, TotalNumberOfFiles}
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.{ProjectReader, StatsSummaryComputer}
-import org.slf4j.event.Level
+import io.github.antivanov.learning.akka.project.stats.util.FileExtension
 
 class ProjectStatsAppSpec extends Matchers
   with AnyFreeSpecLike with BeforeAndAfterAll with FileMocks with MockFactory with ScalaFutures {
@@ -41,12 +37,39 @@ class ProjectStatsAppSpec extends Matchers
     }
 
     "should send StatsReady when all files were successfully handled" in new StatsSummaryComputerTestCase {
+      ref.run(TotalNumberOfFiles(numberOfFiles))
+      (1 to numberOfFiles).foreach({ idx =>
+        ref.run(FileStats(file(""), FileExtension(extension), idx))
+      })
+
+      val expectedLineCounts = Map(FileExtension(extension) -> (1 to numberOfFiles).sum.toLong)
+      projectReader.expectMessage(ProjectReader.StatsReady(expectedLineCounts))
+      ref.run(StatsSummaryComputer.GetCurrentState)
+      testProbe.expectMessage(CurrentState(numberOfFiles, numberOfFiles, expectedLineCounts))
     }
 
     "should send StatsReady if for one of the files NoFileStats was sent" in new StatsSummaryComputerTestCase {
+      ref.run(TotalNumberOfFiles(numberOfFiles))
+      ref.run(NoFileStats(file("")))
+      (2 to numberOfFiles).foreach({ idx =>
+        ref.run(FileStats(file(""), FileExtension(extension), idx))
+      })
+
+      val expectedLineCounts = Map(FileExtension(extension) -> (2 to numberOfFiles).sum.toLong)
+      projectReader.expectMessage(ProjectReader.StatsReady(expectedLineCounts))
+      ref.run(StatsSummaryComputer.GetCurrentState)
+      testProbe.expectMessage(CurrentState(numberOfFiles, numberOfFiles, expectedLineCounts))
     }
 
     "should not send StatsReady when not all the files have been handled" in new StatsSummaryComputerTestCase {
+      val singleFileLineCount = 5L
+      ref.run(TotalNumberOfFiles(numberOfFiles))
+      ref.run(FileStats(file(""), FileExtension(extension), singleFileLineCount))
+
+      val expectedLineCounts = Map(FileExtension(extension) -> singleFileLineCount)
+      projectReader.hasMessages shouldBe false
+      ref.run(StatsSummaryComputer.GetCurrentState)
+      testProbe.expectMessage(CurrentState(numberOfFiles, 1, expectedLineCounts))
     }
   }
 }
