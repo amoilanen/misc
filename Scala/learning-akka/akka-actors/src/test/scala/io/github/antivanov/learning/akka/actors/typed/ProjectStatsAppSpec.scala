@@ -10,8 +10,9 @@ import org.scalatest.time.Span
 import org.scalatest.time.Milliseconds
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
+import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.FileStatsReader.ComputeStatsFor
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.StatsSummaryComputer.{CurrentState, FileStats, NoFileStats, TotalNumberOfFiles}
-import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.{ProjectReader, StatsSummaryComputer}
+import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.{FileLineCounter, FileStatsReader, ProjectReader, StatsSummaryComputer}
 import io.github.antivanov.learning.akka.project.stats.util.FileExtension
 
 class ProjectStatsAppSpec extends Matchers
@@ -70,6 +71,35 @@ class ProjectStatsAppSpec extends Matchers
       projectReader.hasMessages shouldBe false
       ref.run(StatsSummaryComputer.GetCurrentState)
       testProbe.expectMessage(CurrentState(numberOfFiles, 1, expectedLineCounts))
+    }
+  }
+
+  "FileStatsReader" - {
+
+    trait FileStatsReaderTestCase {
+      val mockLineCounter = mock[FileLineCounter]
+      val statsSummaryComputer = TestInbox[StatsSummaryComputer.Event]()
+      val ref = BehaviorTestKit(FileStatsReader(statsSummaryComputer.ref, mockLineCounter))
+
+      val fileExtension = "java"
+      val fileToComputeStatsFor = file(s"abc.$fileExtension")
+    }
+
+    "should send file stats to the reference actor" in new FileStatsReaderTestCase {
+      (mockLineCounter.countLines _).expects(fileToComputeStatsFor).returning(fileToComputeStatsFor.getPath.length)
+
+      ref.run(ComputeStatsFor(fileToComputeStatsFor))
+
+      statsSummaryComputer.expectMessage(FileStats(fileToComputeStatsFor, FileExtension(fileExtension), fileToComputeStatsFor.getPath.length))
+    }
+
+    "should send 'no stats' message in case an error happens when computing file line count" in new FileStatsReaderTestCase {
+      val error = new IllegalStateException("Failed to compute file line count")
+      (mockLineCounter.countLines _).expects(fileToComputeStatsFor).throwing(error)
+
+      ref.run(ComputeStatsFor(fileToComputeStatsFor))
+
+      statsSummaryComputer.expectMessage(NoFileStats(fileToComputeStatsFor))
     }
   }
 }

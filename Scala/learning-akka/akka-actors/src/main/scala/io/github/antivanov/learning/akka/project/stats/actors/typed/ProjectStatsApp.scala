@@ -12,18 +12,28 @@ import scala.util.{Success, Try}
 
 object ProjectStatsApp extends App with ProjectStatsArgs {
 
+  trait FileLineCounter {
+
+    def countLines(file: File): Long
+  }
+
+  val defaultFileLineCounter = new FileLineCounter {
+    override def countLines(file: File): Long =
+      Source.fromFile(file).getLines.size
+  }
+
   object FileStatsReader {
 
     sealed trait Event
 
     case class ComputeStatsFor(file: File) extends Event
 
-    def apply(ref: ActorRef[StatsSummaryComputer.Event]): Behavior[ComputeStatsFor] = Behaviors.supervise[ComputeStatsFor](
+    def apply(ref: ActorRef[StatsSummaryComputer.Event], counter: FileLineCounter = defaultFileLineCounter): Behavior[ComputeStatsFor] = Behaviors.supervise[ComputeStatsFor](
       Behaviors.setup[ComputeStatsFor] { context =>
         Behaviors.receiveMessage[ComputeStatsFor] { computeStatsFor =>
           val file = computeStatsFor.file
           val event: StatsSummaryComputer.Event = Try {
-            val lineCount = Source.fromFile(file).getLines.size
+            val lineCount = counter.countLines(file)
             val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
             StatsSummaryComputer.FileStats(file, FileExtension(extension), lineCount)
           }.fold(
