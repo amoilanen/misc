@@ -4,7 +4,7 @@ import java.io.File
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, SupervisorStrategy}
-import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, LineCounts, ProjectStatsArgs}
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts, ProjectStatsArgs}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.io.Source
@@ -92,21 +92,24 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
   object ProjectReader {
 
     sealed trait Event
-    case class ReadProject(projectPath: String, lineCountsPromise: Promise[LineCounts]) extends Event
+    case class ReadProject(projectRoot: File, lineCountsPromise: Promise[LineCounts]) extends Event
     case class StatsReady(lineCounts: Map[FileExtension, Long]) extends Event
 
-    def apply(): Behavior[Event] = readProject
+    def apply(injectedStatsSummaryComputer: Option[ActorRef[StatsSummaryComputer.Event]] = None,
+              injectedFileStatsReader: Option[ActorRef[FileStatsReader.Event]] = None,
+              fileWalker: FileWalkerLike = FileWalker): Behavior[Event] = readProject(injectedStatsSummaryComputer, injectedFileStatsReader, fileWalker)
 
-    def readProject: Behavior[Event] = Behaviors
+    def readProject(injectedStatsSummaryComputer: Option[ActorRef[StatsSummaryComputer.Event]],
+                    injectedFileStatsReader: Option[ActorRef[FileStatsReader.Event]], fileWalker: FileWalkerLike): Behavior[Event] = Behaviors
       .supervise(
         Behaviors.setup[Event] { context =>
-          val statsSummaryComputer = context.spawn(StatsSummaryComputer(context.self), "stats-summary-computer")
-          val fileStatsReader = context.spawn(FileStatsReader(statsSummaryComputer), "file-stats-reader")
+          val statsSummaryComputer = injectedStatsSummaryComputer.getOrElse(context.spawn(StatsSummaryComputer(context.self), "stats-summary-computer"))
+          val fileStatsReader = injectedFileStatsReader.getOrElse(context.spawn(FileStatsReader(statsSummaryComputer), "file-stats-reader"))
 
           Behaviors.receiveMessage[Event] {
             case ReadProject(projectPath, lineCountsPromise) =>
               context.log.debug(f"Reading project structure at $projectPath")
-              val files = FileWalker.listFiles(new File(projectPath))
+              val files = fileWalker.listFiles(projectPath)
               statsSummaryComputer ! StatsSummaryComputer.TotalNumberOfFiles(files.size)
               files.foreach(file => {
                 fileStatsReader ! FileStatsReader.ComputeStatsFor(file)
@@ -134,7 +137,7 @@ object ProjectStatsApp extends App with ProjectStatsArgs {
   val lineCountsPromise = Promise[LineCounts]()
   val actorSystem = ActorSystem(ProjectReader(), "main-actor")
   implicit val ec: ExecutionContext = actorSystem.executionContext
-  actorSystem ! ProjectReader.ReadProject(getProjectDirectory, lineCountsPromise)
+  actorSystem ! ProjectReader.ReadProject(new File(getProjectDirectory), lineCountsPromise)
   lineCountsPromise.future.andThen { case Success(lineCounts) =>
     println("Final line counts:")
     println(lineCounts.report)

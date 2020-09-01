@@ -11,9 +11,12 @@ import org.scalatest.time.Milliseconds
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.FileStatsReader.ComputeStatsFor
+import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.ProjectReader.{ReadProject, StatsReady}
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.StatsSummaryComputer.{CurrentState, FileStats, NoFileStats, TotalNumberOfFiles}
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.{FileLineCounter, FileStatsReader, ProjectReader, StatsSummaryComputer}
-import io.github.antivanov.learning.akka.project.stats.util.FileExtension
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts}
+
+import scala.concurrent.Promise
 
 class ProjectStatsAppSpec extends Matchers
   with AnyFreeSpecLike with BeforeAndAfterAll with FileMocks with MockFactory with ScalaFutures {
@@ -100,6 +103,41 @@ class ProjectStatsAppSpec extends Matchers
       ref.run(ComputeStatsFor(fileToComputeStatsFor))
 
       statsSummaryComputer.expectMessage(NoFileStats(fileToComputeStatsFor))
+    }
+  }
+
+  "ProjectReader" - {
+
+    trait ProjectReaderTestCase {
+      val lineCountsPromise = Promise[LineCounts]()
+      val statsSummaryComputer = TestInbox[StatsSummaryComputer.Event]()
+      val fileStatsReader = TestInbox[FileStatsReader.Event]()
+      val projectRoot = file("")
+      val projectFiles = (1 to 3).map(idx => file(idx.toString)).toList
+      val fileWalker = mock[FileWalkerLike]
+      (fileWalker.listFiles _).expects(projectRoot, FileWalker.DefaultExcludePaths).returning(projectFiles).anyNumberOfTimes()
+      val ref = BehaviorTestKit(ProjectReader(Some(statsSummaryComputer.ref), Some(fileStatsReader.ref), fileWalker))
+    }
+
+    "should ask fileStatsReader to read stats for every file and send the total number of files to statsSummaryComputer" in new ProjectReaderTestCase {
+      ref.run(ReadProject(projectRoot, lineCountsPromise))
+
+      projectFiles.foreach({ projectFile =>
+        fileStatsReader.expectMessage(ComputeStatsFor(projectFile))
+      })
+      statsSummaryComputer.expectMessage(TotalNumberOfFiles(projectFiles.size))
+    }
+
+    "should complete the provided promise on StatsReady" in new ProjectReaderTestCase {
+      val expectedStats = Map(
+        FileExtension(".txt") -> 1L
+      )
+
+      ref.run(ReadProject(projectRoot, lineCountsPromise))
+      ref.run(StatsReady(expectedStats))
+
+      val received: LineCounts = lineCountsPromise.future.futureValue
+      received shouldEqual LineCounts(expectedStats)
     }
   }
 }
