@@ -6,22 +6,33 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
-import io.github.antivanov.learning.akka.project.stats.util.FileWalker
+import io.github.antivanov.learning.akka.project.stats.util.{FileWalker, FileWalkerLike}
 
-class FilesSource(directoryRoot: File) extends GraphStage[SourceShape[File]] {
+import scala.util.Try
+import scala.util.control.NonFatal
+
+class FilesSource(directoryRoot: File, fileWalker: FileWalkerLike = FileWalker) extends GraphStage[SourceShape[File]] {
   val out: Outlet[File] = Outlet("FilesSource")
   override val shape: SourceShape[File] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogic(shape) {
-      val files = FileWalker.listFiles(directoryRoot)
-      val fileIterator: Iterator[File] = files.iterator
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          fileIterator.nextOption
-            .fold(complete(out))(push(out, _))
-        }
+      Try(fileWalker.listFiles(directoryRoot)).collect({ files =>
+        val fileIterator: Iterator[File] = files.iterator
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            val nextFile = fileIterator.nextOption
+            nextFile.fold(complete(out))(push(out, _))
+          }
+        })
+      }).recover({
+        case NonFatal(e) =>
+          setHandler(out, new OutHandler {
+            override def onPull(): Unit = {
+              fail(out, e)
+              complete(out)
+            }
+          })
       })
     }
   }
