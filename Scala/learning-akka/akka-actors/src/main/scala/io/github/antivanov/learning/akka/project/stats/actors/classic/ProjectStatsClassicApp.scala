@@ -6,25 +6,14 @@ import akka.actor.SupervisorStrategy.Resume
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
 import com.typesafe.scalalogging.Logger
-import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts, ProjectStatsArgs}
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileLineCounter, FileWalker, FileWalkerLike, LineCounts, ProjectStatsArgs}
+import io.github.antivanov.learning.akka.project.stats.util.FileLineCounter.defaultFileLineCounter
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Promise}
-import scala.io.Source
 import scala.util.{Success, Try}
 
 object ProjectStatsClassicApp extends App with ProjectStatsArgs {
-
-
-  trait FileLineCounter {
-
-    def countLines(file: File): Long
-  }
-
-  val defaultFileLineCounter = new FileLineCounter {
-    override def countLines(file: File): Long =
-      Source.fromFile(file).getLines.size
-  }
 
   class StatsSummaryComputer(ref: ActorRef) extends Actor with ActorLogging {
 

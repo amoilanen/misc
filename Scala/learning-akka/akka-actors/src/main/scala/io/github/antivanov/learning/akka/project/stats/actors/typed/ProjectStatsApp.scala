@@ -4,23 +4,13 @@ import java.io.File
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, SupervisorStrategy}
-import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts, ProjectStatsArgs}
+import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileLineCounter, FileWalker, FileWalkerLike, LineCounts, ProjectStatsArgs}
+import io.github.antivanov.learning.akka.project.stats.util.FileLineCounter.defaultFileLineCounter
 
 import scala.concurrent.{ExecutionContext, Promise}
-import scala.io.Source
 import scala.util.{Success, Try}
 
 object ProjectStatsApp extends App with ProjectStatsArgs {
-
-  trait FileLineCounter {
-
-    def countLines(file: File): Long
-  }
-
-  val defaultFileLineCounter = new FileLineCounter {
-    override def countLines(file: File): Long =
-      Source.fromFile(file).getLines.size
-  }
 
   object FileStatsReader {
 

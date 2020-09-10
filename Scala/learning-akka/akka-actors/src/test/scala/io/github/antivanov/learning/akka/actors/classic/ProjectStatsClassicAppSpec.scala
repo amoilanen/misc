@@ -5,7 +5,8 @@ import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.FileStatsReader.ComputeStatsFor
 import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.ProjectReader.{ReadProject, StatsReady}
 import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.StatsSummaryComputer.{FileStats, NoFileStats, TotalNumberOfFiles}
-import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.{FileLineCounter, FileStatsReader, ProjectReader, StatsSummaryComputer}
+import io.github.antivanov.learning.akka.project.stats.actors.classic.ProjectStatsClassicApp.{FileStatsReader, ProjectReader, StatsSummaryComputer}
+import io.github.antivanov.learning.akka.project.stats.util.FileLineCounter
 import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts}
 import io.github.antivanov.learning.akka.testutil.FileMocks
 import org.scalamock.scalatest.MockFactory

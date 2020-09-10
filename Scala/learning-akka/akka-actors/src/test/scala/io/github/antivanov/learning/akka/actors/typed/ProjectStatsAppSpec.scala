@@ -13,8 +13,9 @@ import akka.actor.testkit.typed.scaladsl.TestInbox
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.FileStatsReader.ComputeStatsFor
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.ProjectReader.{ReadProject, StatsReady}
 import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.StatsSummaryComputer.{CurrentState, FileStats, NoFileStats, TotalNumberOfFiles}
-import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.{FileLineCounter, FileStatsReader, ProjectReader, StatsSummaryComputer}
+import io.github.antivanov.learning.akka.project.stats.actors.typed.ProjectStatsApp.{FileStatsReader, ProjectReader, StatsSummaryComputer}
 import io.github.antivanov.learning.akka.project.stats.util.{FileExtension, FileWalker, FileWalkerLike, LineCounts}
+import io.github.antivanov.learning.akka.project.stats.util.FileLineCounter
 
 import scala.concurrent.Promise
 
