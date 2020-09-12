@@ -4,7 +4,6 @@ import java.io.File
 
 import akka.NotUsed
 
-import scala.io.{Source => IOSource}
 import akka.actor.ActorSystem
 import akka.stream.{ActorAttributes, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
