@@ -3,9 +3,8 @@ package io.github.antivanov.learning.akka.project.stats.stream
 import java.io.File
 
 import akka.NotUsed
-
 import akka.actor.ActorSystem
-import akka.stream.{ActorAttributes, Supervision}
+import akka.stream.{ActorAttributes, Materializer, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.Logger
 import io.github.antivanov.learning.akka.project.stats.stream.util.FilesSource
@@ -14,19 +13,19 @@ import io.github.antivanov.learning.akka.project.stats.util.FileLineCounter.defa
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 object ProjectStatsStreamApp extends App with ProjectStatsArgs {
 
   val logger = Logger(LoggerFactory.getLogger(ProjectStatsStreamApp.getClass))
-  val MaxExtensions = Integer.MAX_VALUE
 
   val streamDecider: Supervision.Decider = {
     case NonFatal(e) =>
       logger.error("Error in the stream", e)
       Supervision.Resume
-    case _ => Supervision.Stop
+    case _ =>
+      Supervision.Stop
   }
 
   case class FileStats(extension: FileExtension, linesCount: Long) {
@@ -41,14 +40,19 @@ object ProjectStatsStreamApp extends App with ProjectStatsArgs {
 
   class ProjectStatsComputer(fileLineCounter: FileLineCounter = defaultFileLineCounter) {
 
-    def fileToFileStats(file: File): FileStats = {
-      val lineCount = fileLineCounter.countLines(file)
-      val extension = file.getPath.substring(file.getPath.lastIndexOf('.') + 1)
+    val MaxExtensions = Integer.MAX_VALUE
 
-      FileStats(FileExtension(extension), lineCount)
+    def fileToFileStats(file: File): FileStats = {
+      val filePath = file.getPath
+      val extension = filePath.substring(filePath.lastIndexOf('.') + 1)
+      val lineCount = Try(
+        fileLineCounter.countLines(file)
+      ).toOption
+
+      FileStats(FileExtension(extension), lineCount.getOrElse(0))
     }
 
-    def computeLineCounts(source: Source[File, NotUsed]): Future[Map[FileExtension, Long]] =
+    def computeLineCounts(source: Source[File, NotUsed])(implicit materializer: Materializer): Future[Map[FileExtension, Long]] =
       source
         .map(fileToFileStats)
         .groupBy(MaxExtensions, _.extension)

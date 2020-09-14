@@ -10,7 +10,14 @@ trait FileMocks { self: MockFactory=>
 
   def dir(name: String, files: File*): File = {
     val directory = mock[MockFile]
+    (directory.equals _).expects(*).onCall({ other: Any =>
+      other match {
+        case otherFile: File => otherFile.getPath == name
+        case _ => false
+      }
+    }).anyNumberOfTimes()
     (directory.getName _).expects().returning(name).anyNumberOfTimes()
+    (directory.getPath _).expects().returning(name).anyNumberOfTimes()
     (directory.listFiles: () => Array[File]).expects().returning(files.toArray).anyNumberOfTimes()
     (directory.isDirectory _).expects().returning(true).anyNumberOfTimes()
     directory
