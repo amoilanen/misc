@@ -1,6 +1,6 @@
 package ch3
 
-object Chapter3Excercises {
+object FlexibleFizzBuzz {
 
   val outputRules = Map(
     3 -> "Fizz",

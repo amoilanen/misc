@@ -2,9 +2,9 @@ package ch3
 
 import org.scalatest._
 
-import ch3.Chapter3Excercises._
+import ch3.FlexibleFizzBuzz._
 
-class Chapter3ExcercisesSpec extends FreeSpec with Matchers {
+class FlexibleFizzBuzzSpec extends FreeSpec with Matchers {
 
   "flexibleFizzBuzz" - {
 
