@@ -11,13 +11,12 @@ def wrapperOf[X](x: X): Wrapper[X] = x match
   case x: String => StringWrapper(x)
   case x: Int => IntWrapper(x)
 
-@main def doMain: Unit = {
-  val x: Wrapper[String] = StringWrapper("abc")
-  val y: Wrapper[Int] = IntWrapper(2)
+@main def doMain: Unit =
+  val x: Wrapper[String] = wrapperOf("abc")
+  val y: Wrapper[Int] = wrapperOf(2)
 
   // Would fail compilation
   //val z: Wrapper[Double] = DoubleWrapper(2.0)
 
-  println(wrapperOf("abc"))
-  println(wrapperOf(2))
-}
+  println(x)
+  println(y)
