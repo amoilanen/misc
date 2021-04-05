@@ -3,7 +3,7 @@
     (cons (f (car elements))
           (map f (cdr elements)))))
 
-(define list-size 7000)
+(define list-size 15000)
 (define elements
   (make-list list-size 5))
 
