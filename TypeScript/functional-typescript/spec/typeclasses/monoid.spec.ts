@@ -71,7 +71,7 @@ describe('monoid', () => {
       );
     }
 
-    it('combine should be associative', () => {
+    it('should satisfy monoid laws', () => {
       checkMonoidLaws(MonoidInstances.stringMonoid, 'a', 'bc', 'def');
       checkMonoidLaws(MonoidInstances.numberAdditionMonoid, -4, 2, 3);
       checkMonoidLaws(MonoidInstances.numberMultiplicationMonoid, 1, 2, 4);

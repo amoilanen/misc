@@ -19,7 +19,7 @@ describe('semigroup', () => {
       );
     }
 
-    it('combine should be associative', () => {
+    it('should satisfy semigroup laws', () => {
       checkSemigroupLaws(SemigroupInstances.stringSemigroup, 'a', 'bc', 'def');
       checkSemigroupLaws(SemigroupInstances.numberAdditionSemigroup, -4, 2, 3);
       checkSemigroupLaws(SemigroupInstances.numberMultiplicationSemigroup, 1, 2, 4);
