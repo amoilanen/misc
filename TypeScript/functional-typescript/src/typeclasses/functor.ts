@@ -55,19 +55,40 @@ const optionFunctor: Functor<Option_> = new OptionFunctor();
 
 export type Promise_ = 'Promise_'
 
-class HKTPromise<T> extends Promise<T> implements HKT<Promise_, T> {
+// Attempt to tell Typescript to treat Promise as a "higher-kinded type"
+export class HKTPromise<T> extends Promise<T> implements HKT<Promise_, T> {
   _F: Promise_
   _T: T
+
+  /*
+   * As suggested in https://stackoverflow.com/questions/48158730/extend-javascript-promise-and-resolve-or-reject-it-inside-constructor
+   * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/species
+   * 
+   * It is not otherwise possible to easily subclass Promises in JavaScript/Typescript, issue https://github.com/nodejs/node/issues/13678
+   */
+  static get [Symbol.species]() {
+    return Promise;
+  }
+
+  constructor(readonly underlyingPromise: Promise<T>) {
+    super((resolve, reject) => {
+      underlyingPromise.then(v => resolve(v)).catch(err => reject(err));
+    });
+  }
 }
 
 // Again it might be much more convenient to add map directly to Promise, however, for the illustration's sake defining a separate Functor typeclass
 export class PromiseFunctor implements Functor<Promise_> {
 
-  map<A, B>(fa: HKTPromise<A>, f: (v: A) => B): HKTPromise<B>
+  map<A, B>(fa: HKTPromise<A>, f: (v: A) => B): HKTPromise<B> {
+    return new HKTPromise(fa.then(v => f(v)));
+  }
 
+  /*
   map<A, B>(fa: Promise<A>, f: (v: A) => B): Promise<B> {
     return fa.then(v => f(v));
   }
+  */
 }
 
 const promiseFunctor: Functor<Promise_> = new PromiseFunctor();
