@@ -37,7 +37,7 @@ describe('functor', () => {
 
     it('should satisfy functor laws', async () => {
       await checkFunctorLaws(FunctorInstances.optionFunctor, new Some("abc"), s => s.length, n => `${n}_letters`);
-      await checkFunctorLaws(FunctorInstances.promiseFunctor, new HKTPromise(Promise.resolve("abc")), s => s.length, n => `${n}_letters`);
+      await checkFunctorLaws(FunctorInstances.promiseFunctor, Promise.resolve("abc") as HKTPromise<string>, s => s.length, n => `${n}_letters`);
     });
   });
 
