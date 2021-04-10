@@ -8,16 +8,13 @@ import { HKTArray } from '../../src/typeclasses/types/array';
 
 describe('functor', () => {
 
-  //TODO: Comparing the equality of two Promises would require comparing the values wrapped in each of them: implement, with HKT support
-  interface Equal<T> {
-    eq(x: T, y: T): boolean
-  }
-
   describe('functor laws', () => {
 
-    async function checkFunctorLaws<F, A, B, C>(f: Functor<F>, fa: HKT<F, A>, g: (v: A) => B, h: (v: B) => C): Promise<void> {
-      await checkCompositionLaw(f, fa, g, h);
-      await checkIdentityLaw(f, fa);
+    function checkFunctorLaws<F, A, B, C>(f: Functor<F>, fa: HKT<F, A>, g: (v: A) => B, h: (v: B) => C): void {
+      it(`${f.constructor.name} should satisfy functor laws`, async () => {
+        await checkCompositionLaw(f, fa, g, h);
+        await checkIdentityLaw(f, fa);
+      });
     }
 
     async function checkCompositionLaw <F, A, B, C>(f: Functor<F>, fa: HKT<F, A>, g: (v: A) => B, h: (v: B) => C): Promise<void> {
@@ -38,11 +35,9 @@ describe('functor', () => {
       );
     }
 
-    it('should satisfy functor laws', async () => {
-      await checkFunctorLaws(FunctorInstances.optionFunctor, new Some("abc"), s => s.length, n => `${n}_letters`);
-      await checkFunctorLaws(FunctorInstances.promiseFunctor, Promise.resolve("abc") as HKTPromise<string>, s => s.length, n => `${n}_letters`);
-      await checkFunctorLaws(FunctorInstances.arrayFunctor, [1, 2, 3] as HKTArray<number>, n => String.fromCharCode(n), s => s.toUpperCase());
-    });
+    checkFunctorLaws(FunctorInstances.optionFunctor, new Some("abc"), s => s.length, n => `${n}_letters`);
+    checkFunctorLaws(FunctorInstances.promiseFunctor, Promise.resolve("abc") as HKTPromise<string>, s => s.length, n => `${n}_letters`);
+    checkFunctorLaws(FunctorInstances.arrayFunctor, [1, 2, 3] as HKTArray<number>, n => String.fromCharCode(n), s => s.toUpperCase());
   });
 
   describe('PromiseFunctor', () => {

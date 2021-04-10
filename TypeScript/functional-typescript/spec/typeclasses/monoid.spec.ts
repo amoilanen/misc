@@ -42,9 +42,15 @@ describe('monoid', () => {
 
   describe('monoid laws', () => {
 
+    checkMonoidLaws(MonoidInstances.stringMonoid, 'a', 'bc', 'def');
+    checkMonoidLaws(MonoidInstances.numberAdditionMonoid, -4, 2, 3);
+    checkMonoidLaws(MonoidInstances.numberMultiplicationMonoid, 1, 2, 4);
+
     function checkMonoidLaws<T>(m: Monoid<T>, x: T, y: T, z: T): void {
-      checkAssociativityLaw(m, x, y, z);
-      checkIdentityLaw(m, x);
+      it(`${m.constructor.name} should satisfy monoid laws`, () => {
+        checkAssociativityLaw(m, x, y, z);
+        checkIdentityLaw(m, x);
+      });
     }
 
     function checkAssociativityLaw<T>(m: Monoid<T>, x: T, y: T, z: T): void {
@@ -70,11 +76,5 @@ describe('monoid', () => {
         x
       );
     }
-
-    it('should satisfy monoid laws', () => {
-      checkMonoidLaws(MonoidInstances.stringMonoid, 'a', 'bc', 'def');
-      checkMonoidLaws(MonoidInstances.numberAdditionMonoid, -4, 2, 3);
-      checkMonoidLaws(MonoidInstances.numberMultiplicationMonoid, 1, 2, 4);
-    });
   });
 });

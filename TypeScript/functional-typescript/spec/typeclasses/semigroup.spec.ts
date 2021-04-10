@@ -7,7 +7,9 @@ describe('semigroup', () => {
   describe('semigroup laws', () => {
 
     function checkSemigroupLaws<T>(s: Semigroup<T>, x: T, y: T, z: T): void {
-      checkAssociativityLaw(s, x, y, z);
+      it(`${s.constructor.name} should satisfy semigroup laws`, () => {
+        checkAssociativityLaw(s, x, y, z);
+      });
     }
 
     function checkAssociativityLaw<T>(s: Semigroup<T>, x: T, y: T, z: T): void {
@@ -19,10 +21,8 @@ describe('semigroup', () => {
       );
     }
 
-    it('should satisfy semigroup laws', () => {
-      checkSemigroupLaws(SemigroupInstances.stringSemigroup, 'a', 'bc', 'def');
-      checkSemigroupLaws(SemigroupInstances.numberAdditionSemigroup, -4, 2, 3);
-      checkSemigroupLaws(SemigroupInstances.numberMultiplicationSemigroup, 1, 2, 4);
-    });
+    checkSemigroupLaws(SemigroupInstances.stringSemigroup, 'a', 'bc', 'def');
+    checkSemigroupLaws(SemigroupInstances.numberAdditionSemigroup, -4, 2, 3);
+    checkSemigroupLaws(SemigroupInstances.numberMultiplicationSemigroup, 1, 2, 4);
   });
 });
