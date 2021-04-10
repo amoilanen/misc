@@ -3,29 +3,35 @@
 //TODO: Option Monad
 //TODO: Promise Monad
 //TODO: Array Monad
-//TODO: Reader Monad
 
-import { Context } from 'mocha';
+import { Functor } from './functor';
 import { HKT } from './hkt';
 
-export interface Monad<M> {
-  pure<A>(a: A): HKT<M, A>
-  flatMap<A, B>(fa: HKT<M, A>, f: (v: A) => HKT<M, B>): HKT<M, B>
+// Monad is also a Functor as it is possible to implement "map" through "pure" and "flatMap"
+export abstract class Monad<M> implements Functor<M> {
+  abstract pure<A>(a: A): HKT<M, A>
+  abstract flatMap<A, B>(fa: HKT<M, A>, f: (v: A) => HKT<M, B>): HKT<M, B>
+  map<A, B>(fa: HKT<M, A>, f: (v: A) => B): HKT<M, B> {
+    return this.flatMap(fa, (v: A) => this.pure<B>(f(v)));
+  }
 }
 
+// Informally "ContextDependent<Ctx, unknown>" ~ "Ctx => unknown", i.e. "type constructor" for ContextDependent
+export type ContextDependent_<Ctx> = () => Ctx
 
-// Corresponds to "<R> Ctx => R"
-type ContextDependent_<Ctx> = () => Ctx
-
-// Roughly corresponds to "Ctx => R"
-interface ContextDependent<Ctx, R> extends HKT<ContextDependent_<Ctx>, R> {
+// Informally "ContextDependent<Ctx, R>" ~ "Ctx => R"
+export interface ContextDependent<Ctx, R> extends HKT<ContextDependent_<Ctx>, R> {
   _F: ContextDependent_<Ctx>,
   _T: R
   (c: Ctx): R
 }
 
+/*
+ * Compare with the Scala 3 version, because of Typescript not having higher kinded types, much more boiler-plate is needed
+ * https://dotty.epfl.ch/docs/reference/contextual/type-classes.html#reader
+ */
 function readerMonad<Ctx>(): Monad<ContextDependent_<Ctx>> {
-  return new class ReaderMonad<Ctx> implements Monad<ContextDependent_<Ctx>> {
+  return new class ReaderMonad<Ctx> extends Monad<ContextDependent_<Ctx>> {
     pure<A>(a: A): HKT<ContextDependent_<Ctx>, A> {
       return ((ctx: Ctx) => a) as ContextDependent<Ctx, A>;
     }
@@ -38,4 +44,5 @@ function readerMonad<Ctx>(): Monad<ContextDependent_<Ctx>> {
 }
 
 export const MonadInstances = {
+  readerMonad
 };
