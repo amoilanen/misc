@@ -1,50 +1,20 @@
 // Taking inspiration from https://medium.com/@gcanti/higher-kinded-types-in-typescript-static-and-fantasy-land-d41c361d0dbe, the author of fp-ts
 
 import { HKT } from './hkt';
+import { Option_, Option, Some, none } from './types/option';
+import { Promise_, HKTPromise } from './types/promise';
+import { Array_, HKTArray } from './types/array';
 
 export interface Functor<F> {
   map<A, B>(fa: HKT<F, A>, f: (v: A) => B): HKT<F, B>
 }
 
-// The higher kinded type for Option<T>, in other languages such as Scala such type is created automatically and is called a "type constructor"
-export type Option_ = 'Option_'
-
-abstract class Option<T> implements HKT<Option_, T> {
-  _F: Option_
-  _T: T
-  readonly typeTag: 'None' | 'Some'
-  abstract get(): T
-}
-
-export class Some<T> extends Option<T> {
-  readonly typeTag: 'Some' = 'Some'
-  constructor(readonly value: T) {
-    super();
-  }
-  get(): T {
-    return this.value;
-  }
-}
-
-export class None extends Option<never> {
-  readonly typeTag: 'None' = 'None'
-  private constructor() {
-    super();
-  }
-  get(): never {
-    throw new Error(`None.get: no value wrapped`);
-  }
-  static instance: None = new None();
-}
-
-export const none: None = None.instance;
-
 // It might be much more convenient to add map directly to the Option, however, for the illustration's sake defining a separate Functor typeclass
-export class OptionFunctor implements Functor<Option_> {
+class OptionFunctor implements Functor<Option_> {
   map<A, B>(fa: Option<A>, f: (v: A) => B): Option<B> {
     switch (fa.typeTag) {
       case 'None':
-        return None.instance;
+        return none;
       case 'Some':
         return new Some(f(fa.get()))
     }
@@ -53,16 +23,8 @@ export class OptionFunctor implements Functor<Option_> {
 
 const optionFunctor: Functor<Option_> = new OptionFunctor();
 
-export type Promise_ = 'Promise_'
-
-// Attempt to tell Typescript to treat Promise as a "higher-kinded type"
-export class HKTPromise<T> extends Promise<T> implements HKT<Promise_, T> {
-  _F: Promise_
-  _T: T
-}
-
 // Again it might be much more convenient to add map directly to Promise, however, for the illustration's sake defining a separate Functor typeclass
-export class PromiseFunctor implements Functor<Promise_> {
+class PromiseFunctor implements Functor<Promise_> {
 
   map<A, B>(fa: HKTPromise<A>, f: (v: A) => B): HKTPromise<B> {
     return fa.then(v => f(v)) as HKTPromise<B>;
@@ -71,9 +33,18 @@ export class PromiseFunctor implements Functor<Promise_> {
 
 const promiseFunctor: Functor<Promise_> = new PromiseFunctor();
 
-//TODO: Array Functor
+// The method "map" already exists on an Array. adding it here again via a Functor just for the sake of illustration
+class ArrayFunctor implements Functor<Array_> {
+
+  map<A, B>(fa: HKTArray<A>, f: (v: A) => B): HKTArray<B> {
+    return fa.map(f) as HKTArray<B>;
+  }
+}
+
+const arrayFunctor: Functor<Array_> = new ArrayFunctor();
 
 export const FunctorInstances = {
   optionFunctor,
-  promiseFunctor
+  promiseFunctor,
+  arrayFunctor
 };

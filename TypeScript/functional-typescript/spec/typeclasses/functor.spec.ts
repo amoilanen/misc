@@ -1,7 +1,10 @@
 import { expect } from 'chai';
 
 import { HKT } from '../../src/typeclasses/hkt';
-import { Functor, FunctorInstances, Some, HKTPromise } from '../../src/typeclasses/functor';
+import { Functor, FunctorInstances } from '../../src/typeclasses/functor';
+import { Some } from '../../src/typeclasses/types/option';
+import { HKTPromise } from '../../src/typeclasses/types/promise';
+import { HKTArray } from '../../src/typeclasses/types/array';
 
 describe('functor', () => {
 
@@ -38,6 +41,7 @@ describe('functor', () => {
     it('should satisfy functor laws', async () => {
       await checkFunctorLaws(FunctorInstances.optionFunctor, new Some("abc"), s => s.length, n => `${n}_letters`);
       await checkFunctorLaws(FunctorInstances.promiseFunctor, Promise.resolve("abc") as HKTPromise<string>, s => s.length, n => `${n}_letters`);
+      await checkFunctorLaws(FunctorInstances.arrayFunctor, [1, 2, 3] as HKTArray<number>, n => String.fromCharCode(n), s => s.toUpperCase());
     });
   });
 
