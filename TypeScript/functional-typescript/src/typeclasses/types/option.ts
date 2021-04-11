@@ -8,6 +8,9 @@ export abstract class Option<T> implements HKT<Option_, T> {
   _T: T
   readonly typeTag: 'None' | 'Some'
   abstract get(): T
+  static from<U>(v: U): Option<U> {
+    return v != null ? new Some<U>(v): none;
+  }
 }
 
 export class Some<T> extends Option<T> {

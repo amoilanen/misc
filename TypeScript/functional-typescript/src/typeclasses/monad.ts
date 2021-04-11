@@ -1,4 +1,5 @@
 import { Functor } from './functor';
+import { Option_, Option, Some, none } from './types/option';
 import { HKT } from './hkt';
 
 // Monad is also a Functor as it is possible to implement "map" through "pure" and "flatMap"
@@ -9,6 +10,26 @@ export abstract class Monad<M> implements Functor<M> {
     return this.flatMap(fa, (v: A) => this.pure<B>(f(v)));
   }
 }
+
+// It might be much more convenient to add map directly to the Option, however, for the illustration's sake defining a separate Functor typeclass
+class OptionMonad extends Monad<Option_> {
+  pure<A>(a: A): Option<A> {
+    return Option.from(a);
+  }
+  flatMap<A, B>(fa: Option<A>, f: (v: A) => Option<B>): Option<B> {
+    switch (fa.typeTag) {
+      case 'None':
+        return none;
+      case 'Some':
+        return f(fa.get())
+    }
+  }
+}
+
+const optionMonad: Monad<Option_> = new OptionMonad();
+
+//TODO: Promise Monad
+//TODO: Array Monad
 
 // Informally "ContextDependent<Ctx, unknown>" ~ "Ctx => unknown", i.e. "type constructor" for ContextDependent
 export type ContextDependent_<Ctx> = () => Ctx
@@ -37,10 +58,7 @@ function readerMonad<Ctx>(): Monad<ContextDependent_<Ctx>> {
   };
 }
 
-//TODO: Option Monad
-//TODO: Promise Monad
-//TODO: Array Monad
-
 export const MonadInstances = {
+  optionMonad,
   readerMonad
 };
