@@ -1,9 +1,3 @@
-//TODO: Demonstrate that every Monad can be also viewed as a functor (i.e. map can be implemented via pure and flatMap)
-
-//TODO: Option Monad
-//TODO: Promise Monad
-//TODO: Array Monad
-
 import { Functor } from './functor';
 import { HKT } from './hkt';
 
@@ -37,11 +31,15 @@ function readerMonad<Ctx>(): Monad<ContextDependent_<Ctx>> {
     }
     flatMap<A, B>(fa: HKT<ContextDependent_<Ctx>, A>, f: (v: A) => HKT<ContextDependent_<Ctx>, B>): HKT<ContextDependent_<Ctx>, B> {
       return ((ctx: Ctx) => {
-        (f((fa as ContextDependent<Ctx, A>)(ctx)) as ContextDependent<Ctx, B>)(ctx);
+        return (f((fa as ContextDependent<Ctx, A>)(ctx)) as ContextDependent<Ctx, B>)(ctx);
       }) as ContextDependent<Ctx, B>;
     }
   };
 }
+
+//TODO: Option Monad
+//TODO: Promise Monad
+//TODO: Array Monad
 
 export const MonadInstances = {
   readerMonad
