@@ -46,8 +46,50 @@ object Sudoku {
 
     def isValid(): Boolean =
       areRowsValid() && areColumnsValid() && areSubGridsValid()
+
+    def render(): String = {
+      val ExtendedSquareIndices = SquareIndices.toList :+ Size
+      val verticalSeparator = ("+" + ("-" * (2 * SubSize + 1))) * SubSize + "+"
+      val horizontalSeparator = "|"
+      ExtendedSquareIndices.map(rowIndex => {
+        val isBoundaryRow = rowIndex % SubSize == 0
+        val rowPrefix = if (isBoundaryRow)
+          verticalSeparator + "\n"
+        else
+          ""
+        val rowRendition = if (rowIndex < Size) {
+          Some(ExtendedSquareIndices.flatMap(columnIndex => {
+            val isBoundaryColumn = columnIndex % SubSize == 0
+            val columnPrefix = if (isBoundaryColumn) Some(horizontalSeparator) else None
+            val cellValue = if (columnIndex < Size) Some(cells(rowIndex)(columnIndex)) else None
+            val cellValueRendition = cellValue.map(v =>
+              if (v == 0) " " else v)
+            columnPrefix.toList ++ cellValueRendition.toList
+          }).mkString(" "))
+        } else None
+        rowPrefix + rowRendition.toList.mkString
+      }).mkString("\n")
+    }
   }
 
   def isValidSudoku(grid: Array[Array[Int]]): Boolean =
     SudokuGrid(grid).isValid()
+
+  def renderSudoku(grid: Array[Array[Int]]): String =
+    SudokuGrid(grid).render()
+}
+
+object SudokuApp extends App {
+  val grid = Array(
+    Array(3, 1, 6, 5, 7, 8, 4, 9, 2),
+    Array(5, 2, 9, 1, 3, 4, 7, 6, 8),
+    Array(4, 8, 7, 6, 2, 9, 5, 3, 1),
+    Array(2, 6, 3, 0, 1, 0, 0, 8, 0),
+    Array(9, 7, 4, 8, 6, 3, 0, 0, 5),
+    Array(8, 5, 1, 0, 9, 0, 6, 0, 0),
+    Array(1, 3, 0, 0, 0, 0, 2, 5, 0),
+    Array(0, 0, 0, 0, 0, 0, 0, 7, 4),
+    Array(0, 0, 5, 2, 0, 6, 3, 0, 0)
+  )
+  println(Sudoku.renderSudoku(grid))
 }
