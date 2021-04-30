@@ -68,6 +68,7 @@ object ExpressionSimplification extends App {
     simplify(parsedExpr).toString
   }
 
+  @tailrec
   def simplify(expr: Expr): Expr = {
     val simplified = tryToSimplify(expr)
     if (simplified.equals(expr)) {
