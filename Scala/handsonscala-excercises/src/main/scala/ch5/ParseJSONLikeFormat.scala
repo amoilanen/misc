@@ -6,8 +6,24 @@ object ParseJSONLikeFormat extends App {
     def parse(value: String): T
   }
 
+  trait Serializer[T] {
+    def serialize(value: T): String
+  }
+
+  object SerializerInstances {
+    implicit val StringSerializer: Serializer[String] = (value: String) => value
+    implicit val DoubleParser: Serializer[Double] = (value: Double) => value.toString
+    implicit val IntParser: Serializer[Int] = (value: Int) => value.toString
+    implicit val BooleanParser: Serializer[Boolean] = (value: Boolean) => value.toString
+    implicit def tupleSerializer[A, B](implicit leftSerializer: Serializer[A], rightSerializer: Serializer[B]): Serializer[(A, B)] = { case (left: A,  right: B) =>
+      s"[${leftSerializer.serialize(left)},${rightSerializer.serialize(right)}]"
+    }
+    implicit def sequenceSerializer[T](implicit serializer: Serializer[T]): Serializer[Seq[T]] = (value: Seq[T]) =>
+      s"[${value.map(serializer.serialize(_)).mkString(",")}]"
+  }
+
   object ParserInstances {
-    //TODO: Simplify and implement as a non-imperative version
+
     def parseSequenceItems(seq: String): Seq[String] = {
       var pointer = 1
       var itemStartPointer = pointer
@@ -52,6 +68,9 @@ object ParseJSONLikeFormat extends App {
 
   def parseFromString[T](input: String)(implicit parser: Parser[T]): T =
     parser.parse(input)
+
+  def writeToString[T](input: T)(implicit serializer: Serializer[T]): String =
+    serializer.serialize(input)
 
   val input = "[[[1],[true]],[[2,3],[false,true]],[[4,5,6],[false,true,false]]]"
   ParserInstances.parseSequenceItems(input).foreach(println(_))
