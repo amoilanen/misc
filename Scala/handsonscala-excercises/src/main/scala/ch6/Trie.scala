@@ -2,11 +2,22 @@ package ch6
 
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
-case class TrieNode(value: Char, children: Set[TrieNode])
+case class TrieNode(value: Char, children: Set[TrieNode]) {
+  val isLeaf = children.isEmpty
+}
 
 case class Trie(root: TrieNode) {
 
-  def contains(key: String): Boolean = ???
+  private def findNode(key: String): Option[TrieNode] =
+    if (key.isEmpty)
+      None
+    else
+      key.foldLeft(Option(root))((subTrie, nextKeyChar) => {
+        subTrie.flatMap(_.children.find(_.value == nextKeyChar))
+      })
+
+  def contains(key: String): Boolean =
+    findNode(key).map(_.isLeaf).getOrElse(false)
 
   def prefixesMatchingKey(key: String): Set[String] = ???
 
@@ -34,14 +45,20 @@ object Trie extends App {
     }
   }
 
-  def apply(keys: List[String]) = {
+  def apply(keys: List[String]): Trie = {
     val emptyTrie = TrieNode(SentinelChar, Set())
-
-    keys.foldLeft(emptyTrie)({ case (node, key) =>
+    val root = keys.foldLeft(emptyTrie)({ case (node, key) =>
       addKeyAt(node, key)
     })
+    Trie(root)
   }
 
   val keys = List("abcd", "abe", "ac", "ad", "efg", "eab")
-  println(Trie(keys).asJson.spaces2)
+  val trie = Trie(keys)
+  println(trie.asJson.spaces2)
+
+  println(trie.contains("abe"))
+  println(trie.contains("ab"))
+  println(trie.contains("fgh"))
+  println(trie.contains(""))
 }
