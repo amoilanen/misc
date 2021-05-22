@@ -2,11 +2,10 @@ package ch6
 
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
-case class TrieNode(value: Char, children: Set[TrieNode]) {
-  val isLeaf = children.isEmpty
+case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean = false) {
 
   def keys(): Set[String] = {
-    if (isLeaf)
+    if (children.isEmpty)
       Set(value.toString)
     else
       children.flatMap(child =>
@@ -25,17 +24,32 @@ case class Trie(root: TrieNode) {
         subTrie.flatMap(_.children.find(_.value == nextKeyChar))
       })
 
-  def contains(key: String): Boolean =
-    findNode(key).map(_.isLeaf).getOrElse(false)
+  def contains(key: String): Boolean = {
+    val foundNode = findNode(key)
+    foundNode.map(_.isStringEnd).getOrElse(false)
+  }
 
   def prefixesMatchingKey(key: String): Set[String] =
     ???
 
-  def keysMatchingPrefix(prefix: String): Set[String] =
-    findNode(prefix)
-      .map(_.keys())
-      .getOrElse(Set())
-      .map(prefix + _.drop(1))
+  def delete(key: String): Option[String] =
+    ???
+
+  def keysMatchingPrefix(prefix: String): Set[String] = {
+    val prefixNode = findNode(prefix)
+    val prefixKey: Option[String] = prefixNode.flatMap(node => {
+      if (node.isStringEnd)
+        Some(prefix)
+      else
+        None
+    })
+
+    prefixKey.toSet ++
+      prefixNode
+        .map(_.keys())
+        .getOrElse(Set())
+        .map(prefix + _.drop(1))
+  }
 }
 
 object Trie extends App {
@@ -44,7 +58,7 @@ object Trie extends App {
 
   private def addKeyAt(node: TrieNode, key: String): TrieNode = {
     if (key.isEmpty)
-      node
+      node.copy(isStringEnd = true)
     else {
       val nextKeyChar = key.charAt(0)
       val childNodeToModify = node.children.find(_.value == nextKeyChar)
@@ -67,14 +81,14 @@ object Trie extends App {
     Trie(root)
   }
 
-  val keys = List("abcd", "abe", "ac", "ad", "efg", "eab")
+  val keys = List("abcd", "abe", "ab", "ac", "ad", "efg", "eab")
   val trie = Trie(keys)
   println(trie.asJson.spaces2)
 
-  println(trie.contains("abe"))
-  println(trie.contains("ab"))
-  println(trie.contains("fgh"))
-  println(trie.contains(""))
+  assert(trie.contains("abe") == true)
+  assert(trie.contains("ab") == true)
+  assert(trie.contains("fgh") == false)
+  assert(trie.contains("ah") == false)
 
-  println(trie.keysMatchingPrefix("ab"))
+  assert(trie.keysMatchingPrefix("ab") == Set("abcd", "abe", "ab"))
 }
