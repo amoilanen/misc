@@ -29,8 +29,21 @@ case class Trie(root: TrieNode) {
     foundNode.map(_.isStringEnd).getOrElse(false)
   }
 
-  def prefixesMatchingKey(key: String): Set[String] =
-    ???
+  def keysMatchingStringPrefix(string: String): Set[String] = {
+    val (matchingNodes, _) = (0 until string.length).toList.foldLeft((List((root, -1)), Option(root)))({ case (acc, idx) =>
+      val (previousMatchingNodes, lastMatchingNode) = acc
+      val nextChar = string.charAt(idx)
+      val nextMatchingNode = lastMatchingNode.flatMap(_.children.find(_.value == nextChar))
+      val nextMatchingNodes = nextMatchingNode.map((_, idx)).toList ++ previousMatchingNodes
+      (nextMatchingNodes, nextMatchingNode)
+    })
+    matchingNodes.flatMap({ case (node, idx) =>
+      if (node.isStringEnd)
+        List(string.substring(0, idx + 1))
+      else
+        List()
+    }).toSet
+  }
 
   def delete(key: String): Option[String] =
     ???
@@ -91,4 +104,5 @@ object Trie extends App {
   assert(trie.contains("ah") == false)
 
   assert(trie.keysMatchingPrefix("ab") == Set("abcd", "abe", "ab"))
+  assert(trie.keysMatchingStringPrefix("abcdef") == Set("ab", "abcd"))
 }
