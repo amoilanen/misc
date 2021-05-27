@@ -2,7 +2,7 @@ package ch6
 
 import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
 
-case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean = false) {
+case class TrieNode(value: Char, children: Set[TrieNode], parent: Option[TrieNode], isStringEnd: Boolean = false) {
 
   def keys(): Set[String] = {
     if (children.isEmpty)
@@ -16,18 +16,22 @@ case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean =
 
 case class Trie(root: TrieNode) {
 
-  private def findNode(keyPrefix: String): Option[TrieNode] =
+  private def findNode(keyPrefix: String, keepLastMatch: Boolean = false): Option[TrieNode] =
     if (keyPrefix.isEmpty)
       None
-    else
-      keyPrefix.foldLeft(Option(root))((subTrie, nextKeyChar) => {
-        subTrie.flatMap(_.children.find(_.value == nextKeyChar))
+    else {
+      val matchedNodes = keyPrefix.foldLeft(List(Option(root)))((matchedNodes, nextKeyChar) => {
+        val subTrie = matchedNodes.head
+        subTrie.flatMap(_.children.find(_.value == nextKeyChar)) +: matchedNodes
       })
+      if (keepLastMatch)
+        matchedNodes.dropWhile(!_.isDefined).head
+      else
+        matchedNodes.head
+    }
 
-  def contains(key: String): Boolean = {
-    val foundNode = findNode(key)
-    foundNode.map(_.isStringEnd).getOrElse(false)
-  }
+  def contains(key: String): Boolean =
+    findNode(key).map(_.isStringEnd).getOrElse(false)
 
   def keysMatchingStringPrefix(string: String): Set[String] = {
     val (matchingNodes, _) = (0 until string.length).toList.foldLeft((List((root, -1)), Option(root)))({ case (acc, idx) =>
@@ -45,8 +49,8 @@ case class Trie(root: TrieNode) {
     }).toSet
   }
 
-  def delete(key: String): Option[String] =
-    ???
+  def delete(key: String): Trie =
+    this
 
   def keysMatchingPrefix(prefix: String): Set[String] = {
     val prefixNode = findNode(prefix)
@@ -79,7 +83,7 @@ object Trie extends App {
         case Some(childNode) =>
           addKeyAt(childNode, key.substring(1))
         case None =>
-          addKeyAt(TrieNode(nextKeyChar, Set()), key.substring(1))
+          addKeyAt(TrieNode(nextKeyChar, Set(), Some(node)), key.substring(1))
       }
       val updatedChildren = node.children.filter(_.value != nextKeyChar) + modifiedChildNode
       node.copy(children = updatedChildren)
@@ -87,8 +91,8 @@ object Trie extends App {
   }
 
   def apply(keys: List[String]): Trie = {
-    val emptyTrie = TrieNode(SentinelChar, Set())
-    val root = keys.foldLeft(emptyTrie)({ case (node, key) =>
+    val rootNode = TrieNode(SentinelChar, Set(), None)
+    val root = keys.foldLeft(rootNode)({ case (node, key) =>
       addKeyAt(node, key)
     })
     Trie(root)
@@ -98,11 +102,20 @@ object Trie extends App {
   val trie = Trie(keys)
   println(trie.asJson.spaces2)
 
+  assert(trie.contains("abcd") == true)
   assert(trie.contains("abe") == true)
   assert(trie.contains("ab") == true)
+  assert(trie.contains("ac") == true)
+  assert(trie.contains("ad") == true)
+  assert(trie.contains("efg") == true)
+  assert(trie.contains("eab") == true)
   assert(trie.contains("fgh") == false)
   assert(trie.contains("ah") == false)
 
   assert(trie.keysMatchingPrefix("ab") == Set("abcd", "abe", "ab"))
   assert(trie.keysMatchingStringPrefix("abcdef") == Set("ab", "abcd"))
+
+  val trieWithDeletedKeys = trie.delete("ab").delete("efg").delete("ea") // "ea" is not a valid key in Trie
+
+  //TODO: Another test case when ae eb are deleted
 }
