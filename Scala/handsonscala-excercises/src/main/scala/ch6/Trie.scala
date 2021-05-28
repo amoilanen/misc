@@ -13,42 +13,46 @@ case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean =
       )
   }
 
-  def addKey(key: String): TrieNode = {
+  private def modify(key: String,
+                     onEmptyKey: => Option[TrieNode],
+                     updatedChildNodeMatchingNextChar: (TrieNode, String) => Option[TrieNode],
+                     updatedChildNodeIfNoMatch: String => Option[TrieNode]): Option[TrieNode] = {
     if (key.isEmpty)
-      this.copy(isStringEnd = true)
+      onEmptyKey
     else {
       val nextKeyChar = key.charAt(0)
       val childNodeToModify = this.children.find(_.value == nextKeyChar)
       val modifiedChildNode = childNodeToModify match {
         case Some(childNode) =>
-          childNode.addKey(key.substring(1))
+          updatedChildNodeMatchingNextChar(childNode, key)
         case None =>
-          TrieNode(nextKeyChar, Set()).addKey(key.substring(1))
-      }
-      val updatedChildren = children.filter(_.value != nextKeyChar) + modifiedChildNode
-      this.copy(children = updatedChildren)
-    }
-  }
-
-  def deleteKey(key: String): Option[TrieNode] = {
-    if (key.isEmpty)
-      if (children.isEmpty)
-        None
-      else
-        Some(this.copy(isStringEnd = false))
-    else {
-      val nextKeyChar = key.charAt(0)
-      val childNodeToModify = this.children.find(_.value == nextKeyChar)
-      val modifiedChildNode = childNodeToModify match {
-        case Some(childNode) =>
-          childNode.deleteKey(key.substring(1))
-        case None =>
-          None
+          updatedChildNodeIfNoMatch(key)
       }
       val updatedChildren = children.filter(_.value != nextKeyChar) ++ modifiedChildNode.toList
       Some(this.copy(children = updatedChildren))
     }
   }
+
+  def addKey(key: String): Option[TrieNode] =
+    modify(key,
+      onEmptyKey =
+        Some(this.copy(isStringEnd = true)),
+      updatedChildNodeMatchingNextChar = (childNode: TrieNode, key: String) =>
+        childNode.addKey(key.substring(1)),
+      updatedChildNodeIfNoMatch = (key: String) =>
+        TrieNode(key.head, Set()).addKey(key.substring(1)))
+
+  def deleteKey(key: String): Option[TrieNode] =
+    modify(key,
+      onEmptyKey =
+        if (children.isEmpty)
+          None
+        else
+          Some(this.copy(isStringEnd = false)),
+      updatedChildNodeMatchingNextChar = (childNode: TrieNode, key: String) =>
+        childNode.deleteKey(key.substring(1)),
+      updatedChildNodeIfNoMatch = (key: String) =>
+        None)
 }
 
 case class Trie(root: TrieNode) {
@@ -83,7 +87,7 @@ case class Trie(root: TrieNode) {
   }
 
   def delete(key: String): Trie =
-    Trie(root.deleteKey(key).get) //TODO: Avoid .get
+    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.emptyTrie)
 
   def keysMatchingPrefix(prefix: String): Set[String] = {
     val prefixNode = findNode(prefix)
@@ -106,12 +110,13 @@ object Trie extends App {
 
   private val SentinelChar = '#'
 
+  val emptyTrie = Trie(TrieNode(SentinelChar, Set()))
+
   def apply(keys: List[String]): Trie = {
-    val emptyTrie = TrieNode(SentinelChar, Set())
-    val root = keys.foldLeft(emptyTrie)({ case (currentRoot, key) =>
-      currentRoot.addKey(key)
+    val root = keys.foldLeft(Option(emptyTrie.root))({ case (currentRoot, key) =>
+      currentRoot.flatMap(_.addKey(key))
     })
-    Trie(root)
+    root.map(Trie(_)).getOrElse(Trie.emptyTrie)
   }
 
   val keys = List("abcd", "abe", "ab", "ac", "ad", "efg", "eab")
