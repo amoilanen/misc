@@ -1,7 +1,5 @@
 package ch6
 
-import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
-
 case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean = false) {
 
   def keys(): Set[String] = {
@@ -70,7 +68,7 @@ case class Trie(root: TrieNode) {
     foundNode.map(_.isStringEnd).getOrElse(false)
   }
 
-  def keysMatchingStringPrefix(string: String): Set[String] = {
+  def keyPrefixesOf(string: String): Set[String] = {
     val (matchingNodes, _) = (0 until string.length).toList.foldLeft((List((root, -1)), Option(root)))({ case (acc, idx) =>
       val (previousMatchingNodes, lastMatchingNode) = acc
       val nextChar = string.charAt(idx)
@@ -87,9 +85,9 @@ case class Trie(root: TrieNode) {
   }
 
   def delete(key: String): Trie =
-    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.emptyTrie)
+    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.EmptyTrie)
 
-  def keysMatchingPrefix(prefix: String): Set[String] = {
+  def keysHavingPrefix(prefix: String): Set[String] = {
     val prefixNode = findNode(prefix)
     val prefixKey: Option[String] = prefixNode.flatMap(node => {
       if (node.isStringEnd)
@@ -109,43 +107,12 @@ case class Trie(root: TrieNode) {
 object Trie extends App {
 
   private val SentinelChar = '#'
+  val EmptyTrie = new Trie(TrieNode(SentinelChar, Set()))
 
-  val emptyTrie = Trie(TrieNode(SentinelChar, Set()))
-
-  def apply(keys: List[String]): Trie = {
-    val root = keys.foldLeft(Option(emptyTrie.root))({ case (currentRoot, key) =>
+  def withKeys(keys: List[String]): Trie = {
+    val root = keys.foldLeft(Option(EmptyTrie.root))({ case (currentRoot, key) =>
       currentRoot.flatMap(_.addKey(key))
     })
-    root.map(Trie(_)).getOrElse(Trie.emptyTrie)
+    root.map(Trie(_)).getOrElse(Trie.EmptyTrie)
   }
-
-  val keys = List("abcd", "abe", "ab", "ac", "ad", "efg", "eab")
-  val trie = Trie(keys)
-  println(trie.asJson.spaces2)
-
-  assert(trie.contains("abcd") == true)
-  assert(trie.contains("abe") == true)
-  assert(trie.contains("ab") == true)
-  assert(trie.contains("ac") == true)
-  assert(trie.contains("ad") == true)
-  assert(trie.contains("efg") == true)
-  assert(trie.contains("eab") == true)
-  assert(trie.contains("fgh") == false)
-  assert(trie.contains("ah") == false)
-
-  assert(trie.keysMatchingPrefix("ab") == Set("abcd", "abe", "ab"))
-  assert(trie.keysMatchingStringPrefix("abcdef") == Set("ab", "abcd"))
-
-  val trieWithDeletedKeys = trie.delete("ab").delete("efg").delete("ea") // "ea" is not a valid key in Trie
-  assert(trieWithDeletedKeys.contains("abcd") == true)
-  assert(trieWithDeletedKeys.contains("abe") == true)
-  assert(trieWithDeletedKeys.contains("ab") == false)
-  assert(trieWithDeletedKeys.contains("ac") == true)
-  assert(trieWithDeletedKeys.contains("ad") == true)
-  assert(trieWithDeletedKeys.contains("efg") == false)
-  assert(trieWithDeletedKeys.contains("eab") == true)
-  assert(trieWithDeletedKeys.contains("fgh") == false)
-  assert(trieWithDeletedKeys.contains("ah") == false)
-
-  //TODO: Another test case when ae eb are deleted
 }
