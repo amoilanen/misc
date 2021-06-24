@@ -89,12 +89,12 @@ case class Trie(root: TrieNode) {
 
   def keysHavingPrefix(prefix: String): Set[String] = {
     val prefixNode = findNode(prefix)
-    val prefixKey: Option[String] = prefixNode.flatMap(node => {
+    val prefixKey: Option[String] = prefixNode.flatMap(node =>
       if (node.isStringEnd)
         Some(prefix)
       else
         None
-    })
+    )
 
     prefixKey.toSet ++
       prefixNode
@@ -107,10 +107,12 @@ case class Trie(root: TrieNode) {
 object Trie extends App {
 
   private val SentinelChar = '#'
-  val EmptyTrie = new Trie(TrieNode(SentinelChar, Set()))
+  def rootNode =
+    TrieNode(SentinelChar, Set())
+  val EmptyTrie = new Trie(rootNode)
 
   def withKeys(keys: List[String]): Trie = {
-    val root = keys.foldLeft(Option(EmptyTrie.root))({ case (currentRoot, key) =>
+    val root = keys.foldLeft(Option(rootNode))({ case (currentRoot, key) =>
       currentRoot.flatMap(_.addKey(key))
     })
     root.map(Trie(_)).getOrElse(Trie.EmptyTrie)
