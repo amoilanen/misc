@@ -32,4 +32,16 @@ class ShortestPathSpec extends AnyFreeSpec with Matchers  {
       )
     ) shouldEqual List("a", "c")
   }
+
+  "should be able to take edge length into account" in {
+    shortestPath(
+      start = "a",
+      dest = "c",
+      graph = Map(
+        "a" -> Seq(("b", 1), ("c", 3)),
+        "b" -> Seq(("c", 1)),
+        "c" -> Seq()
+      )
+    ) shouldEqual List("a", "b", "c")
+  }
 }
