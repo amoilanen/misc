@@ -12,9 +12,9 @@ class ShortestPathSpec extends AnyFreeSpec with Matchers  {
       start = "a",
       dest = "d",
       graph = Map(
-        "a" -> Seq("b", "c"),
-        "b" -> Seq("c", "d"),
-        "c" -> Seq("d"),
+        "a" -> Seq(("b", 1), ("c", 1)),
+        "b" -> Seq(("c", 1), ("d", 1)),
+        "c" -> Seq(("d", 1)),
         "d" -> Seq()
       )
     ) shouldEqual List("a", "c", "d")
@@ -25,9 +25,9 @@ class ShortestPathSpec extends AnyFreeSpec with Matchers  {
       start = "a",
       dest = "c",
       graph = Map(
-        "a" -> Seq("b", "c"),
-        "b" -> Seq("c", "d"),
-        "c" -> Seq("d"),
+        "a" -> Seq(("b", 1), ("c", 1)),
+        "b" -> Seq(("c", 1), ("d", 1)),
+        "c" -> Seq(("d", 1)),
         "d" -> Seq()
       )
     ) shouldEqual List("a", "c")

@@ -2,27 +2,31 @@ package ch6
 
 object ShortestPath {
 
-  def depthSearchPaths[T](start: T, graph: Map[T, Seq[T]]): Map[T, List[T]] = {
-    val seen = collection.mutable.Map(start -> List(start))
-    val pathLengths = collection.mutable.Map(start -> 0)
-    val queue = collection.mutable.ArrayDeque((start, List(start), 0))
+  def depthSearchPaths[T](start: T, graph: Map[T, Seq[(T, Int)]]): Map[T, List[T]] = {
+    val shortestLengths = collection.mutable.Map(start -> 0)
+    val shortestPathes = collection.mutable.Map(start -> List(start))
+    val visited = collection.mutable.Set(start)
+    val queue = collection.mutable.ArrayDeque(start)
     while (queue.nonEmpty) {
-      val (current, path, pathLength) = queue.removeLast()
-      for {
-        next <- graph(current)
-        if !seen.contains(next) && !pathLengths.get(next).exists(_ <= pathLength + 1)
-      } {
-        val newPath = next :: path
-        seen(next) = newPath
-        pathLengths(next) = pathLength + 1
-        queue.append((next, newPath, pathLength + 1))
-      }
+      val current = queue.removeLast()
+      val currentPathLength = shortestLengths(current)
+      val currentPath = shortestPathes(current)
+      graph(current).foreach({ case (child, edgeLength) =>
+        if (!shortestLengths.get(child).exists(_ <= currentPathLength + edgeLength)) {
+          shortestLengths(child) = currentPathLength + edgeLength
+          shortestPathes(child) = currentPath ++ List(child)
+        }
+        if (!visited(child)) {
+          queue.append(child)
+        }
+        visited.add(current)
+      })
     }
-    seen.toMap
+    shortestPathes.toMap
   }
 
-  def shortestPath[T](start: T, dest: T, graph: Map[T, Seq[T]]): Seq[T] = {
-    val shortestReversedPaths = depthSearchPaths(start, graph)
-    shortestReversedPaths(dest).reverse
+  def shortestPath[T](start: T, dest: T, graph: Map[T, Seq[(T, Int)]]): Seq[T] = {
+    val shortestPathes = depthSearchPaths(start, graph)
+    shortestPathes(dest)
   }
 }
