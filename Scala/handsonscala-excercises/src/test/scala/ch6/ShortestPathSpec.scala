@@ -7,41 +7,48 @@ class ShortestPathSpec extends AnyFreeSpec with Matchers  {
 
   import ShortestPath._
 
-  "should prefer shorter path" in {
-    shortestPath(
-      start = "a",
-      dest = "d",
-      graph = Map(
-        "a" -> Seq(("b", 1), ("c", 1)),
-        "b" -> Seq(("c", 1), ("d", 1)),
-        "c" -> Seq(("d", 1)),
-        "d" -> Seq()
-      )
-    ) shouldEqual List("a", "c", "d")
-  }
+  List(DepthFirstTraversalStrategy, BreadthFirstTraversalStrategy).foreach(strategy => {
 
-  "should choose direct path if available" in {
-    shortestPath(
-      start = "a",
-      dest = "c",
-      graph = Map(
-        "a" -> Seq(("b", 1), ("c", 1)),
-        "b" -> Seq(("c", 1), ("d", 1)),
-        "c" -> Seq(("d", 1)),
-        "d" -> Seq()
-      )
-    ) shouldEqual List("a", "c")
-  }
+    strategy.getClass.getSimpleName.dropRight(1) - {
+      "should prefer shorter path" in {
+        shortestPath(
+          start = "a",
+          dest = "d",
+          graph = Map(
+            "a" -> Seq(("b", 1), ("c", 1)),
+            "b" -> Seq(("c", 1), ("d", 1)),
+            "c" -> Seq(("d", 1)),
+            "d" -> Seq()
+          )
+        ) shouldEqual List("a", "b", "d")
+      }
 
-  "should be able to take edge length into account" in {
-    shortestPath(
-      start = "a",
-      dest = "c",
-      graph = Map(
-        "a" -> Seq(("b", 1), ("c", 3)),
-        "b" -> Seq(("c", 1)),
-        "c" -> Seq()
-      )
-    ) shouldEqual List("a", "b", "c")
-  }
+      "should choose direct path if available" in {
+        shortestPath(
+          start = "a",
+          dest = "c",
+          graph = Map(
+            "a" -> Seq(("b", 1), ("c", 1)),
+            "b" -> Seq(("c", 1), ("d", 1)),
+            "c" -> Seq(("d", 1)),
+            "d" -> Seq()
+          )
+        ) shouldEqual List("a", "c")
+      }
+
+      "should be able to take edge length into account" in {
+        shortestPath(
+          start = "a",
+          dest = "c",
+          graph = Map(
+            "a" -> Seq(("b", 1), ("c", 3)),
+            "b" -> Seq(("c", 1)),
+            "c" -> Seq()
+          )
+        ) shouldEqual List("a", "b", "c")
+      }
+    }
+  })
+
+
 }

@@ -7,25 +7,28 @@ object ShortestPath {
   type Graph[T] = Map[T, Seq[(T, Int)]]
 
   trait TraversalStrategy {
-    def updateQueue[T](queue: List[T], visited: Set[T], graph: Graph[T]): List[T]
-  }
-
-  object DepthFirstTraversalStrategy extends TraversalStrategy {
-    override def updateQueue[T](queue: List[T], visited: Set[T], graph: Graph[T]): List[T] =
+    def updateQueue[T](queue: List[T], visited: Set[T], graph: Graph[T]): List[T] =
       if (queue.isEmpty)
         queue
       else {
-        val current = queue.last
+        val current = queue.head
         val notVisitedChildren = graph(current).filter({
           case (child, _) => !visited(child)
         }).map(_._1).toList
-        queue.dropRight(1) ++ notVisitedChildren
+        appendNotVisitedChildNodesToQueue(queue.drop(1), notVisitedChildren)
       }
+
+    protected def appendNotVisitedChildNodesToQueue[T](queue: List[T], notVisitedChildren: List[T]): List[T]
+  }
+
+  object DepthFirstTraversalStrategy extends TraversalStrategy {
+    final override def appendNotVisitedChildNodesToQueue[T](queue: List[T], notVisitedChildren: List[T]): List[T] =
+      notVisitedChildren ++ queue
   }
 
   object BreadthFirstTraversalStrategy extends TraversalStrategy {
-    //TODO: Implement breadth first traversal
-    override def updateQueue[T](queue: List[T], visited: Set[T], graph: Graph[T]): List[T] = ???
+    final override def appendNotVisitedChildNodesToQueue[T](queue: List[T], notVisitedChildren: List[T]): List[T] =
+      queue ++ notVisitedChildren
   }
 
   private case class TraversalState[T](
@@ -41,7 +44,7 @@ object ShortestPath {
     if (queue.isEmpty)
       state
     else {
-      val current = queue.last
+      val current = queue.head
       val currentPathLength = shortestLengths(current)
       val currentPath = shortestPaths(current)
 
@@ -67,10 +70,10 @@ object ShortestPath {
   }
 
   private def searchPaths[T](start: T, graph: Graph[T], traversalStrategy: TraversalStrategy): Map[T, List[T]] = {
+    val queue = List(start)
+    val visited = Set(start)
     val shortestLengths = Map(start -> 0)
     val shortestPaths = Map(start -> List(start))
-    val visited = Set(start)
-    val queue = List(start)
     val traversalResult = traverseNext(graph, TraversalState(queue, visited, shortestLengths, shortestPaths), traversalStrategy)
     traversalResult.shortestPaths
   }
