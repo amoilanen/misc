@@ -52,29 +52,35 @@ object SudokuSolver {
     def show: String =
       cells.map(_.mkString(",")).mkString("\n")
 
-    def solve: Option[SudokuGrid] = {
-      (0 until Size).toList.flatMap(rowIdx => {
-        val row = cells(rowIdx)
-        val filledOutRowValues = row.filter(_ > 0).toSet
-        val availableValues = (1 to Size).toSet.diff(filledOutRowValues).toList
 
-        val potentiallyValidRowVariants = permutationsOf(availableValues).map(availableValuesPermutation =>
-          (0 until Size).foldLeft((List[Int](), availableValuesPermutation))({
-            case ((updatedRow, updatedAvailableValues), cellIdx) =>
-              val cellValue = row(cellIdx)
-              if (cellValue == 0)
-                (updatedRow :+ updatedAvailableValues.head, updatedAvailableValues.tail)
-              else
-                (updatedRow :+ cellValue, updatedAvailableValues)
-          })
-        )
-        val potentiallyValidGridsWithFilledOutRow = potentiallyValidRowVariants.map(row =>
-          SudokuGrid(cells.updated(rowIdx, row))
-        ).filter(_.isValid)
-        //TODO
-        potentiallyValidGridsWithFilledOutRow
+    def solve: Option[SudokuGrid] = {
+      val validGrids = (0 until Size).toList.foldLeft(List(this))({ case (possiblyValidGrids, rowIdx) =>
+        possiblyValidGrids.flatMap(_.tryFillingOutRow(rowIdx))
       })
-      Some(this)
+      println(validGrids.size)
+      validGrids.headOption
+    }
+
+    private def tryFillingOutRow(rowIdx: Int): List[SudokuGrid] = {
+      val row = cells(rowIdx)
+      val filledOutRowValues = row.filter(_ > 0).toSet
+      val availableValues = (1 to Size).toSet.diff(filledOutRowValues).toList
+
+      val potentiallyValidRowVariants = permutationsOf(availableValues).map(availableValuesPermutation =>
+        (0 until Size).foldLeft((List[Int](), availableValuesPermutation))({
+          case ((updatedRow, updatedAvailableValues), cellIdx) =>
+            val cellValue = row(cellIdx)
+            if (cellValue == 0)
+              (updatedRow :+ updatedAvailableValues.head, updatedAvailableValues.tail)
+            else
+              (updatedRow :+ cellValue, updatedAvailableValues)
+        })._1
+      )
+      val potentiallyValidGridsWithFilledOutRow = potentiallyValidRowVariants.map(row =>
+        SudokuGrid(cells.updated(rowIdx, row.toArray))
+      ).filter(_.isValid)
+
+      potentiallyValidGridsWithFilledOutRow
     }
   }
 
