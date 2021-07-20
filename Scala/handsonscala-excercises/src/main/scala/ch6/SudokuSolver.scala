@@ -1,7 +1,5 @@
 package ch6
 
-import scala.annotation.tailrec
-
 object SudokuSolver {
 
   val PlaceholderValue = 0
@@ -57,7 +55,6 @@ object SudokuSolver {
       val validGrids = (0 until Size).toList.foldLeft(List(this))({ case (possiblyValidGrids, rowIdx) =>
         possiblyValidGrids.flatMap(_.tryFillingOutRow(rowIdx))
       })
-      println(validGrids.size)
       validGrids.headOption
     }
 
@@ -96,26 +93,4 @@ object SudokuSolver {
         val restOfValues = values.slice(0, idx) ++ values.slice(idx + 1, values.size)
         permutationsOf(restOfValues).map(_ :+ value)
       })
-}
-
-object SudokuSolverApp extends App {
-  import SudokuSolver._
-
-  val puzzle = Array(
-    Array(3, 0, 6, 5, 0, 8, 4, 0, 0),
-    Array(5, 2, 0, 0, 0, 0, 0, 0, 0),
-    Array(0, 8, 7, 0, 0, 0, 0, 3, 1),
-    Array(0, 0, 3, 0, 1, 0, 0, 8, 0),
-    Array(9, 0, 0, 8, 6, 3, 0, 0, 5),
-    Array(0, 5, 0, 0, 9, 0, 6, 0, 0),
-    Array(1, 3, 0, 0, 0, 0, 2, 5, 0),
-    Array(0, 0, 0, 0, 0, 0, 0, 7, 4),
-    Array(0, 0, 5, 2, 0, 6, 3, 0, 0)
-  )
-  val sudokuGrid = SudokuGrid(puzzle)
-
-  sudokuGrid.solve.map(solution =>
-    println(solution.show))
-
-  println(permutationsOf(List(1, 2, 3, 4, 5)).size)
 }
