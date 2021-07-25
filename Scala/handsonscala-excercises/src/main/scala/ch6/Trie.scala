@@ -78,10 +78,19 @@ case class Trie[T](root: TrieNode[T]) {
     foundNode.map(_.isStringEnd).getOrElse(false)
   }
 
-  def keyPrefixesOfWithValues(string: String): Map[String, T] =
-    ???
+  def delete(key: String): Trie[T] =
+    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.emptyTrie)
 
-  def keyPrefixesOf(string: String): Set[String] = {
+  private def keyValueMap(keysAndNodeValues: Set[(String, Option[T])]): Map[String, T] =
+    keysAndNodeValues.flatMap({ case (key, value) =>
+      value.toSet.map((v: T) => key -> v)
+    })
+    .toMap
+
+  private def keysOnly(keysAndNodeValues: Set[(String, Option[T])]): Set[String] =
+    keysAndNodeValues.map({ case (key, _) => key })
+
+  private def keyAndNodeValuePrefixesOf(string: String): Set[(String, Option[T])] = {
     val (matchingNodes, _) = (0 until string.length).toList.foldLeft((List((root, -1)), Option(root)))({ case (acc, idx) =>
       val (previousMatchingNodes, lastMatchingNode) = acc
       val nextChar = string.charAt(idx)
@@ -91,16 +100,19 @@ case class Trie[T](root: TrieNode[T]) {
     })
     matchingNodes.flatMap({ case (node, idx) =>
       if (node.isStringEnd)
-        List(string.substring(0, idx + 1))
+        List((string.substring(0, idx + 1), node.storedValue))
       else
         List()
     }).toSet
   }
 
-  def delete(key: String): Trie[T] =
-    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.emptyTrie)
+  def keyPrefixesOfWithValues(string: String): Map[String, T] =
+    keyValueMap(keyAndNodeValuePrefixesOf(string))
 
-  private def keysAndNodesHavingPrefix(prefix: String): Set[(String, Option[T])] =
+  def keyPrefixesOf(string: String): Set[String] =
+    keysOnly(keyAndNodeValuePrefixesOf(string))
+
+  private def keysAndNodeValuesHavingPrefix(prefix: String): Set[(String, Option[T])] =
     findNode(prefix)
       .map(_.keysWithNodes)
       .getOrElse(Set())
@@ -109,13 +121,10 @@ case class Trie[T](root: TrieNode[T]) {
       })
 
   def keysHavingPrefixWithValues(prefix: String): Map[String, T] =
-    keysAndNodesHavingPrefix(prefix).flatMap({ case (key, value) =>
-        value.toSet.map((v: T) => key -> v)
-      })
-      .toMap
+    keyValueMap(keysAndNodeValuesHavingPrefix(prefix))
 
   def keysHavingPrefix(prefix: String): Set[String] =
-    keysAndNodesHavingPrefix(prefix).map({ case (key, _) => key })
+    keysOnly(keysAndNodeValuesHavingPrefix(prefix))
 }
 
 object Trie extends App {

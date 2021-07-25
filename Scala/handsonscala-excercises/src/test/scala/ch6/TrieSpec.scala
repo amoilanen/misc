@@ -25,16 +25,24 @@ class TrieSpec extends AnyFreeSpec with Matchers {
         trie.contains(key) shouldBe false
       )
     }
+  }
 
-    "should allow adding values with keys" in {
-      val t = new Trie[Int](Trie.rootNode.asInstanceOf[TrieNode[Int]])
+  "addKey with value" - {
+    val t = new Trie[Int](Trie.rootNode.asInstanceOf[TrieNode[Int]])
       .add("mango", 1337)
       .add("mandarin", 31337)
       .add("map", 37)
       .add("man", 7)
 
+    "should allow adding values with keys" in {
       t.get("mango") shouldEqual Some(1337)
-      //t.keyPrefixesOfWithValues("mangosteen") shouldEqual Map("man" -> 7, "mango" -> 1337)
+    }
+
+    "keyPrefixesOfWithValues returns set of keys which match prefix" in {
+      t.keyPrefixesOfWithValues("mangosteen") shouldEqual Map("man" -> 7, "mango" -> 1337)
+    }
+
+    "keysHavingPrefixWithValues returns keys which are prefix of the string" in {
       t.keysHavingPrefixWithValues("mand") shouldEqual Map("mandarin" -> 31337)
     }
   }
