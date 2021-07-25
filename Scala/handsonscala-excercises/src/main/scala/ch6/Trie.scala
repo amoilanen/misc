@@ -1,20 +1,22 @@
 package ch6
 
-case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean = false) {
+case class TrieNode[T](value: Char, children: Set[TrieNode[T]], isStringEnd: Boolean = false, storedValue: Option[T] = None) {
 
-  def keys(): Set[String] = {
-    if (children.isEmpty)
-      Set(value.toString)
-    else
-      children.flatMap(child =>
-        child.keys().map(value + _)
-      )
+  def keysWithNodes: Set[(String, TrieNode[T])] = {
+    val current =
+      if (isStringEnd)
+        Set((value.toString, this))
+      else
+        Set()
+    current ++ children.flatMap(child =>
+        child.keysWithNodes.map({ case (key, node) =>
+          (value + key, node)}))
   }
 
   private def modify(key: String,
-                     onEmptyKey: => Option[TrieNode],
-                     updatedChildNodeMatchingNextChar: (TrieNode, String) => Option[TrieNode],
-                     updatedChildNodeIfNoMatch: String => Option[TrieNode]): Option[TrieNode] = {
+                     onEmptyKey: => Option[TrieNode[T]],
+                     updatedChildNodeMatchingNextChar: (TrieNode[T], String) => Option[TrieNode[T]],
+                     updatedChildNodeIfNoMatch: String => Option[TrieNode[T]]): Option[TrieNode[T]] = {
     if (key.isEmpty)
       onEmptyKey
     else {
@@ -31,31 +33,31 @@ case class TrieNode(value: Char, children: Set[TrieNode], isStringEnd: Boolean =
     }
   }
 
-  def addKey(key: String): Option[TrieNode] =
+  def addKey(key: String, value: Option[T] = None): Option[TrieNode[T]] =
     modify(key,
       onEmptyKey =
-        Some(this.copy(isStringEnd = true)),
-      updatedChildNodeMatchingNextChar = (childNode: TrieNode, key: String) =>
-        childNode.addKey(key.substring(1)),
+        Some(this.copy(isStringEnd = true, storedValue = value)),
+      updatedChildNodeMatchingNextChar = (childNode: TrieNode[T], key: String) =>
+        childNode.addKey(key.substring(1), value),
       updatedChildNodeIfNoMatch = (key: String) =>
-        TrieNode(key.head, Set()).addKey(key.substring(1)))
+        TrieNode[T](key.head, Set()).addKey(key.substring(1), value))
 
-  def deleteKey(key: String): Option[TrieNode] =
+  def deleteKey(key: String): Option[TrieNode[T]] =
     modify(key,
       onEmptyKey =
         if (children.isEmpty)
           None
         else
           Some(this.copy(isStringEnd = false)),
-      updatedChildNodeMatchingNextChar = (childNode: TrieNode, key: String) =>
+      updatedChildNodeMatchingNextChar = (childNode: TrieNode[T], key: String) =>
         childNode.deleteKey(key.substring(1)),
       updatedChildNodeIfNoMatch = (key: String) =>
         None)
 }
 
-case class Trie(root: TrieNode) {
+case class Trie[T](root: TrieNode[T]) {
 
-  private def findNode(keyPrefix: String): Option[TrieNode] =
+  private def findNode(keyPrefix: String): Option[TrieNode[T]] =
     if (keyPrefix.isEmpty)
       None
     else
@@ -63,10 +65,21 @@ case class Trie(root: TrieNode) {
         subTrie.flatMap(_.children.find(_.value == nextKeyChar))
       })
 
+  def add(key: String, value: T): Trie[T] =
+    Trie(root.addKey(key, Some(value)).getOrElse(root))
+
+  def get(key: String): Option[T] =
+    findNode(key)
+      .filter(_.isStringEnd)
+      .flatMap(_.storedValue)
+
   def contains(key: String): Boolean = {
     val foundNode = findNode(key)
     foundNode.map(_.isStringEnd).getOrElse(false)
   }
+
+  def keyPrefixesOfWithValues(string: String): Map[String, T] =
+    ???
 
   def keyPrefixesOf(string: String): Set[String] = {
     val (matchingNodes, _) = (0 until string.length).toList.foldLeft((List((root, -1)), Option(root)))({ case (acc, idx) =>
@@ -84,37 +97,41 @@ case class Trie(root: TrieNode) {
     }).toSet
   }
 
-  def delete(key: String): Trie =
-    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.EmptyTrie)
+  def delete(key: String): Trie[T] =
+    root.deleteKey(key).map(Trie(_)).getOrElse(Trie.emptyTrie)
 
-  def keysHavingPrefix(prefix: String): Set[String] = {
-    val prefixNode = findNode(prefix)
-    val prefixKey: Option[String] = prefixNode.flatMap(node =>
-      if (node.isStringEnd)
-        Some(prefix)
-      else
-        None
-    )
+  private def keysAndNodesHavingPrefix(prefix: String): Set[(String, Option[T])] =
+    findNode(prefix)
+      .map(_.keysWithNodes)
+      .getOrElse(Set())
+      .map({ case (key, node) =>
+        (prefix + key.drop(1), node.storedValue)
+      })
 
-    prefixKey.toSet ++
-      prefixNode
-        .map(_.keys())
-        .getOrElse(Set())
-        .map(prefix + _.drop(1))
-  }
+  def keysHavingPrefixWithValues(prefix: String): Map[String, T] =
+    keysAndNodesHavingPrefix(prefix).flatMap({ case (key, value) =>
+        value.toSet.map((v: T) => key -> v)
+      })
+      .toMap
+
+  def keysHavingPrefix(prefix: String): Set[String] =
+    keysAndNodesHavingPrefix(prefix).map({ case (key, _) => key })
 }
 
 object Trie extends App {
 
   private val SentinelChar = '#'
   def rootNode =
-    TrieNode(SentinelChar, Set())
-  val EmptyTrie = new Trie(rootNode)
+    TrieNode[Nothing](SentinelChar, Set())
+  val EmptyTrie = new Trie[Nothing](rootNode)
 
-  def withKeys(keys: List[String]): Trie = {
+  def emptyTrie[T]: Trie[T] =
+    EmptyTrie.asInstanceOf[Trie[T]]
+
+  def withKeys(keys: List[String]): Trie[Nothing] = {
     val root = keys.foldLeft(Option(rootNode))({ case (currentRoot, key) =>
       currentRoot.flatMap(_.addKey(key))
     })
-    root.map(Trie(_)).getOrElse(Trie.EmptyTrie)
+    root.map(Trie[Nothing](_)).getOrElse(Trie.EmptyTrie)
   }
 }
