@@ -8,8 +8,11 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "handsonscala-excercises",
-    libraryDependencies ++= Seq("org.scalamock" %% "scalamock" % "5.1.0" % Test,
-                                "org.scalatest" %% "scalatest" % "3.1.0" % Test)
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "os-lib" % "0.7.8",
+      "org.scalamock" %% "scalamock" % "5.1.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.1.0" % Test
+    )
 )
 
 val circeVersion = "0.12.3"
