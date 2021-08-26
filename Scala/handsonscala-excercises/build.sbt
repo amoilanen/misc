@@ -8,7 +8,8 @@ ThisBuild / organizationName := "example"
 val lihaoyiLibraries = List(
   ("os-lib", "0.7.8"),
   ("upickle", "1.4.0"),
-  ("ujson", "1.4.0")
+  ("ujson", "1.4.0"),
+  ("scalatags", "0.9.1")
 ).map({ case (artifact, version) =>
   "com.lihaoyi" %% artifact % version
 })
@@ -18,7 +19,8 @@ lazy val root = (project in file("."))
     name := "handsonscala-excercises",
     libraryDependencies ++= Seq(
       "org.scalamock" %% "scalamock" % "5.1.0" % Test,
-      "org.scalatest" %% "scalatest" % "3.1.0" % Test
+      "org.scalatest" %% "scalatest" % "3.1.0" % Test,
+      "com.atlassian.commonmark" % "commonmark" % "0.13.1"
     ) ++ lihaoyiLibraries
 )
 
