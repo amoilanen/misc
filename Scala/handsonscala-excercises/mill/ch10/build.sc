@@ -6,6 +6,23 @@ import os.{Path, Pipe, Shellable}
 import java.time.{Instant, ZoneId}
 import java.time.format.DateTimeFormatter
 
+def currentTimeStampLabel(): String =
+  DateTimeFormatter.ISO_INSTANT.format(Instant.now())
+
+case class Command(command: String, notSplittableArgs: String*) {
+  def execute(directory: Path = os.pwd): Unit = {
+    val commandParts = command.split(" +").toSeq ++ notSplittableArgs
+    val shellables = commandParts.map(part => Shellable(Seq(part)))
+    os.proc(shellables: _*).call(cwd = directory, stderr = Pipe)
+  }
+}
+
+case class Script(commands: Command*) {
+  def execute(directory: Path = os.pwd): Unit = {
+    commands.foreach(_.execute(directory))
+  }
+}
+
 def mdNameToHtml(name: String): String = name.replace(" ", "-").toLowerCase + ".html"
 
 case class PostDescription(prefix: String, title: String, path: os.Path)
@@ -78,7 +95,7 @@ def index = T {
 }
 
 def clean = T {
-  T.dest.toIO.delete()
+  dist().path.toIO.delete()
 }
 
 def dist = T {
@@ -90,21 +107,17 @@ def dist = T {
   PathRef(T.dest)
 }
 
-def currentTimeStampLabel(): String =
-  DateTimeFormatter.ISO_INSTANT.format(Instant.now())
-
-case class Command(command: String, notSplittableArgs: String*) {
-  def execute(directory: Path = os.pwd): Unit = {
-    val commandParts = command.split(" +").toSeq ++ notSplittableArgs
-    val shellables = commandParts.map(part => Shellable(Seq(part)))
-    os.proc(shellables: _*).call(cwd = directory, stderr = Pipe)
-  }
-}
-
-case class Script(commands: Command*) {
-  def execute(directory: Path = os.pwd): Unit = {
-    commands.foreach(_.execute(directory))
-  }
+def pdfs = T {
+  val destPath = dist().path
+  val postHtmls = os.list(destPath / "post")
+  val postPdfs = T.dest / "post"
+  os.makeDir.all(postPdfs)
+  postHtmls.foreach(from => {
+    val to = postPdfs / from.last.replace(".html", ".pdf")
+    println(s"ts-node ./html.to.pdf.ts '${from.toString()}' '${to.toString()}'")
+    Command("ts-node ./html.to.pdf.ts", from.toString(), to.toString()).execute()
+  })
+  PathRef(T.dest)
 }
 
 // mill main git@bitbucket.org:ant-ivanov/temp-repo.git
