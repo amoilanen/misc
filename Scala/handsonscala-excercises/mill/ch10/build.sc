@@ -1,10 +1,17 @@
+import java.io.{BufferedInputStream, BufferedOutputStream, BufferedWriter, FileInputStream, FileOutputStream}
+
 import $ivy.`com.lihaoyi::scalatags:0.9.1`
 import $ivy.`com.atlassian.commonmark:commonmark:0.13.1`
+import $ivy.`org.apache.pdfbox:pdfbox:2.0.18`
 import scalatags.Text.all._
 import mill._
 import os.{Path, Pipe, Shellable}
-import java.time.{Instant, ZoneId}
+import java.time.Instant
+
+import org.apache.pdfbox.multipdf.PDFMergerUtility
 import java.time.format.DateTimeFormatter
+
+import scala.util.Try
 
 def currentTimeStampLabel(): String =
   DateTimeFormatter.ISO_INSTANT.format(Instant.now())
@@ -86,11 +93,11 @@ def index = T {
     T.dest / "index.html",
     "bootstrap.css",
     h1("Blog"),
-  for ((suffix, preview) <- postTitles().zip(previews()))
-    yield frag(
-      h2(a(href := ("post/" + mdNameToHtml(suffix)))(suffix)),
-      raw(preview) // include markdown-generated HTML "raw" without HTML-escaping it
-    )
+    for ((suffix, preview) <- postTitles().zip(previews()))
+      yield frag(
+        h2(a(href := ("post/" + mdNameToHtml(suffix)))(suffix)),
+        raw(preview) // include markdown-generated HTML "raw" without HTML-escaping it
+      )
   )
 }
 
@@ -107,16 +114,40 @@ def dist = T {
   PathRef(T.dest)
 }
 
+def mergePdfs(output: Path, inputs: Path*): Unit = {
+  val inputStreams = inputs.map(input => Try(new BufferedInputStream(new FileInputStream(input.toIO))).toOption).flatten
+  val outputStream = Try(new BufferedOutputStream(new FileOutputStream(output.toIO))).toOption
+  val successfullyOpenStreams = inputStreams ++ outputStream
+
+  try {
+    if (successfullyOpenStreams.length == inputs.length + 1) {
+      val mergerUtility = new PDFMergerUtility()
+      mergerUtility.setDestinationStream(outputStream.get)
+      inputStreams.foreach(mergerUtility.addSource(_))
+      mergerUtility.mergeDocuments(null)
+    } else {
+      throw new RuntimeException(s"Could not open all the streams... ${output}, ${inputs}")
+    }
+  } finally {
+    successfullyOpenStreams.foreach(_.close())
+  }
+}
+
 def pdfs = T {
   val destPath = dist().path
   val postHtmls = os.list(destPath / "post")
-  val postPdfs = T.dest / "post"
-  os.makeDir.all(postPdfs)
-  postHtmls.foreach(from => {
-    val to = postPdfs / from.last.replace(".html", ".pdf")
-    println(s"ts-node ./html.to.pdf.ts '${from.toString()}' '${to.toString()}'")
+  val postPdfsDirectory = T.dest / "post"
+  os.makeDir.all(postPdfsDirectory)
+  val postPdfs = postHtmls.map(from =>
+    postPdfsDirectory / from.last.replace(".html", ".pdf")
+  )
+  postHtmls.zip(postPdfs).foreach({ case (from, to) =>
     Command("ts-node ./html.to.pdf.ts", from.toString(), to.toString()).execute()
   })
+
+  val mergedPdfs = T.dest / "post" / "all-posts.pdf"
+  mergePdfs(mergedPdfs, postPdfs:_*)
+
   PathRef(T.dest)
 }
 
