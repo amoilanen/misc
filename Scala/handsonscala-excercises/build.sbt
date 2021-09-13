@@ -20,7 +20,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "org.scalamock" %% "scalamock" % "5.1.0" % Test,
       "org.scalatest" %% "scalatest" % "3.1.0" % Test,
-      "com.atlassian.commonmark" % "commonmark" % "0.13.1"
+      "com.atlassian.commonmark" % "commonmark" % "0.13.1",
+      "org.jsoup" % "jsoup" % "1.14.2"
     ) ++ lihaoyiLibraries
 )
 
