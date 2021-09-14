@@ -1,5 +1,6 @@
 package ch11
 
+import ch3.FileReaderWriter
 import java.net.URL
 
 import ujson.Value
@@ -35,24 +36,32 @@ object ReadWrites {
 object ApiStatus extends App {
   import ReadWrites._
   import JSoupConversions._
+  val utilities = new FileReaderWriter()
+  import utilities._
 
-  val rootHost = "https://developer.mozilla.org/"
-  val webApisRoot: Document = Jsoup.connect(s"$rootHost/en-US/docs/Web/API").get
-  val webApiSpecs = webApisRoot.querySelectorAll("#specifications + div li")
+  def scrapeWebApiDescriptions(): List[WebApi] = {
+    val rootHost = "https://developer.mozilla.org/"
+    val webApisRoot: Document = Jsoup.connect(s"$rootHost/en-US/docs/Web/API").get
+    val webApiSpecs = webApisRoot.querySelectorAll("#specifications + div li")
 
-  webApiSpecs.map((webApiSpec: Element) => {
-    val a = webApiSpec.querySelector("a").get
-    val href = a.attr("href")
-    val fullLink = s"$rootHost/$href"
-    val webApiName = a.text()
-    val isDeprecated = webApiSpec.querySelectorAll(".icon-deprecated").length > 0
-    val isExperimental = webApiSpec.querySelectorAll(".icon-experimental").length > 0
-    val deprecatedAnnotation = if (isDeprecated) Some(WebApiAnnotation.Deprecated) else None
-    val experimentalAnnotation = if (isExperimental) Some(WebApiAnnotation.Experimental) else None
-    val annotations = deprecatedAnnotation.toList ++ experimentalAnnotation.toList
-    val webApi = WebApi(webApiName, new URL(fullLink), annotations)
-    println(upickle.default.write(webApi))
-  })
+    webApiSpecs.map((webApiSpec: Element) => {
+      val a = webApiSpec.querySelector("a").get
+      val href = a.attr("href")
+      val fullLink = s"$rootHost/$href"
+      val webApiName = a.text()
+      val isDeprecated = webApiSpec.querySelectorAll(".icon-deprecated").length > 0
+      val isExperimental = webApiSpec.querySelectorAll(".icon-experimental").length > 0
+      val deprecatedAnnotation = if (isDeprecated) Some(WebApiAnnotation.Deprecated) else None
+      val experimentalAnnotation = if (isExperimental) Some(WebApiAnnotation.Experimental) else None
+      val annotations = deprecatedAnnotation.toList ++ experimentalAnnotation.toList
+      WebApi(webApiName, new URL(fullLink), annotations)
+    })
+  }
 
-  //TODO: Store serialized JSON
+  val webApis = scrapeWebApiDescriptions()
+  val json = upickle.default.write(webApis)
+
+  withFileWriter("webapis.json") { writer =>
+    writer.write(json)
+  }
 }
