@@ -1,6 +1,6 @@
 package ch11
 
-import java.net.URI
+import java.net.{URI, URL}
 
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -23,8 +23,15 @@ object BrokenLinks extends App {
   def scrapeLinksFrom(url: URI): List[URI] =
     Try {
       val document: Document = Jsoup.connect(url.toString).get
-      val base = document.querySelector("base").map(_.attr("href")).getOrElse(url.toString)
-      document.querySelectorAll("a").map(element => new URI(element.attr("href")).normalize())
+      val baseUri = document.querySelector("base").map(element =>
+        new URI(element.attr("href"))).getOrElse(url)
+      document.querySelectorAll("a").map(element => {
+        val uri = new URI(element.attr("href"))
+        val fullUri = if (!uri.isAbsolute) {
+          new URL(baseUri.toURL, uri.toString).toURI
+        } else uri
+        fullUri.normalize()
+      })
     }.toOption.toList.flatten
 
   def getAllLinks(startingPage: URI): ScrapedLinks = {
