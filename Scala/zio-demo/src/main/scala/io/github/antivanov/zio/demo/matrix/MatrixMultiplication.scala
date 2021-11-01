@@ -14,6 +14,6 @@ object MatrixMultiplication extends App {
       )
       Right(Matrix(product))
     } else
-      Left(new IllegalArgumentException(s"Matrix dimensions do not match ${x.width} != ${y.height}"))
+      Left(new IllegalArgumentException(s"Matrix dimensions do not match width ${x.width} != height ${y.height}"))
   }
 }

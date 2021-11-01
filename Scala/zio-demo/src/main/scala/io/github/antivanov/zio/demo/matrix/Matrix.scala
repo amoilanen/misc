@@ -9,7 +9,15 @@ case class Matrix(values: Array[Array[Int]]) {
 
   lazy val height = values.length
 
-  override def toString(): String = {
-    values.map(_.toSeq).toSeq.toString
+  private lazy val valuesSeq = values.map(_.toSeq).toSeq
+
+  override def toString(): String =
+    valuesSeq.toString
+
+  override def hashCode(): Int = valuesSeq.hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Matrix => other.valuesSeq.equals(valuesSeq)
+    case _ => false
   }
 }
