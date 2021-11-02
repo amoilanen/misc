@@ -9,7 +9,7 @@ case class Matrix(values: Array[Array[Int]]) {
 
   lazy val height = values.length
 
-  private lazy val valuesSeq = values.map(_.toSeq).toSeq
+  lazy val valuesSeq = values.map(_.toSeq).toSeq
 
   override def toString(): String =
     valuesSeq.toString

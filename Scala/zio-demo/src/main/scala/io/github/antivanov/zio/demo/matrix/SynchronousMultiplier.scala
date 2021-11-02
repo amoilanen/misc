@@ -1,6 +1,6 @@
 package io.github.antivanov.zio.demo.matrix
 
-object MatrixMultiplication extends App {
+object SynchronousMultiplier extends MatrixMultiplier {
 
   def multiply(x: Matrix, y: Matrix): Either[IllegalArgumentException, Matrix] = {
     if (x.width == y.height) {
