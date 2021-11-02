@@ -70,17 +70,17 @@ class MatrixMultiplicationSpec extends AnyFreeSpec with Matchers {
         multiplier.multiply(a, b).swap.map(_.getMessage) shouldEqual Right("Matrix dimensions do not match width 2 != height 1")
       }
 
+      val FirstMatrixHeight = 50
+      val FirstMatrixWidth = 100000
+      val MaxRandomValue = 1000
+      def randomMatrix(width: Int, height: Int, maxRandomValue: Int): Matrix = {
+        val values = Array.fill(width, height)(Random.nextInt(maxRandomValue + 1))
+        Matrix(values)
+      }
+      val x = randomMatrix(FirstMatrixHeight, FirstMatrixWidth, MaxRandomValue)
+      val y = randomMatrix(FirstMatrixWidth, FirstMatrixHeight, MaxRandomValue)
+
       "benchmark multiplication" - {
-
-        val DefaultSize = 700
-        val DefaultMaxRandomValue = 100
-        def randomMatrix(size: Int = DefaultSize, maxRandomValue: Int = DefaultMaxRandomValue): Matrix = {
-          val values = Array.fill(size, size)(Random.nextInt(maxRandomValue + 1))
-          Matrix(values)
-        }
-        val x = randomMatrix()
-        val y = randomMatrix()
-
         "multiply two large random matrices" in {
           multiplier.multiply(x, y).isRight shouldBe true
         }
