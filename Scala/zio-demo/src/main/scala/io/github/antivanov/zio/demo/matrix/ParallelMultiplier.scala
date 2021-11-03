@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 
 object ParallelMultiplier extends MatrixMultiplier {
   private val MaxTimeout = 1.minute
-  private val DefaultThreadNumber = 16
+  private val DefaultThreadNumber = 64
   private implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(DefaultThreadNumber))
 
   case class ElementComputationResult(xRow: Int, yColumn: Int, element: Int)

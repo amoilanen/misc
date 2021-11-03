@@ -71,9 +71,9 @@ class MatrixMultiplicationSpec extends AnyFreeSpec with Matchers {
       }
 
       val FirstMatrixHeight = 30
-      val FirstMatrixWidth = 300000
+      val FirstMatrixWidth = 100000
       val MaxRandomValue = 1000
-      val multiplyTimes = 2
+      val multiplyTimes = 1
       def randomMatrix(width: Int, height: Int, maxRandomValue: Int): Matrix = {
         val values = Array.fill(width, height)(Random.nextInt(maxRandomValue + 1))
         Matrix(values)
