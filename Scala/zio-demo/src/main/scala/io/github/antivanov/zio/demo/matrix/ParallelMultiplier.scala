@@ -10,22 +10,20 @@ object ParallelMultiplier extends MatrixMultiplier {
   private implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(DefaultThreadNumber))
 
   case class ElementComputationResult(xRow: Int, yColumn: Int, element: Int)
-  case class ElementComputationTask(xValues: Seq[Seq[Int]], yValues: Seq[Seq[Int]], xRow: Int, yColumn: Int) {
+  case class ElementComputationTask(x: Matrix, y: Matrix, xRow: Int, yColumn: Int) {
     def compute: Future[ElementComputationResult] =
       Future {
-        (0 until yValues.size).map(k =>
-          xValues(xRow)(k) * yValues(k)(yColumn)
+        (0 until y.height).map(k =>
+          x.values(xRow)(k) * y.values(k)(yColumn)
         ).reduce(_ + _)
       }.map(ElementComputationResult(xRow, yColumn, _))
   }
 
   private def computeProductElements(x: Matrix, y: Matrix): Future[Seq[ElementComputationResult]] = {
-    val xValues: Seq[Seq[Int]] = x.valuesSeq
-    val yValues: Seq[Seq[Int]] = y.valuesSeq
     Future.sequence(
       (0 until x.height).flatMap(i =>
         (0 until y.width).map(j =>
-          ElementComputationTask(xValues, yValues, i, j).compute
+          ElementComputationTask(x, y, i, j).compute
         )
       )
     )
