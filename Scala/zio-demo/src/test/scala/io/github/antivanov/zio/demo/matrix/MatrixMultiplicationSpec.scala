@@ -7,7 +7,7 @@ import scala.util.Random
 
 class MatrixMultiplicationSpec extends AnyFreeSpec with Matchers {
 
-  val multipliers = List(SynchronousMultiplier, ParallelMultiplier)
+  val multipliers = List(SynchronousMultiplier, ParallelMultiplier, ZIOParallelMultiplier)
 
   multipliers.foreach(multiplier => {
     val multiplierName = multiplier.getClass.getSimpleName
@@ -70,9 +70,10 @@ class MatrixMultiplicationSpec extends AnyFreeSpec with Matchers {
         multiplier.multiply(a, b).swap.map(_.getMessage) shouldEqual Right("Matrix dimensions do not match width 2 != height 1")
       }
 
-      val FirstMatrixHeight = 50
-      val FirstMatrixWidth = 100000
+      val FirstMatrixHeight = 30
+      val FirstMatrixWidth = 300000
       val MaxRandomValue = 1000
+      val multiplyTimes = 2
       def randomMatrix(width: Int, height: Int, maxRandomValue: Int): Matrix = {
         val values = Array.fill(width, height)(Random.nextInt(maxRandomValue + 1))
         Matrix(values)
@@ -82,7 +83,9 @@ class MatrixMultiplicationSpec extends AnyFreeSpec with Matchers {
 
       "benchmark multiplication" - {
         "multiply two large random matrices" in {
-          multiplier.multiply(x, y).isRight shouldBe true
+          (0 to multiplyTimes).foreach(_ =>
+            multiplier.multiply(x, y).isRight shouldBe true
+          )
         }
       }
     }
