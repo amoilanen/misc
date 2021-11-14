@@ -29,8 +29,8 @@ object DiscussionTree extends App {
     } yield Comment(author, text, getChildComments(commentRoot))
 
   def getChildComments(commentRoot: Element): List[Comment] = {
-    val commentsSection = root.querySelectorAll(".comments").filter(commentRoot.children().contains(_)).head
-    val comments = root.querySelectorAll(".comments_subtree").filter(commentsSection.children().contains(_)).map(parseComment).flatten
+    val commentsSection = commentRoot.querySelectorAll(":scope > .comments").head
+    val comments = commentsSection.querySelectorAll(":scope > .comments_subtree").map(parseComment).flatten
     comments
   }
 
