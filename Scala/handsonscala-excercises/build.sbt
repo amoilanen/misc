@@ -9,7 +9,8 @@ val lihaoyiLibraries = List(
   ("os-lib", "0.7.8"),
   ("upickle", "1.4.0"),
   ("ujson", "1.4.0"),
-  ("scalatags", "0.9.1")
+  ("scalatags", "0.9.1"),
+  ("requests", "0.6.5")
 ).map({ case (artifact, version) =>
   "com.lihaoyi" %% artifact % version
 })
