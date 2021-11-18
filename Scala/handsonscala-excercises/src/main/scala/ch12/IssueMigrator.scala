@@ -1,22 +1,7 @@
 package ch12
 
-import requests.Response
-
-//Temporarily mocking requests to not submit actual POST requests
-case class MockResponse(value: String, code: Int) {
-  def text() = value
-  def statusCode() = code
-}
-
-object req {
-  def post(url: String, headers: Map[String, String], data: Any): MockResponse = {
-    println(s"POST $url, $headers \n$data")
-    MockResponse("{\"number\": 100}", 200)
-  }
-
-  def get(url: String, params: Map[String, String], headers: Map[String, String]): Response =
-    requests.get(url, params = params, headers = headers)
-}
+import Http._
+import GitHubApi.Fetch
 
 object IssueMigrator extends App {
 
@@ -24,27 +9,8 @@ object IssueMigrator extends App {
   val destRepo = "antivanov/testrepo2"
   val token = os.read(os.home / "github_token.txt").trim
 
-  def fetchPaginated(url: String, params: (String, String)*) = {
-    var done = false
-    var page = 1
-    val responses = collection.mutable.Buffer.empty[ujson.Value]
-    while (!done) {
-      println("page " + page + "...")
-      val resp = req.get(
-        url,
-        params = Map("page" -> page.toString) ++ params,
-        headers = Map("Authorization" -> s"token $token")
-      )
-      val parsed = ujson.read(resp.text()).arr
-      if (parsed.length == 0) done = true
-      else responses.appendAll(parsed)
-      page += 1
-    }
-    responses
-  }
-
   val issues =
-    fetchPaginated(s"https://api.github.com/repos/$srcRepo/issues", "state" -> "all")
+    Fetch(token, s"https://api.github.com/repos/$srcRepo/issues", "state" -> "all").getJson()
 
   val nonPullRequests = issues.filter(!_.obj.contains("pull_request"))
 
@@ -56,7 +22,7 @@ object IssueMigrator extends App {
   )
 
   val comments =
-    fetchPaginated(s"https://api.github.com/repos/$srcRepo/issues/comments")
+    Fetch(token, s"https://api.github.com/repos/$srcRepo/issues/comments").getJson()
 
   val commentData = comments.map({ case comment =>
     val url = comment("issue_url").str match {
