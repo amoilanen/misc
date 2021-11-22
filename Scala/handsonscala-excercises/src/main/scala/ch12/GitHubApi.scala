@@ -1,6 +1,7 @@
 package ch12
 
 import Http._
+import ch12.github.{Issue, IssueComment}
 import ujson.Value
 
 import scala.annotation.tailrec
@@ -31,5 +32,39 @@ object GitHubApi {
     }
   }
 
+  def getIssuesWithComments(token: String, repo: String): List[Issue] = {
+    val issues = getIssues(token, repo)
 
+    issues.map(issue => {
+      val comments = getIssueComments(token, repo, issue.number)
+      issue.copy(comments = comments)
+    })
+  }
+
+  def getIssues(token: String, repo: String): List[Issue] = {
+    val issues =
+      Fetch(token, s"https://api.github.com/repos/$repo/issues", "state" -> "all").getJson()
+
+    issues.filter(!_.obj.contains("pull_request")).map({ case issueFields =>
+      Issue(
+        issueFields("url").str,
+        issueFields("number").num.toInt,
+        issueFields("title").str,
+        issueFields("body").str,
+        issueFields("user")("login").str
+      )
+    })
+  }
+
+  def getIssueComments(token: String, repo: String, issueNumber: Int): List[IssueComment] = {
+    val comments = Fetch(token, s"https://api.github.com/repos/$repo/issues/$issueNumber/comments").getJson()
+
+    comments.map(commentFields =>
+      IssueComment(
+        commentFields("url").str,
+        commentFields("user")("login").str,
+        commentFields("body").str
+      )
+    )
+  }
 }
