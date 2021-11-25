@@ -1,6 +1,5 @@
 package ch12
 
-import Http._
 import ch12.github.{Issue, IssueComment}
 
 object IssueMigrator extends App {
@@ -18,7 +17,7 @@ object IssueMigrator extends App {
         ID: $number
         Original Author: $user
     """
-    val newIssueNumber = GitHubApi.createIssue(token, destRepo, title, issueBody)
+    val newIssueNumber = GitHubApi.createIssue(token, destRepo, title, issueBody).number
     (number, newIssueNumber)
   }
 

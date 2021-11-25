@@ -1,9 +1,9 @@
 package ch12
 
-import Http._
-import ch12.IssueMigrator.{destRepo, token}
 import ch12.github.{Issue, IssueComment}
 import ujson.Value
+import github.Issue._
+import github.IssueComment._
 
 import scala.annotation.tailrec
 
@@ -24,17 +24,17 @@ object GitHubApi {
     }
 
     private def fetchPage(page: Int): List[Value] = {
-      val resp = req.get(
+      val response = requests.get(
         url,
         params = Map("page" -> page.toString) ++ params,
         headers = Map("Authorization" -> s"token $token")
       )
-      ujson.read(resp.text()).arr.toList
+      ujson.read(response.text()).arr.toList
     }
   }
 
-  def createIssue(token: String, repo: String, title: String, body: String): Int = {
-    val resp = req.post(
+  def createIssue(token: String, repo: String, title: String, body: String): Issue = {
+    val response = requests.post(
       s"https://api.github.com/repos/$repo/issues",
       data = ujson.Obj(
         "title" -> title,
@@ -42,15 +42,16 @@ object GitHubApi {
       ),
       headers = Map("Authorization" -> s"token $token")
     )
-    ujson.read(resp.text())("number").num.toInt
+    issueParser(ujson.read(response.text()))
   }
 
-  def addComment(token: String, repo: String, issueNumber: Int, body: String): Unit = {
-    req.post(
+  def addComment(token: String, repo: String, issueNumber: Int, body: String): IssueComment = {
+    val response = requests.post(
       s"https://api.github.com/repos/$repo/issues/$issueNumber/comments",
       data = ujson.Obj("body" -> body),
       headers = Map("Authorization" -> s"token $token")
     )
+    commentParser(ujson.read(response.text))
   }
 
   def getIssuesWithComments(token: String, repo: String): List[Issue] = {
@@ -80,12 +81,6 @@ object GitHubApi {
   def getIssueComments(token: String, repo: String, issueNumber: Int): List[IssueComment] = {
     val comments = Fetch(token, s"https://api.github.com/repos/$repo/issues/$issueNumber/comments").getJson()
 
-    comments.map(commentFields =>
-      IssueComment(
-        commentFields("url").str,
-        commentFields("user")("login").str,
-        commentFields("body").str
-      )
-    )
+    comments.map(commentParser)
   }
 }
