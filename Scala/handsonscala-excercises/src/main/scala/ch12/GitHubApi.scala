@@ -1,6 +1,7 @@
 package ch12
 
 import Http._
+import ch12.IssueMigrator.{destRepo, token}
 import ch12.github.{Issue, IssueComment}
 import ujson.Value
 
@@ -30,6 +31,26 @@ object GitHubApi {
       )
       ujson.read(resp.text()).arr.toList
     }
+  }
+
+  def createIssue(token: String, repo: String, title: String, body: String): Int = {
+    val resp = req.post(
+      s"https://api.github.com/repos/$repo/issues",
+      data = ujson.Obj(
+        "title" -> title,
+        "body" -> body
+      ),
+      headers = Map("Authorization" -> s"token $token")
+    )
+    ujson.read(resp.text())("number").num.toInt
+  }
+
+  def addComment(token: String, repo: String, issueNumber: Int, body: String): Unit = {
+    req.post(
+      s"https://api.github.com/repos/$repo/issues/$issueNumber/comments",
+      data = ujson.Obj("body" -> body),
+      headers = Map("Authorization" -> s"token $token")
+    )
   }
 
   def getIssuesWithComments(token: String, repo: String): List[Issue] = {

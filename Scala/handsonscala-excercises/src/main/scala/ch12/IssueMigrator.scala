@@ -13,34 +13,22 @@ object IssueMigrator extends App {
 
   val issueNums = for (Issue(_, number, title, body, user, _) <- issues.sortBy(_.number)) yield {
     println(s"Creating issue $number")
-    val resp = req.post(
-      s"https://api.github.com/repos/$destRepo/issues",
-      data = ujson.Obj(
-        "title" -> title,
-        "body" -> s"""
-          $body
-          ID: $number
-          Original Author: $user
-        """
-      ),
-      headers = Map("Authorization" -> s"token $token")
-    )
-    println(resp.statusCode)
-    val newIssueNumber = ujson.read(resp.text())("number").num.toInt
+    val issueBody = s"""
+        $body
+        ID: $number
+        Original Author: $user
+    """
+    val newIssueNumber = GitHubApi.createIssue(token, destRepo, title, issueBody)
     (number, newIssueNumber)
   }
 
-  val issueNumMap = issueNums.toMap
+  val oldNumberToNewNumber: Map[Int, Int] = issueNums.toMap
 
-  for (Issue(_, number, _, _, _, comments) <- issues; newIssueNumber <- issueNumMap.get(number)) {
+  for (Issue(_, number, _, _, _, comments) <- issues; newIssueNumber <- oldNumberToNewNumber.get(number)) {
     println(s"Commenting on issue old number=$number new number=$newIssueNumber")
     comments.foreach({ case IssueComment(_, user, body) =>
-      val resp = req.post(
-        s"https://api.github.com/repos/$destRepo/issues/$newIssueNumber/comments",
-        data = ujson.Obj("body" -> s"$body\nOriginal Author:$user"),
-        headers = Map("Authorization" -> s"token $token")
-      )
-      println(resp.statusCode)
+      val commentBody = s"$body\nOriginal Author:$user"
+      GitHubApi.addComment(token, destRepo, newIssueNumber, commentBody)
     })
   }
 }
