@@ -45,6 +45,17 @@ object GitHubApi {
     issueParser(ujson.read(response.text()))
   }
 
+  def updateIssueState(token: String, repo: String, issueNumber: Int, state: String): Issue = {
+    val response = requests.patch(
+      s"https://api.github.com/repos/$repo/issues/${issueNumber}",
+      data = ujson.Obj(
+        "state" -> state
+      ),
+      headers = Map("Authorization" -> s"token $token")
+    )
+    issueParser(ujson.read(response.text()))
+  }
+
   def addComment(token: String, repo: String, issueNumber: Int, body: String): IssueComment = {
     val response = requests.post(
       s"https://api.github.com/repos/$repo/issues/$issueNumber/comments",
@@ -56,7 +67,6 @@ object GitHubApi {
 
   def getIssuesWithComments(token: String, repo: String): List[Issue] = {
     val issues = getIssues(token, repo)
-
     issues.map(issue => {
       val comments = getIssueComments(token, repo, issue.number)
       issue.copy(comments = comments)
@@ -66,21 +76,11 @@ object GitHubApi {
   def getIssues(token: String, repo: String): List[Issue] = {
     val issues =
       Fetch(token, s"https://api.github.com/repos/$repo/issues", "state" -> "all").getJson()
-
-    issues.filter(!_.obj.contains("pull_request")).map({ case issueFields =>
-      Issue(
-        issueFields("url").str,
-        issueFields("number").num.toInt,
-        issueFields("title").str,
-        issueFields("body").str,
-        issueFields("user")("login").str
-      )
-    })
+    issues.filter(!_.obj.contains("pull_request")).map(issueParser)
   }
 
   def getIssueComments(token: String, repo: String, issueNumber: Int): List[IssueComment] = {
     val comments = Fetch(token, s"https://api.github.com/repos/$repo/issues/$issueNumber/comments").getJson()
-
     comments.map(commentParser)
   }
 }
