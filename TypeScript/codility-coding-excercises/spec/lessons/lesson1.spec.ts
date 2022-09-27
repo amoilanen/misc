@@ -15,6 +15,6 @@ const fixtures = [
 
 fixtures.forEach(fixture =>
   test(`longest gap in ${fixture.input}`, () => {
-    expect(longestGap(fixture.input)).toBe(fixture.answer);
+    expect(longestGap(fixture.input)).toBe(fixture.answer)
   })
 )
