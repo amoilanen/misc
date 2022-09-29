@@ -12,7 +12,6 @@ function getGaps(input: number): string[] {
 
 export function longestGap(input: number): number {
   const gaps = getGaps(input)
-
   const gapLengthes = gaps.map(gap => gap.length)
   return Math.max(...gapLengthes.concat(0))
 }
