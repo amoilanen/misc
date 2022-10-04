@@ -5,8 +5,17 @@ function rotate(arr: number[]): number[] {
     return []
 }
 
-function rotateTimes(arr: number[], times: number): number[] {
+export function rotateTimes(arr: number[], times: number): number[] {
   return Array.from(Array(times).keys()).reduce((currentArr) => rotate(currentArr), arr);
 }
 
-console.log(rotateTimes([3, 8, 9, 7, 6], 3))
+export function rotateTimesEfficiently(arr: number[], times: number): number[] {
+  Array.from(Array(times).keys()).forEach(_ => {
+    const lastElement = arr[arr.length - 1]
+    for (let i = arr.length - 1; i > 0; i--) {
+      arr[i] = arr[i - 1]
+    }
+    arr[0] = lastElement
+  })
+  return arr
+}
