@@ -1,6 +1,6 @@
 import { rotateTimes as rotateTimesInefficiently, rotateTimesEfficiently as rotateTimes } from '../../src/lessons/lesson2.1';
 
-test(`rotate zero times`, () => {
+test('rotate zero times', () => {
   expect(rotateTimes([1, 2, 3], 0)).toEqual([1, 2, 3])
 })
 
