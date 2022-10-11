@@ -28,5 +28,3 @@ export function optimizedUniqueElement(arr: number[]): number | undefined {
       return parseInt(el, 10)
   }
 }
-
-console.log(uniqueElement([9, 3, 9, 3, 9, 7, 9]))
