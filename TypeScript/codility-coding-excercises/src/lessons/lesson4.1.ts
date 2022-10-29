@@ -1,4 +1,3 @@
-//TODO: Implement the same algorithm in a more functional language, for example Scala 3
 //TODO: Carefully check corner cases of riverLength and faillintLeavesInTime
 function earliestMomentToCross(riverLength: number, fallingLeavesInTime: Array<number>): number {
   let leavesToFall = new Set(Array.from(Array(riverLength).keys()))
