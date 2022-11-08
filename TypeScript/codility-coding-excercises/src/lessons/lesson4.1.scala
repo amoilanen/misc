@@ -2,7 +2,7 @@ package antivanov.codility.lessons
 
 case class CrossingState(waitingForLeavesToFall: Set[Int], earliestTimeToCross: Option[Int] = None)
 
-def earliestMomentToCross(riverLength: Int, fallingLeavesInTime: Seq[Int]): Int = {
+def earliestMomentToCross(riverLength: Int, fallingLeavesInTime: Seq[Int]): Int =
   val leavesToFall = (1 to riverLength).toSet
   val finalCrossingState: CrossingState = fallingLeavesInTime.zipWithIndex.foldLeft(CrossingState(leavesToFall))({
     case (CrossingState(leftLeaves, Some(timeToCross)), _) => CrossingState(leftLeaves, Some(timeToCross))
@@ -15,7 +15,6 @@ def earliestMomentToCross(riverLength: Int, fallingLeavesInTime: Seq[Int]): Int 
       CrossingState(updatedLeavesLeftToFall, timeToCross)
   })
   finalCrossingState.earliestTimeToCross.getOrElse(-1)
-}
 
 @main def lesson41Main: Unit =
   val riverLength = 5
