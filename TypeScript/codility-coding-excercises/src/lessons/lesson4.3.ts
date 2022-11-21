@@ -1,4 +1,4 @@
-function applyCounterOperations(operations: Array<number>, counterNumber: number): Array<number> {
+export function applyCounterOperations(counterNumber: number, operations: Array<number>): Array<number> {
   const initialState: [number, number[]] = [0, Array.from(Array(counterNumber)).map(_ => 0)]
   const [_, updatedCounters] = operations.reduce(([maxCounter, counters], operation) => {
     let updatedMaxCounter = maxCounter
@@ -15,6 +15,3 @@ function applyCounterOperations(operations: Array<number>, counterNumber: number
   }, initialState)
   return updatedCounters
 }
-
-const counters = applyCounterOperations([3, 4, 4, 6, 1, 4, 4], 5)
-console.log(counters)
