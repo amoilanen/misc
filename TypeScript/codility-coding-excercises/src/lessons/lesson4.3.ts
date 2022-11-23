@@ -8,8 +8,6 @@ export function applyCounterOperations(counterNumber: number, operations: Array<
     } else if (operation == counterNumber + 1) {
       counters = counters.map(_ => maxCounter)
     }
-    // console.log(`Operation ${operation}`)
-    // console.log(counters)
     const updatedState: [number, number[]] = [updatedMaxCounter, counters]
     return updatedState
   }, initialState)
