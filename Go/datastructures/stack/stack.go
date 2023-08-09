@@ -1,5 +1,16 @@
 package stack
 
+import "fmt"
+
+type StackError struct {
+	Message string
+}
+
+func (e *StackError) Error() string {
+	return fmt.Sprintf("Stack error: %s", e.Message)
+}
+
+
 type Stack[T any] struct {
 	top *stackElement[T]
 }
@@ -19,9 +30,15 @@ func (stack *Stack[T]) IsEmpty() bool {
 	return stack.top == nil
 }
 
-func (stack * Stack[T]) Peek() T {
-	//TODO: Return an Error if the stack is empty
-	return stack.top.element
+func (stack * Stack[T]) Peek() (T, error) {
+	if stack.IsEmpty() {
+		var emptyResult T
+		return emptyResult, &StackError{
+			Message: "Cannot Peek() on an empty Stack",
+		}
+	} else {
+		return stack.top.element, nil
+	}
 }
 
 func (stack *Stack[T]) Pop() T {
