@@ -41,11 +41,17 @@ func (stack * Stack[T]) Peek() (T, error) {
 	}
 }
 
-func (stack *Stack[T]) Pop() T {
-	//TODO: Return an Error if the stack is empty
-	topElement := stack.top.element
-	stack.top = stack.top.next
-	return topElement
+func (stack *Stack[T]) Pop() (T, error) {
+	if stack.IsEmpty() {
+		var emptyResult T
+		return emptyResult, &StackError{
+			Message: "Cannot Pop() on an empty Stack",
+		}
+	} else {
+		topElement := stack.top.element
+		stack.top = stack.top.next
+		return topElement, nil
+	}
 }
 
 func (stack *Stack[T]) Push(newElement T) *Stack[T] {
@@ -59,7 +65,6 @@ func (stack *Stack[T]) Push(newElement T) *Stack[T] {
 }
 
 func (stack *Stack[T]) Elements() []T {
-	//TODO: Handle the case when the stack is empty
 	collectedElements := []T{}
 	top := stack.top
 	for top != nil {

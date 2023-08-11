@@ -6,14 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPushElement(t *testing.T) {
-	s := stack.NewStack[int]()
-	s.Push(1)
-	s.Push(2)
-	s.Push(3)
-	assert.Equal(t, []int{3, 2, 1}, s.Elements(), "Should contain pushed elements in the reversed order")
-}
-
 func TestIsEmpty(t *testing.T) {
 	s := stack.NewStack[int]()
 	assert.Equal(t, true, s.IsEmpty(), "Stack with no elements is empty")
@@ -38,4 +30,69 @@ func TestPeekWithEmptyStack(t *testing.T) {
 	assert.Equal(t, &expectedError, err, "Peek on empty Stack should return an error")
 }
 
-//TODO: Put pointers to a struct to the stack and retrieve them
+func TestPopWithNonEmptyStack(t *testing.T) {
+	s := stack.NewStack[string]()
+	s.Push("a")
+	s.Push("b")
+	s.Push("c")
+	result, err := s.Pop()
+	assert.Equal(t, nil, err, "Peek on non-empty Stack should not return error")
+	assert.Equal(t, "c", result, "Peek should return the element which was pushed to the stack last")
+	assert.Equal(t, []string{"b", "a"}, s.Elements(), "Should contain the elements besides the poped one in the reversed order")
+}
+
+func TestPopWithEmptyStack(t *testing.T) {
+	s := stack.NewStack[string]()
+	expectedError := stack.StackError{"Cannot Pop() on an empty Stack"}
+	_, err := s.Pop()
+	assert.Equal(t, &expectedError, err, "Pop on empty Stack should return an error")
+}
+
+func TestPush(t *testing.T) {
+	s := stack.NewStack[int]()
+	s.Push(1)
+	s.Push(2)
+	s.Push(3)
+	assert.Equal(t, []int{3, 2, 1}, s.Elements(), "Should contain pushed elements in the reversed order")
+}
+
+func TestElementsWithNonEmptyStack(t *testing.T) {
+	s := stack.NewStack[int]()
+	s.Push(1)
+	s.Push(2)
+	s.Push(3)
+	assert.Equal(t, []int{3, 2, 1}, s.Elements(), "Elements() should return all the pushed elements")
+}
+
+func TestElementsWithEmptyStack(t *testing.T) {
+	s := stack.NewStack[int]()
+	assert.Equal(t, []int{}, s.Elements(), "Elements() should return an empty slice for an empty stack")
+}
+
+func TestClear(t *testing.T) {
+	s := stack.NewStack[int]()
+	s.Push(1)
+	s.Push(2)
+	s.Push(3)
+	s.Clear()
+	assert.Equal(t, []int{}, s.Elements(), "Stack should contain no elements after clearing")
+}
+
+func TestStackOfPointers(t *testing.T) {
+	type city struct {
+		name string
+		populationSize int
+	}
+
+	tokyo := city{name: "Tokyo", populationSize: 37468000 }
+	delhi := city{name: "Delhi", populationSize: 28514000 }
+	shanghai := city{name: "Shanghai", populationSize: 25582000}
+	s := stack.NewStack[*city]()
+	s.Push(&tokyo)
+	s.Push(&delhi)
+	s.Push(&shanghai)
+	topCity, err := s.Pop()
+
+	assert.Equal(t, nil, err, "Pop on non-empty Stack should not return error")
+	assert.Equal(t, shanghai, *topCity, "Stack should contain no elements after clearing")
+}

@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-	//TODO: Move this code to the test suite
 	s := stack.NewStack[int]()
 	s.Push(1)
 	s.Push(2)
