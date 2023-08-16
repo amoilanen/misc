@@ -71,8 +71,24 @@ func (matrix *Matrix[T]) Negate() *Matrix[T] {
 	return NewMatrixWithElements(matrix.Width, matrix.Height, resultElements)
 }
 
-func (matrix *Matrix[T]) Multiply() (*Matrix[T], error) {
+func (matrix *Matrix[T]) MultiplyBy(other *Matrix[T]) (*Matrix[T], error) {
 	//TODO: Optimize using go routines and a worker pool to construct a new matrix
-	//TODO: Implement
-	return matrix, nil
+	if matrix.Width != other.Height {
+		return nil, &MatrixError{
+			Message: fmt.Sprintf("Incompatible matrix dimensions: this [%d, %d], other [%d, %d]", matrix.Width, matrix.Height, other.Width, other.Height),
+		}
+	} else {
+		resultElements := make([][]T, matrix.Height)
+		for row := 0; row < matrix.Height; row++ {
+			resultElements[row] = make([]T, other.Width)
+			for column := 0; column < other.Width; column++ {
+				var result T
+				for i := 0; i < matrix.Width; i++ {
+					result = result + matrix.Elements[row][i] * other.Elements[i][column]
+				}
+				resultElements[row][column] = result
+			}
+		}
+		return NewMatrixWithElements(other.Width, matrix.Height, resultElements), nil
+	}
 }

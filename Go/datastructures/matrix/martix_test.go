@@ -12,7 +12,7 @@ func TestIsEmpty(t *testing.T) {
 	assert.Equal(t, 3, s.Height, "Created matrix has correct height")
 }
 
-func TestAddMatrixDimensionsMatch(t *testing.T) {
+func TestAddMatrix(t *testing.T) {
 	x := matrix.NewMatrixWithElements[int](3, 2, [][]int {
 		{1, 2, 3},
 		{4, 5, 6},
@@ -58,4 +58,35 @@ func TestNegate(t *testing.T) {
 		{-7, -8, -9},
 		{-10, -11, -12},
 	}, result.Elements, "Negating a matrix negates all matrix elements")
+}
+
+func TestMultiplyByMatrixMismatchingDimensions(t *testing.T) {
+	x := matrix.NewMatrixWithElements[int](3, 1, [][]int {
+		{1, 2, 3},
+	})
+	y := matrix.NewMatrixWithElements[int](3, 1, [][]int {
+		{4, 5, 6},
+	})
+	_, err := x.MultiplyBy(y)
+	expectedError := &matrix.MatrixError{ Message: "Incompatible matrix dimensions: this [3, 1], other [3, 1]" }
+	assert.Equal(t, expectedError, err, "Multiplying two matrixes with mismatching dimensions results in an error")
+}
+
+func TestMultiplyByMatrix(t *testing.T) {
+	x := matrix.NewMatrixWithElements[int](3, 2, [][]int {
+		{1, 2, 3},
+		{4, 5, 6},
+	})
+	y := matrix.NewMatrixWithElements[int](4, 3, [][]int {
+		{1, 1, 0, 0},
+		{2, 1, 0, 1},
+		{3, 1, 1, 0},
+	})
+	expected := matrix.NewMatrixWithElements[int](1, 2, [][]int {
+		{14, 6, 3, 2},
+		{32, 15, 6, 5},
+	})
+	result, err := x.MultiplyBy(y)
+	assert.Equal(t, nil, err, "Multiplying two matrixes with the correct dimensions should not result in an error")
+	assert.Equal(t, expected.Elements, result.Elements, "Elements of the product of the two matrices")
 }
