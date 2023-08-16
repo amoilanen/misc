@@ -28,3 +28,19 @@ func TestAddMatrixDimensionsMatch(t *testing.T) {
 		{6, 7, 8},
 	}, result.Elements, "Elements of the the sum of two matrices are the sums of the elements of the added matrices")
 }
+
+func TestNegate(t *testing.T) {
+	x := matrix.NewMatrixWithElements[int](3, 4, [][]int {
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+		{10, 11, 12},
+	})
+	result := x.Negate()
+	assert.Equal(t, [][]int {
+		{-1, -2, -3},
+		{-4, -5, -6},
+		{-7, -8, -9},
+		{-10, -11, -12},
+	}, result.Elements, "Negating a matrix negates all matrix elements")
+}

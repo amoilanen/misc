@@ -61,8 +61,14 @@ func (matrix *Matrix[T]) Minus(other *Matrix[T]) (*Matrix[T], error) {
 }
 
 func (matrix *Matrix[T]) Negate() *Matrix[T] {
-	//TODO: Implement
-	return matrix
+	resultElements := make([][]T, matrix.Height)
+	for row := 0; row < matrix.Height; row++ {
+		resultElements[row] = make([]T, matrix.Width)
+		for column := 0; column < matrix.Width; column++ {
+			resultElements[row][column] = -matrix.Elements[row][column]
+		}
+	}
+	return NewMatrixWithElements(matrix.Width, matrix.Height, resultElements)
 }
 
 func (matrix *Matrix[T]) Multiply() (*Matrix[T], error) {
