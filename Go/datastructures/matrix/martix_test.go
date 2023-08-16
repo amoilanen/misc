@@ -29,6 +29,21 @@ func TestAddMatrixDimensionsMatch(t *testing.T) {
 	}, result.Elements, "Elements of the the sum of two matrices are the sums of the elements of the added matrices")
 }
 
+func TestAddMatrixDifferentDimensions(t *testing.T) {
+	x := matrix.NewMatrixWithElements[int](3, 2, [][]int {
+		{1, 2, 3},
+		{4, 5, 6},
+	})
+	y := matrix.NewMatrixWithElements[int](2, 3, [][]int {
+		{2, 2},
+		{2, 2},
+		{2, 2},
+	})
+	_, err := x.Add(y)
+	expectedError := &matrix.MatrixError{ Message: "Incompatible matrix dimensions: this [3, 2], other [2, 3]" }
+	assert.Equal(t, expectedError, err, "Adding two matrixes with different dimensions results in an error")
+}
+
 func TestNegate(t *testing.T) {
 	x := matrix.NewMatrixWithElements[int](3, 4, [][]int {
 		{1, 2, 3},
