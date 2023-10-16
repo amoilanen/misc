@@ -53,7 +53,13 @@ func TestPush(t *testing.T) {
 	s.Push(1)
 	s.Push(2)
 	s.Push(3)
-	assert.Equal(t, []int{3, 2, 1}, s.Elements(), "Should contain pushed elements in the reversed order")
+	result, _ := s.Pop()
+	assert.Equal(t, 3, result, "Last pushed element is at the top")
+	result, _ = s.Pop()
+	assert.Equal(t, 2, result, "The intermediate element")
+	result, _ = s.Pop()
+	assert.Equal(t, 1, result, "First pushed element is at the bottom")
+	assert.Equal(t, true, s.IsEmpty(), "No other elements are contained")
 }
 
 func TestElementsWithNonEmptyStack(t *testing.T) {
@@ -94,5 +100,5 @@ func TestStackOfPointers(t *testing.T) {
 	topCity, err := s.Pop()
 
 	assert.Equal(t, nil, err, "Pop on non-empty Stack should not return error")
-	assert.Equal(t, shanghai, *topCity, "Stack should contain no elements after clearing")
+	assert.Equal(t, shanghai, *topCity, "Top element can be dereferenced")
 }

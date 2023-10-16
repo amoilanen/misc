@@ -1,6 +1,6 @@
 module github.com/amoilanen/datastructures
 
-go 1.20
+go 1.21.3
 
 replace github.com/amoilanen/datastructures => ../datastructures
 

@@ -29,17 +29,15 @@ func NewMatrix[T Number](width int, height int) *Matrix[T] {
 	for i:= 0; i < height; i++ {
 		elements[i] = make([]T, width)
 	}
+	return NewMatrixWithElements(width, height, elements)
+}
+
+func NewMatrixWithElements[T Number](width int, height int, elements [][]T) *Matrix[T] {
 	return &Matrix[T]{
 		Width: width,
 		Height: height,
 		Elements: elements,
 	}
-}
-
-func NewMatrixWithElements[T Number](width int, height int, elements [][]T) *Matrix[T] {
-	matrix := NewMatrix[T](width, height)
-	matrix.Elements = elements
-	return matrix
 }
 
 func (matrix *Matrix[T]) Add(other *Matrix[T]) (*Matrix[T], error) {

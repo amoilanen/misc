@@ -30,7 +30,7 @@ func (stack *Stack[T]) IsEmpty() bool {
 	return stack.top == nil
 }
 
-func (stack * Stack[T]) Peek() (T, error) {
+func (stack *Stack[T]) Peek() (T, error) {
 	if stack.IsEmpty() {
 		var emptyResult T
 		return emptyResult, &StackError{
