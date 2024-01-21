@@ -1,17 +1,17 @@
 use std::vec::Vec;
-use std::ops::Add;
+use std::char;
 
 fn digit_to_hex(digit: u8) -> char {
-    let digit = digit % 16;
+    let digit = digit;
     match digit {
-        0..=9 => (digit as u32).to_string().pop().unwrap(),
+        0..=9 => char::from_u32((digit + ('0' as u8)) as u32).unwrap(),
         10 => 'a',
         11 => 'b',
         12 => 'c',
         13 => 'd',
         14 => 'e',
         15 => 'f',
-        _ => panic!(format!("Got too large hex digit {}", digit)),
+        _ => panic!("Got a hex digit out of bounds {}", digit),
     }
 }
 

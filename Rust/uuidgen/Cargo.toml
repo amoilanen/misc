@@ -1,10 +1,9 @@
 [package]
 name = "uuidgen"
 version = "0.1.0"
-authors = ["Anton Ivanov <anton.al.ivanov@gmail.com>"]
-edition = "2018"
+authors = ["Anton Moilanen <anton.a.moilanen@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand="0.7.2"
+rand="0.8.5"
