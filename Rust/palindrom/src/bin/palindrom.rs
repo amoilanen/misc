@@ -7,15 +7,16 @@ fn is_palindrome(s: &str) -> bool {
 // In general this is not the case in Rust where strings do not support indexing into them
 fn ascii_is_palindrome(s: &str) -> bool {
     let len = s.len();
-    let mut left = 0;
-    let mut right = if len > 1 {
+    let s_bytes = s.as_bytes();
+    let mut left: usize = 0;
+    let mut right: usize = if len > 1 {
         len - 1
     } else {
         0
     };
     let mut is_palindrome = true;
     while is_palindrome && left < right {
-        is_palindrome = s[left..(left + 1)] == s[right..(right + 1)];
+        is_palindrome = s_bytes[left] == s_bytes[right];
         left = left + 1;
         right = right - 1;
     }
