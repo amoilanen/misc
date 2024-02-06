@@ -54,4 +54,7 @@ mod tests {
             end: 2
         }]);
     }
+
+    //TODO: Test a really long string
+    //TODO: Test a really long pattern
 }
