@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, thread::current};
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -27,19 +27,20 @@ fn char_u32_at_index(str: &str, idx: usize) -> u32 {
     str.chars().nth(idx).map_or(0, |ch| ch as u32)
 }
 
+fn recompute_hash_at_index(idx: usize, pattern_length: usize, str: &str, previous_hash: u32) -> u32 {
+    let previous_first_char = char_u32_at_index(str, idx - 1);
+    let new_last_char = char_u32_at_index(str, idx + pattern_length - 1);
+    let correction_term = P - (previous_first_char * P.pow(pattern_length as u32) % P);
+    (previous_hash * P + correction_term + new_last_char) % P
+}
+
 pub fn find_occurrences_rabin_karp(str: &str, pattern: &str)  -> Vec<PatternOccurrence> {
-    //TODO: Re-factor, simplify
     let mut occurrences: Vec<PatternOccurrence> = Vec::new();
     let pattern_length = pattern.len();
     let str_length = str.len();
-    let primary_base_coefficient: u32 = P.pow(pattern_length as u32) as u32;
 
     let pattern_hash: u32 = hash(pattern);
-    let last_possible_match_index = if str_length >= pattern_length {
-        str_length - pattern_length
-    } else {
-      0
-    };
+    let last_possible_match_index = str_length.checked_sub(pattern_length).unwrap_or(0);
     let mut possible_match_index: usize = 0;
     let mut current_hash = hash(&str[possible_match_index..cmp::min(possible_match_index + pattern_length, str_length)]);
     while possible_match_index < last_possible_match_index {
@@ -51,11 +52,8 @@ pub fn find_occurrences_rabin_karp(str: &str, pattern: &str)  -> Vec<PatternOccu
                 })
             }
         }
-        let previous_first_char = char_u32_at_index(str, possible_match_index);
-        let new_last_char = char_u32_at_index(str, possible_match_index + pattern_length);
-        let correction_term = P - (previous_first_char * primary_base_coefficient % P);
-        current_hash = (current_hash * P + correction_term + new_last_char) % P;
         possible_match_index = possible_match_index + 1;
+        current_hash = recompute_hash_at_index(possible_match_index, pattern_length, str, current_hash)
     }
 
     return occurrences;
