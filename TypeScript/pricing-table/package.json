@@ -1,0 +1,20 @@
+{
+  "name": "pricing-table",
+  "version": "0.0.1",
+  "description": "Simple tool for generating a pricing table given an hourly price and VAT",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Anton Moilanen <anton.a.moilanen@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.8.7"
+  },
+  "dependencies": {
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "pdfkit": "^0.15.1",
+    "pdfkit-table": "^0.1.99"
+  }
+}
