@@ -1,0 +1,6 @@
+- Generate an invoice PDF in Finnish for Finland
+- Add English translations for Finland
+- Allow to provide any invoice content/not just hardcoded
+- Add an international invoice template
+
+- Create a hosted service which will allow to submit the data for invoices and define the template for the invoice number, created invoices can then be downloaded from the Web interface

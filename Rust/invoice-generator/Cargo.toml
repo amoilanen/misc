@@ -1,0 +1,9 @@
+[package]
+name = "invoice-generator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bigdecimal = "0.4.7"
+font-kit = "0.14.2"
+printpdf = "0.7.0"
