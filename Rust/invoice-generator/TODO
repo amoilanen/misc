@@ -3,4 +3,5 @@
 - Allow to provide any invoice content/not just hardcoded
 - Add an international invoice template
 
+- Command line tool which would read invoice YAML definitions and will generate PDFs
 - Create a hosted service which will allow to submit the data for invoices and define the template for the invoice number, created invoices can then be downloaded from the Web interface

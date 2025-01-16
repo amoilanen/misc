@@ -22,6 +22,7 @@ struct Invoice {
     billed_by: BillingAddress,
     currency: String,
     vat_percent: f32,
+    billed_at: String,
     invoice_number: String,
     reference_id: Option<String>,
     description: Option<String>,
@@ -46,44 +47,57 @@ fn main() {
         },
         currency: "EUR".to_owned(),
         vat_percent: 25.5,
+        billed_at: "17.01.2025".to_owned(),
         invoice_number: "2025-0001".to_owned(),
         reference_id: Some("4387349".to_owned()),
         description: Some("Tietokonen huolto ja päivitys".to_owned()),
         invoice_lines: vec![InvoiceLine {
-            name: "Tietokone palvelut".to_owned(),
+            name: "Tietokone palvelut (työ)".to_owned(),
             count: 1,
             price: BigDecimal::from_f32(89.99).unwrap()
+        }, InvoiceLine {
+            name: "CD levyt".to_owned(),
+            count: 5,
+            price: BigDecimal::from_f32(35.00).unwrap()
+        }, InvoiceLine {
+            name: "Matkakulut".to_owned(),
+            count: 1,
+            price: BigDecimal::from_f32(12.00).unwrap()
         }]
     };
 
     let (doc, page1, layer1) = PdfDocument::new(format!("Lasku {}", invoice.invoice_number), Mm(210.0), Mm(297.0), "Layer 1");
 
-    let font = BuiltinFont::Helvetica;
-    let font_ref = doc.add_builtin_font(font).unwrap();
+    let regular_font = BuiltinFont::Helvetica;
+    let regular_font_ref = doc.add_builtin_font(regular_font).unwrap();
+    let bold_font = BuiltinFont::HelveticaBold;
+    let bold_font_ref = doc.add_builtin_font(bold_font).unwrap();
 
     let current_layer = doc.get_page(page1).get_layer(layer1);
-    // Add title text
     current_layer.use_text(
         "Lasku",
         24.0,
         Mm(140.0),
         Mm(270.0),
-        &font_ref,
+        &regular_font_ref,
     );
+    //TODO: Render the billed_by section
+    // - Render the invoice information: invoice number, reference id (if present) and other relevant information
 
+    // Billed to section
     current_layer.use_text(
         invoice.billed_to.name,
         12.0,
         Mm(20.0),
         Mm(250.0),
-        &font_ref,
+        &regular_font_ref,
     );
     current_layer.use_text(
         invoice.billed_to.address_line_1,
         12.0,
         Mm(20.0),
         Mm(245.0),
-        &font_ref,
+        &regular_font_ref,
     );
     if let Some(address_line_2) = invoice.billed_to.address_line_2 {
         current_layer.use_text(
@@ -91,7 +105,7 @@ fn main() {
             12.0,
             Mm(20.0),
             Mm(240.0),
-            &font_ref,
+            &regular_font_ref,
         );
     }
     if let Some(address_line_3) = invoice.billed_to.address_line_3 {
@@ -100,23 +114,60 @@ fn main() {
             12.0,
             Mm(20.0),
             Mm(235.0),
-            &font_ref,
+            &regular_font_ref,
         );
     }
 
+    // Table headers
+    current_layer.set_outline_thickness(0.4);
     current_layer.add_line(
         Line {
             points: vec![
-                (Point::new(Mm(10.0), Mm(190.0)), false),
-                (Point::new(Mm(200.0), Mm(190.0)), false),
+                (Point::new(Mm(15.0), Mm(190.0)), false),
+                (Point::new(Mm(195.0), Mm(190.0)), false),
             ],
             is_closed: false
-            //line_width: Some(Mm(0.5))
         },
     );
+    current_layer.use_text(
+        "Tuote",
+        10.0,
+        Mm(15.0),
+        Mm(192.0),
+        &bold_font_ref,
+    );
+    current_layer.use_text(
+        "Määrä",
+        10.0,
+        Mm(75.0),
+        Mm(192.0),
+        &bold_font_ref,
+    );
+    current_layer.use_text(
+        "Hinta (sis. ALV)",
+        10.0,
+        Mm(105.0),
+        Mm(192.0),
+        &bold_font_ref,
+    );
+    current_layer.use_text(
+        "Veroton hinta",
+        10.0,
+        Mm(135.0),
+        Mm(192.0),
+        &bold_font_ref,
+    );
+    current_layer.use_text(
+        "ALV %",
+        10.0,
+        Mm(183.0),
+        Mm(192.0),
+        &bold_font_ref,
+    );
 
-    //TODO: Render the billed_by section
-    //TODO: Render the invoice information: invoice number, reference id (if present) and other relevant information
+    //TODO: Render the invoice lines in a table
+
+    //TODO: Render the summary: total price without VAT, total VAT, total price
 
     doc.save(&mut BufWriter::new(File::create("test_invoice.pdf").unwrap())).unwrap();
 }
