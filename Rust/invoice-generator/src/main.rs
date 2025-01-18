@@ -2,6 +2,7 @@ use printpdf::*;
 use bigdecimal::{BigDecimal, FromPrimitive};
 use std::fs::File;
 use std::io::BufWriter;
+use invoice_generator::format::{format_price, format_vat};
 
 struct BillingAddress {
     name: String,
@@ -165,7 +166,47 @@ fn main() {
         &bold_font_ref,
     );
 
-    //TODO: Render the invoice lines in a table
+    let mut current_y = 185.0;
+    for invoice_line in invoice.invoice_lines {
+        current_layer.use_text(
+            invoice_line.name,
+            10.0,
+            Mm(15.0),
+            Mm(current_y),
+            &regular_font_ref,
+        );
+        current_layer.use_text(
+            format!("{}", invoice_line.count),
+            10.0,
+            Mm(75.0),
+            Mm(current_y),
+            &regular_font_ref,
+        );
+        current_layer.use_text(
+            format_price(&invoice_line.price),
+            10.0,
+            Mm(105.0),
+            Mm(current_y),
+            &regular_font_ref,
+        );
+
+        let price_without_tax = &invoice_line.price * BigDecimal::from_f32(1.0 - invoice.vat_percent / 100.0).unwrap();
+        current_layer.use_text(
+            format_price(&price_without_tax),
+            10.0,
+            Mm(135.0),
+            Mm(current_y),
+            &regular_font_ref,
+        );
+        current_layer.use_text(
+            format_vat(&invoice.vat_percent),
+            10.0,
+            Mm(187.0),
+            Mm(current_y),
+            &regular_font_ref,
+        );
+        current_y = current_y - 5.0;
+    }
 
     //TODO: Render the summary: total price without VAT, total VAT, total price
 
