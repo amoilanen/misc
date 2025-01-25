@@ -1,4 +1,5 @@
 - Generate an invoice PDF in Finnish for Finland
+- Extra common components and UI elements such as tables
 - Add English translations for Finland
 - Allow to provide any invoice content/not just hardcoded
 - Add an international invoice template

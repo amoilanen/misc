@@ -99,40 +99,124 @@ fn main() {
     current_layer.use_text(
         "Lasku",
         24.0,
-        Mm(140.0),
+        Mm(120.0),
         Mm(270.0),
         &regular_font_ref,
     );
-    //TODO: Render the invoice information: invoice number, reference id (if present) and other relevant information
+    current_layer.use_text(
+        "Laskunumero:",
+        11.0,
+        Mm(120.0),
+        Mm(255.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        "Päiväys:",
+        11.0,
+        Mm(120.0),
+        Mm(260.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        "Eräpäivä:",
+        11.0,
+        Mm(120.0),
+        Mm(250.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        "Viitenumero:",
+        11.0,
+        Mm(120.0),
+        Mm(245.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        "Tilinumero:",
+        11.0,
+        Mm(120.0),
+        Mm(240.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        "BIC-koodi:",
+        11.0,
+        Mm(120.0),
+        Mm(235.0),
+        &regular_font_ref
+    );
+
+    current_layer.use_text(
+        invoice.invoice_number,
+        11.0,
+        Mm(150.0),
+        Mm(255.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        invoice.billed_at,
+        11.0,
+        Mm(150.0),
+        Mm(260.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        invoice.due_date,
+        11.0,
+        Mm(150.0),
+        Mm(250.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        invoice.reference_id.unwrap_or("".to_owned()),
+        11.0,
+        Mm(150.0),
+        Mm(245.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        invoice.bank_details.account_number,
+        11.0,
+        Mm(150.0),
+        Mm(240.0),
+        &regular_font_ref
+    );
+    current_layer.use_text(
+        invoice.bank_details.bic_code,
+        11.0,
+        Mm(150.0),
+        Mm(235.0),
+        &regular_font_ref
+    );
 
     // Billed to section
     current_layer.use_text(
         invoice.billed_to.name,
-        12.0,
+        11.0,
         Mm(20.0),
-        Mm(250.0),
+        Mm(260.0),
         &regular_font_ref,
     );
     current_layer.use_text(
         invoice.billed_to.address_line_1,
-        12.0,
+        11.0,
         Mm(20.0),
-        Mm(245.0),
+        Mm(255.0),
         &regular_font_ref,
     );
     if let Some(address_line_2) = invoice.billed_to.address_line_2 {
         current_layer.use_text(
             address_line_2,
-            12.0,
+            11.0,
             Mm(20.0),
-            Mm(240.0),
+            Mm(250.0),
             &regular_font_ref,
         );
     }
     if let Some(address_line_3) = invoice.billed_to.address_line_3 {
         current_layer.use_text(
             address_line_3,
-            12.0,
+            11.0,
             Mm(20.0),
             Mm(235.0),
             &regular_font_ref,
