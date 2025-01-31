@@ -32,6 +32,7 @@ struct BankDetails {
 struct Invoice {
     billed_to: BillingAddress,
     billed_by: BillingAddress,
+    invoice_description: String,
     currency: String,
     vat_percent: f32,
     billed_at: String,
@@ -40,7 +41,7 @@ struct Invoice {
     reference_id: Option<String>,
     description: Option<String>,
     bank_details: BankDetails,
-    invoice_lines: Vec<InvoiceLine>
+       invoice_lines: Vec<InvoiceLine>
 }
 
 fn main() {
@@ -73,6 +74,7 @@ fn main() {
         vat_percent: 25.5,
         billed_at: "17.01.2025".to_owned(),
         due_date: "31.01.2025".to_owned(),
+        invoice_description: "Tietokone avustus: desktop järjestelmän asennus ja konfigurointi".to_owned(),
         invoice_number: "2025-0001".to_owned(),
         reference_id: Some("4387349".to_owned()),
         description: Some("Tietokonen huolto ja päivitys".to_owned()),
@@ -111,6 +113,7 @@ fn main() {
     let invoice_info = Table {
         column_widths: vec![30.0, 30.0],
         row_height: 5.0,
+        header: None,
         rows: Label::new_rows(
             vec![
                 vec!["Laskunumero", &invoice.invoice_number],
@@ -139,6 +142,7 @@ fn main() {
     let billed_to = Table {
         column_widths: vec![30.0],
         row_height: 5.0,
+        header: None,
         rows: Label::new_rows(billed_to_lines,
             11.0,
             &regular_font_ref
@@ -146,95 +150,32 @@ fn main() {
     };
     billed_to.render_at(15.0, 260.0, &current_layer);
 
-    // Table headers
-    current_layer.set_outline_thickness(0.4);
-    current_layer.add_line(
-        Line {
-            points: vec![
-                (Point::new(Mm(15.0), Mm(190.0)), false),
-                (Point::new(Mm(195.0), Mm(190.0)), false),
-            ],
-            is_closed: false
-        },
-    );
-    current_layer.use_text(
-        "Tuote",
-        10.0,
-        Mm(15.0),
-        Mm(192.0),
-        &bold_font_ref,
-    );
-    current_layer.use_text(
-        "Määrä",
-        10.0,
-        Mm(75.0),
-        Mm(192.0),
-        &bold_font_ref,
-    );
-    current_layer.use_text(
-        "Hinta (sis. ALV)",
-        10.0,
-        Mm(105.0),
-        Mm(192.0),
-        &bold_font_ref,
-    );
-    current_layer.use_text(
-        "Veroton hinta",
-        10.0,
-        Mm(135.0),
-        Mm(192.0),
-        &bold_font_ref,
-    );
-    current_layer.use_text(
-        "ALV %",
-        10.0,
-        Mm(183.0),
-        Mm(192.0),
-        &bold_font_ref,
-    );
+    let mut invoice_lines: Vec<Vec<String>> = Vec::new();
+    for invoice_line in invoice.invoice_lines.iter() {
+        let price_without_vat = &invoice_line.price / BigDecimal::from_f32(1.0 + invoice.vat_percent / 100.0).unwrap();
+        invoice_lines.push(vec![
+            format!("{}", invoice_line.name),
+            format!("{}", invoice_line.count),
+            format_price(&invoice_line.price, &invoice.currency),
+            format_price(&price_without_vat, &invoice.currency),
+            format_vat(&invoice.vat_percent)
+        ]);
+    }
+    let invoice_info = Table {
+        column_widths: vec![60.0, 30.0, 30.0, 50.0, 15.0],
+        row_height: 5.0,
+        header: Some(Label::new_row(vec![
+            "Tuote", "Määrä", "Hinta (sis. ALV)", "Veroton hinta", "ALV %"
+        ], 10.0, &bold_font_ref)),
+        rows: Label::new_rows(
+            invoice_lines.iter().map(|x| x.iter().map(|s| s.as_str()).collect()).collect(),
+            10.0,
+            &regular_font_ref
+        )
+    };
+    invoice_info.render_at(15.0, 200.0, &current_layer);
 
     let mut current_y = 185.0;
-    for invoice_line in invoice.invoice_lines.iter() {
-        current_layer.use_text(
-            &invoice_line.name,
-            10.0,
-            Mm(15.0),
-            Mm(current_y),
-            &regular_font_ref,
-        );
-        current_layer.use_text(
-            format!("{}", invoice_line.count),
-            10.0,
-            Mm(75.0),
-            Mm(current_y),
-            &regular_font_ref,
-        );
-        current_layer.use_text(
-            format_price(&invoice_line.price, &invoice.currency),
-            10.0,
-            Mm(105.0),
-            Mm(current_y),
-            &regular_font_ref,
-        );
-
-        let price_without_vat = &invoice_line.price / BigDecimal::from_f32(1.0 + invoice.vat_percent / 100.0).unwrap();
-        current_layer.use_text(
-            format_price(&price_without_vat, &invoice.currency),
-            10.0,
-            Mm(135.0),
-            Mm(current_y),
-            &regular_font_ref,
-        );
-        current_layer.use_text(
-            format_vat(&invoice.vat_percent),
-            10.0,
-            Mm(187.0),
-            Mm(current_y),
-            &regular_font_ref,
-        );
-        current_y = current_y - 5.0;
-    }
-
     let total_price: BigDecimal = invoice.invoice_lines.iter().map(|line| &line.price).sum();
     let total_vat: BigDecimal = BigDecimal::from_f32(invoice.vat_percent / 100.0).unwrap() * &total_price;
     let total_price_without_vat = &total_price / BigDecimal::from_f32(1.0 + invoice.vat_percent / 100.0).unwrap();

@@ -1,8 +1,9 @@
 - Generate an invoice PDF in Finnish for Finland
 - Extra common components and UI elements such as tables
 - Add English translations for Finland
-- Allow to provide any invoice content/not just hardcoded
+- Allow to provide any invoice content/not just hardcoded (in the input YAML file)
 - Add an international invoice template
+- Support B2B invoices
 
 - Command line tool which would read invoice YAML definitions and will generate PDFs
 - Create a hosted service which will allow to submit the data for invoices and define the template for the invoice number, created invoices can then be downloaded from the Web interface

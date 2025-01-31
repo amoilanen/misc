@@ -15,15 +15,19 @@ impl Label {
             font_size
         }
     }
- 
+
+    pub fn new_row(row: Vec<&str>, font_size: f32, font: &IndirectFontRef) -> Vec<Box<dyn Component>> {
+        let mut label_row: Vec<Box<dyn Component>> = Vec::new();
+        for value in row.into_iter() {
+            label_row.push(Box::new(Label::new(value, font_size, font.clone())));
+        }
+        label_row
+    }
+
     pub fn new_rows(rows: Vec<Vec<&str>>, font_size: f32, font: &IndirectFontRef) -> Vec<Vec<Box<dyn Component>>> {
         let mut labels: Vec<Vec<Box<dyn Component>>> = Vec::new();
         for row in rows.into_iter() {
-            let mut label_row: Vec<Box<dyn Component>> = Vec::new();
-            for value in row.into_iter() {
-                label_row.push(Box::new(Label::new(value, font_size, font.clone())));
-            }
-            labels.push(label_row);
+            labels.push(Label::new_row(row, font_size, font));
         }
         labels
     }
