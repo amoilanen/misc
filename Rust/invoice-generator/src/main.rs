@@ -16,6 +16,7 @@ struct BillingAddress {
     address_line_1: String,
     address_line_2: Option<String>,
     address_line_3: Option<String>,
+    detail: Option<String>
 }
 
 struct InvoiceLine {
@@ -41,7 +42,7 @@ struct Invoice {
     reference_id: Option<String>,
     description: Option<String>,
     bank_details: BankDetails,
-       invoice_lines: Vec<InvoiceLine>
+    invoice_lines: Vec<InvoiceLine>
 }
 
 fn main() {
@@ -55,6 +56,7 @@ fn main() {
             phone_number: Some("0455555555".to_owned()),
             company_id: Some("1234567-8".to_owned()),
             vat_id: Some("FI12345678".to_owned()),
+            detail: None
         },
         billed_to: BillingAddress {
             name: "Matti Meikäläinen".to_owned(),
@@ -65,6 +67,7 @@ fn main() {
             phone_number: None,
             company_id: None,
             vat_id: None,
+            detail: None
         },
         bank_details: BankDetails {
             account_number: "FI22 1234 5678 1234 56".to_owned(),
@@ -180,52 +183,39 @@ fn main() {
     let total_vat: BigDecimal = BigDecimal::from_f32(invoice.vat_percent / 100.0).unwrap() * &total_price;
     let total_price_without_vat = &total_price / BigDecimal::from_f32(1.0 + invoice.vat_percent / 100.0).unwrap();
     current_y = current_y - 21.0;
+
+    let summary = Table {
+        column_widths: vec![40.0, 30.0],
+        row_height: 5.0,
+        header: None,
+        rows: vec![
+            Label::new_row(
+                vec!["Veroton hinta yhteensä:", &format_price(&total_price_without_vat, &invoice.currency)],
+                10.0,
+                &regular_font_ref
+            ),
+            Label::new_row(
+                vec![&format!("Alv {} %:", invoice.vat_percent), &format_price(&total_vat, &invoice.currency)],
+                10.0,
+                &regular_font_ref
+            ),
+            Label::new_row(
+                vec!["Summa yhteensä:", &format_price(&total_price, &invoice.currency)],
+                10.0,
+                &bold_font_ref
+            )
+        ]
+    };
+    summary.render_at(125.0, current_y, &current_layer);
+
     current_layer.use_text(
-        "Veroton hinta yhteensä:",
+        invoice.description.unwrap_or("".to_owned()),
         10.0,
-        Mm(125.0),
-        Mm(current_y),
+        Mm(15.0),
+        Mm(140.0),
         &regular_font_ref,
-    );
-    current_layer.use_text(
-        format_price(&total_price_without_vat, &invoice.currency),
-        10.0,
-        Mm(165.0),
-        Mm(current_y),
-        &regular_font_ref,
-    );
-    current_y = current_y - 5.0;
-    current_layer.use_text(
-        "Alv 25,5 %:",
-        10.0,
-        Mm(125.0),
-        Mm(current_y),
-        &regular_font_ref,
-    );
-    current_layer.use_text(
-        format_price(&total_vat, &invoice.currency),
-        10.0,
-        Mm(165.0),
-        Mm(current_y),
-        &regular_font_ref,
-    );
-    current_y = current_y - 5.0;
-    current_layer.use_text(
-        "Summa yhteensä:",
-        10.0,
-        Mm(125.0),
-        Mm(current_y),
-        &bold_font_ref,
-    );
-    current_layer.use_text(
-        format_price(&total_price, &invoice.currency),
-        10.0,
-        Mm(165.0),
-        Mm(current_y),
-        &bold_font_ref,
     );
 
-    //TODO: Render the description and the additional notes on the invoice
     //TODO: Render the billed_by information in the footer of the invoice
-    doc.save(&mut BufWriter::new(File::create("test_invoice.pdf").unwrap())).unwrap();
+    doc.save(&mut BufWriter::new(File::create(format!("{}.pdf", invoice.invoice_number)).unwrap())).unwrap();
 }
