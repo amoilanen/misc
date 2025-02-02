@@ -40,7 +40,7 @@ struct Invoice {
     due_date: String,
     invoice_number: String,
     reference_id: Option<String>,
-    description: Option<String>,
+    note: Option<String>,
     bank_details: BankDetails,
     invoice_lines: Vec<InvoiceLine>
 }
@@ -80,7 +80,7 @@ fn main() {
         invoice_description: "Tietokone avustus: desktop järjestelmän asennus ja konfigurointi".to_owned(),
         invoice_number: "2025-0001".to_owned(),
         reference_id: Some("4387349".to_owned()),
-        description: Some("Tietokonen huolto ja päivitys".to_owned()),
+        note: Some("Tietokonen huolto ja päivitys".to_owned()),
         invoice_lines: vec![InvoiceLine {
             name: "Tietokone palvelut (työ)".to_owned(),
             count: 1,
@@ -209,13 +209,41 @@ fn main() {
     summary.render_at(125.0, current_y, &current_layer);
 
     current_layer.use_text(
-        invoice.description.unwrap_or("".to_owned()),
+        invoice.note.unwrap_or("".to_owned()),
         10.0,
         Mm(15.0),
         Mm(140.0),
         &regular_font_ref,
     );
 
-    //TODO: Render the billed_by information in the footer of the invoice
+    // Footer upper border
+    current_layer.set_outline_thickness(0.8);
+    current_layer.add_line(
+        Line {
+            points: vec![
+                (Point::new(Mm(15.0), Mm(25.0)), false),
+                (Point::new(Mm(200.0), Mm(25.0)), false),
+            ],
+            is_closed: false
+        }
+    );
+    let billed_by = Table {
+        column_widths: vec![60.0, 60.0, 65.0],
+        row_height: 3.0,
+        header: None,
+        rows: Label::new_rows(
+            vec![
+                vec![&invoice.billed_by.name, &invoice.billed_by.company_id.map(|s| format!("Yritystunnus: {}", s)).unwrap_or("".to_owned()), &invoice.billed_by.email.unwrap_or("".to_owned())],
+                vec![&invoice.billed_by.address_line_1, &invoice.billed_by.vat_id.map(|s| format!("ALV tunnus: {}", s)).unwrap_or("".to_owned()), &invoice.billed_by.phone_number.unwrap_or("".to_owned())],
+                vec![&invoice.billed_by.address_line_2.unwrap_or("".to_owned()), &invoice.bank_details.account_number, ""],
+                vec![&invoice.billed_by.address_line_3.unwrap_or("".to_owned()), &invoice.bank_details.bic_code, ""],
+                vec![&invoice.billed_by.detail.unwrap_or("".to_owned()), "", ""]
+            ],
+            7.0,
+            &regular_font_ref
+        )
+    };
+    billed_by.render_at(25.0, 20.0, &current_layer);
+
     doc.save(&mut BufWriter::new(File::create(format!("{}.pdf", invoice.invoice_number)).unwrap())).unwrap();
 }
