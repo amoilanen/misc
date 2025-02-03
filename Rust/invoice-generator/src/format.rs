@@ -21,6 +21,7 @@ mod tests {
         assert_eq!(format_price(&BigDecimal::from_f32(2.30).unwrap(), "€"), "2,30 €");
         assert_eq!(format_price(&BigDecimal::from_f32(2.00).unwrap(), "EUR"), "2,00 EUR");
         assert_eq!(format_price(&BigDecimal::from_f32(100.00).unwrap(), "EUR"), "100,00 EUR");
+        assert_eq!(format_price(&BigDecimal::from_f32(5400.12).unwrap(), "EUR"), "5400,12 EUR");
     }
 
     #[test]

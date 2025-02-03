@@ -33,7 +33,7 @@ pub struct BankDetails {
 pub struct Invoice {
     pub billed_to: BillingAddress,
     pub billed_by: BillingAddress,
-    pub invoice_description: String,
+    pub invoice_description: Option<String>,
     pub currency: String,
     pub vat_percent: f32,
     pub billed_at: String,

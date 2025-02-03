@@ -6,7 +6,7 @@ use invoice_generator::renderer::render;
 use invoice_generator::invoice::Invoice;
 
 fn main() -> Result<(), Error> {
-    let raw_invoice = fs::read_to_string("examples/1.json")?;
+    let raw_invoice = fs::read_to_string("examples/2025-0001.json")?;
     let invoice: Invoice = serde_json::from_str(&raw_invoice).context("Could not parse invoice")?;
     let doc = render(&invoice)?;
     doc.save(&mut BufWriter::new(File::create(format!("{}.pdf", invoice.invoice_number)).unwrap())).unwrap();

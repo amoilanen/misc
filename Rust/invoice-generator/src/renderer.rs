@@ -13,6 +13,11 @@ pub fn render(invoice: &Invoice) -> Result<PdfDocumentReference, Error> {
     let translations = load_translations(&invoice.locale)?;
     let (doc, page1, layer1) = PdfDocument::new(format!("{} {}", translations.invoice.invoice, invoice.invoice_number), Mm(210.0), Mm(297.0), "Layer 1");
 
+    let currency = if &invoice.currency == "EUR" {
+        "€"
+    } else {
+        &invoice.currency
+    };
     let regular_font = BuiltinFont::Helvetica;
     let regular_font_ref = doc.add_builtin_font(regular_font).unwrap();
     let bold_font = BuiltinFont::HelveticaBold;
@@ -57,6 +62,22 @@ pub fn render(invoice: &Invoice) -> Result<PdfDocumentReference, Error> {
     if let Some(address_line_3) = invoice.billed_to.address_line_3.as_ref() {
         billed_to_lines.push(vec![address_line_3.as_str()]);
     }
+    let company_id_line = if let Some(company_id) = invoice.billed_to.company_id.as_ref() {
+        format!("{}: {}", &translations.company_id, company_id)
+    } else {
+        "".to_owned()
+    };
+    if company_id_line.len() > 0 {
+        billed_to_lines.push(vec![&company_id_line]);
+    }
+    let vat_id_line = if let Some(vat_id) = invoice.billed_to.vat_id.as_ref() {
+        format!("{}: {}", &translations.vat_id, vat_id)
+    } else {
+        "".to_owned()
+    };
+    if vat_id_line.len() > 0 {
+        billed_to_lines.push(vec![&vat_id_line]);
+    }
     let billed_to = Table {
         column_widths: vec![30.0],
         row_height: 5.0,
@@ -74,13 +95,13 @@ pub fn render(invoice: &Invoice) -> Result<PdfDocumentReference, Error> {
         invoice_lines.push(vec![
             format!("{}", invoice_line.name),
             format!("{}", invoice_line.count),
-            format_price(&invoice_line.price, &invoice.currency),
-            format_price(&price_without_vat, &invoice.currency),
+            format_price(&invoice_line.price, currency),
+            format_price(&price_without_vat, currency),
             format_vat(&invoice.vat_percent)
         ]);
     }
     let invoice_info = Table {
-        column_widths: vec![60.0, 30.0, 30.0, 50.0, 15.0],
+        column_widths: vec![90.0, 20.0, 30.0, 30.0, 15.0],
         row_height: 5.0,
         header: Some(Label::new_row(vec![
             &translations.invoice.line.item, &translations.invoice.line.quantity, &translations.invoice.line.price,
@@ -106,17 +127,17 @@ pub fn render(invoice: &Invoice) -> Result<PdfDocumentReference, Error> {
         header: None,
         rows: vec![
             Label::new_row(
-                vec![&format!("{}:", &translations.invoice.total_price_without_tax), &format_price(&total_price_without_vat, &invoice.currency)],
+                vec![&format!("{}:", &translations.invoice.total_price_without_tax), &format_price(&total_price_without_vat, currency)],
                 10.0,
                 &regular_font_ref
             ),
             Label::new_row(
-                vec![&format!("{} {} %:", &translations.invoice.vat, invoice.vat_percent), &format_price(&total_vat, &invoice.currency)],
+                vec![&format!("{} {} %:", &translations.invoice.vat, invoice.vat_percent), &format_price(&total_vat, currency)],
                 10.0,
                 &regular_font_ref
             ),
             Label::new_row(
-                vec![&format!("{}:", &translations.invoice.total_price), &format_price(&total_price, &invoice.currency)],
+                vec![&format!("{}:", &translations.invoice.total_price), &format_price(&total_price, currency)],
                 10.0,
                 &bold_font_ref
             )
@@ -129,6 +150,13 @@ pub fn render(invoice: &Invoice) -> Result<PdfDocumentReference, Error> {
         10.0,
         Mm(15.0),
         Mm(140.0),
+        &regular_font_ref,
+    );
+    current_layer.use_text(
+        invoice.invoice_description.as_ref().unwrap_or(&"".to_owned()),
+        10.0,
+        Mm(15.0),
+        Mm(130.0),
         &regular_font_ref,
     );
 
