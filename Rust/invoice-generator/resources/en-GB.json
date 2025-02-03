@@ -1,0 +1,25 @@
+{
+    "invoice": {
+        "invoice": "Invoice",
+        "number": "Invoice number",
+        "date": "Date",
+        "due_date": "Due date",
+        "reference_number": "Reference number",
+        "total_price_without_tax": "Total price without tax",
+        "total_price": "Total price",
+        "vat": "VAT",
+        "line": {
+            "item": "Item",
+            "quantity": "Quantity",
+            "price": "Price",
+            "price_without_tax": "Price without tax",
+            "vat": "VAT"
+        }
+    },
+    "company_id": "Registration number",
+    "vat_id": "VAT ID",
+    "account": {
+        "number": "Account number",
+        "bic": "BIC"
+    }
+}

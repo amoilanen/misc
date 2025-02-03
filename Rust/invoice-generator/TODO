@@ -1,6 +1,3 @@
-- Generate an invoice PDF in Finnish
-- Extra common components and UI elements such as tables
-- Add English translations
 - Allow to provide any invoice content/not just hardcoded (in the input YAML file)
 - Add an international invoice template
 - Support B2B invoices (generate an example B2B invoice)
