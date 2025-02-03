@@ -1,5 +1,9 @@
+use anyhow::{Context, Error};
+use serde::{Deserialize, Serialize};
+use serde_json;
 use bigdecimal::BigDecimal;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BillingAddress {
     pub name: String,
     pub email: Option<String>,
@@ -12,17 +16,20 @@ pub struct BillingAddress {
     pub detail: Option<String>
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InvoiceLine {
     pub name: String,
     pub count: usize,
     pub price: BigDecimal
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BankDetails {
     pub account_number: String,
     pub bic_code: String
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Invoice {
     pub billed_to: BillingAddress,
     pub billed_by: BillingAddress,
@@ -37,4 +44,9 @@ pub struct Invoice {
     pub bank_details: BankDetails,
     pub invoice_lines: Vec<InvoiceLine>,
     pub locale: String
+}
+
+pub fn parse_invoice_json(raw_invoice: &str) -> Result<Invoice, Error> {
+    let translations: Invoice = serde_json::from_str(raw_invoice).context("Could not load translations")?;
+    Ok(translations)
 }

@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.95"
-bigdecimal = "0.4.7"
+bigdecimal = { version = "0.4.7", features = ["serde"] }
 font-kit = "0.14.2"
 printpdf = "0.7.0"
 serde = { version = "1.0.217", features = ["derive"] }
