@@ -1,7 +1,7 @@
 use std::io::{self, Read, Write};
 use clap::{Parser, Subcommand};
 use aes_cryptor::aes::{KeySize, Mode};
-use aes_cryptor::aes::cipher::{encrypt, decrypt};
+use aes_cryptor::aes::cipher::{encrypt, decrypt, CipherError};
 use hex;
 
 #[derive(Parser)]
@@ -82,7 +82,13 @@ fn main() -> io::Result<()> {
 
     // Parse IV if provided
     let iv = cli.command.iv().as_ref().map(|iv| {
-        hex::decode(iv).expect("Invalid IV format. Must be hex-encoded.")
+        match hex::decode(iv) {
+            Ok(iv) => iv,
+            Err(_) => {
+                eprintln!("Invalid IV format. Must be hex-encoded.");
+                std::process::exit(1);
+            }
+        }
     });
 
     // Generate key from passphrase (using SHA-256)
@@ -96,12 +102,26 @@ fn main() -> io::Result<()> {
 
     match cli.command {
         Commands::Encrypt { .. } => {
-            let ciphertext = encrypt(&input, &key, key_size, mode, iv.as_deref());
-            io::stdout().write_all(&ciphertext)?;
+            match encrypt(&input, &key, key_size, mode, iv.as_deref()) {
+                Ok(ciphertext) => {
+                    io::stdout().write_all(&ciphertext)?;
+                }
+                Err(e) => {
+                    eprintln!("Encryption error: {}", e);
+                    std::process::exit(1);
+                }
+            }
         }
         Commands::Decrypt { .. } => {
-            let plaintext = decrypt(&input, &key, key_size, mode, iv.as_deref());
-            io::stdout().write_all(&plaintext)?;
+            match decrypt(&input, &key, key_size, mode, iv.as_deref()) {
+                Ok(plaintext) => {
+                    io::stdout().write_all(&plaintext)?;
+                }
+                Err(e) => {
+                    eprintln!("Decryption error: {}", e);
+                    std::process::exit(1);
+                }
+            }
         }
     }
 
