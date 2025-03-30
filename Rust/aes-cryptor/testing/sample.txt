@@ -1,0 +1,3 @@
+Hello, World!
+This is a sample text file for testing the AES Cryptor utility.
+It contains multiple lines and some special characters: !@#$%^&*() 
