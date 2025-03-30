@@ -18,10 +18,10 @@
 //! let data = b"Hello, World!";
 //! 
 //! // Encrypt
-//! let ciphertext = encrypt(data, key, KeySize::Bits128, Mode::CBC, None);
+//! let ciphertext = encrypt(data, key, KeySize::Bits128, Mode::CBC, None).unwrap();
 //! 
 //! // Decrypt
-//! let plaintext = decrypt(&ciphertext, key, KeySize::Bits128, Mode::CBC, None);
+//! let plaintext = decrypt(&ciphertext, key, KeySize::Bits128, Mode::CBC, None).unwrap();
 //! 
 //! assert_eq!(data.to_vec(), plaintext);
 //! ```
