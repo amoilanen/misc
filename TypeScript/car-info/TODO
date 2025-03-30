@@ -1,0 +1,13 @@
+* Add tests
+
+* Call real APIs to fetch vehicle info
+    * Connect with real APIs for fetching real vehicle info (requires Traficom registration) - see API.txt, https://www.dnb.com/fi-fi/documentation/vehicles/BISRIKEP.html
+
+* Purchasing more detailed vehicle info
+    * Integrate with Paypal 
+    * Integrate with bank payments in Finland
+    * Make sure that invoicing works
+
+* Deployment
+    * Deploy to GCP
+    * Serve at a public domain

@@ -1,0 +1,3 @@
+https://www.dnb.com/fi-fi/documentation/vehicles/bistrafi.html
+https://www.dnb.com/fi-fi/documentation/vehicles/BISRIKEP.html
+https://api-test.bisnode.fi/vehicle/info/v1/swagger/ui/index
