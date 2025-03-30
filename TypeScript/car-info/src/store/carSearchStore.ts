@@ -1,42 +1,53 @@
 import { create } from 'zustand';
-import { CarInfo } from '../types/car';
+
+interface CarInfo {
+  brand: string;
+  model: string;
+  year: number;
+}
+
+type PaymentStatus = 'idle' | 'success' | 'error';
 
 interface CarSearchState {
   carInfo: CarInfo | null;
   isLoading: boolean;
   error: string | null;
-  email: string;
+  email: string | null;
   showPayment: boolean;
   paymentError: string | null;
   showDetailedInfo: boolean;
+  paymentStatus: PaymentStatus;
   setCarInfo: (carInfo: CarInfo | null) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-  setEmail: (email: string) => void;
+  setEmail: (email: string | null) => void;
   setShowPayment: (show: boolean) => void;
   setPaymentError: (error: string | null) => void;
   setShowDetailedInfo: (show: boolean) => void;
-  resetState: () => void;
+  setPaymentStatus: (status: PaymentStatus) => void;
+  reset: () => void;
 }
 
 const initialState = {
   carInfo: null,
   isLoading: false,
   error: null,
-  email: '',
+  email: null,
   showPayment: false,
   paymentError: null,
   showDetailedInfo: false,
+  paymentStatus: 'idle' as PaymentStatus,
 };
 
 export const useCarSearchStore = create<CarSearchState>((set) => ({
   ...initialState,
-  setCarInfo: (carInfo) => set((state) => ({ ...state, carInfo })),
-  setLoading: (isLoading) => set((state) => ({ ...state, isLoading })),
-  setError: (error) => set((state) => ({ ...state, error })),
-  setEmail: (email) => set((state) => ({ ...state, email })),
-  setShowPayment: (show) => set((state) => ({ ...state, showPayment: show })),
-  setPaymentError: (error) => set((state) => ({ ...state, paymentError: error })),
-  setShowDetailedInfo: (show) => set((state) => ({ ...state, showDetailedInfo: show })),
-  resetState: () => set(initialState),
+  setCarInfo: (carInfo) => set({ carInfo }),
+  setLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
+  setEmail: (email) => set({ email }),
+  setShowPayment: (showPayment) => set({ showPayment }),
+  setPaymentError: (paymentError) => set({ paymentError }),
+  setShowDetailedInfo: (showDetailedInfo) => set({ showDetailedInfo }),
+  setPaymentStatus: (paymentStatus) => set({ paymentStatus }),
+  reset: () => set(initialState),
 })); 
