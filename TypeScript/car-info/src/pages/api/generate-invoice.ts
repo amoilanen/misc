@@ -37,7 +37,7 @@ export default async function handler(
     // Invoice details
     const invoiceNumber = `INV-${Date.now()}`;
     const date = format(new Date(), 'yyyy-MM-dd');
-    const amount = 29.99;
+    const amount = 5.99;
     const vatRate = 0.24;
     const vatAmount = amount * vatRate;
     const totalAmount = amount + vatAmount;

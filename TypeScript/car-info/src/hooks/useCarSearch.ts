@@ -13,7 +13,7 @@ export function useCarSearch(licensePlate: string | null) {
       try {
         store.setLoading(true);
         store.setError(null);
-        const response = await fetch(`/api/car-info/${licensePlate}`);
+        const response = await fetch(`/api/car-info?plate=${licensePlate}`);
         if (!response.ok) throw new Error('Failed to fetch car information');
         const data = await response.json();
         store.setCarInfo(data);

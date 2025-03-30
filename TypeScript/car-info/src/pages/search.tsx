@@ -112,7 +112,7 @@ export default function Search() {
               <Typography paragraph>
                 {t('detailedInfoDescription')}
                 <br />
-                {t('price', { price: '29.99' })}
+                {t('price', { price: '5.99' })}
               </Typography>
               <Button
                 variant="contained"
