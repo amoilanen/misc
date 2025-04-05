@@ -157,11 +157,11 @@ For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT
    ```bash
    gcloud container clusters create budgetty-cluster \
      --zone=europe-north1 \
-     --num-nodes=3 \
-     --machine-type=e2-standard-2 \
+     --num-nodes=1 \
+     --machine-type=e2-micro \
      --enable-autoscaling \
      --min-nodes=1 \
-     --max-nodes=5 \
+     --max-nodes=2 \
      --enable-autorepair \
      --enable-autoupgrade
    ```
