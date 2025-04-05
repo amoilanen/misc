@@ -24,6 +24,7 @@ gcloud config set project budgetty
 gcloud services enable container.googleapis.com
 gcloud services enable compute.googleapis.com
 gcloud services enable cloudresourcemanager.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
 ```
 
 3. Create a GKE cluster:
@@ -116,6 +117,31 @@ gcloud compute addresses list
 
 ## Application Deployment
 
+### Frontend Deployment
+
+1. Build and push the frontend image:
+```bash
+cd frontend
+docker build -t gcr.io/budgetty/frontend:latest .
+docker push gcr.io/budgetty/frontend:latest
+```
+
+2. Deploy the frontend:
+```bash
+kubectl apply -f k8s/frontend/deployment.yaml
+kubectl apply -f k8s/frontend/service.yaml
+kubectl apply -f k8s/frontend/ingress.yaml
+```
+
+3. Verify frontend deployment:
+```bash
+kubectl get pods -l app=budgetty-frontend
+kubectl get service budgetty-frontend
+kubectl get ingress budgetty-frontend
+```
+
+### Backend Deployment
+
 1. Build and push the backend image:
 ```bash
 cd backend
@@ -123,31 +149,17 @@ docker build -t gcr.io/budgetty/backend:latest .
 docker push gcr.io/budgetty/backend:latest
 ```
 
-2. Build and push the frontend image:
-```bash
-cd frontend
-docker build -t gcr.io/budgetty/frontend:latest .
-docker push gcr.io/budgetty/frontend:latest
-```
-
-3. Create secrets:
+2. Create secrets:
 ```bash
 # Edit k8s/backend/secrets.yaml with your values
 kubectl apply -f k8s/backend/secrets.yaml
 ```
 
-4. Deploy the backend:
+3. Deploy the backend:
 ```bash
 kubectl apply -f k8s/backend/deployment.yaml
 kubectl apply -f k8s/backend/service.yaml
 kubectl apply -f k8s/backend/ingress.yaml
-```
-
-5. Deploy the frontend:
-```bash
-kubectl apply -f k8s/frontend/deployment.yaml
-kubectl apply -f k8s/frontend/service.yaml
-kubectl apply -f k8s/frontend/ingress.yaml
 ```
 
 ## Monitoring and Maintenance
@@ -167,9 +179,13 @@ kubectl top pods
 kubectl top nodes
 ```
 
-3. Scale the backend:
+3. Scale the applications:
 ```bash
+# Scale backend
 kubectl scale deployment budgetty-backend --replicas=3
+
+# Scale frontend
+kubectl scale deployment budgetty-frontend --replicas=3
 ```
 
 4. Update the application:
@@ -250,18 +266,18 @@ kubectl describe pod [POD_NAME]
 
 2. Check ingress status:
 ```bash
-kubectl get ingress
+kubectl describe ingress budgetty-frontend
 kubectl describe ingress budgetty-backend
 ```
 
-3. Check SSL certificate:
+3. View container logs:
 ```bash
-kubectl get certificate
-kubectl describe certificate budgetty-backend-tls
+kubectl logs -f deployment/budgetty-frontend
+kubectl logs -f deployment/budgetty-backend
 ```
 
-4. View logs:
+4. Check SSL certificate status:
 ```bash
-kubectl logs -f deployment/budgetty-backend
-kubectl logs -f deployment/budgetty-frontend
+kubectl get certificaterequest
+kubectl get order.acme.cert-manager.io
 ``` 

@@ -18,6 +18,7 @@ A modern web application for managing personal finances, built with NestJS (back
 - Docker and Docker Compose (for local development)
 - Google Cloud Platform account (for deployment)
 - PostgreSQL database
+- Domain name for production deployment
 
 ## Local Development
 
@@ -100,6 +101,8 @@ The frontend will be available at `http://localhost:5173`.
 
 ## Deployment to Google Cloud Platform
 
+For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ### 1. Prerequisites Setup
 
 1. Install and initialize the Google Cloud SDK:
@@ -116,6 +119,7 @@ The frontend will be available at `http://localhost:5173`.
    gcloud services enable container.googleapis.com
    gcloud services enable compute.googleapis.com
    gcloud services enable cloudresourcemanager.googleapis.com
+   gcloud services enable cloudbuild.googleapis.com
    ```
 
 3. Create a new project (if not already created):
@@ -131,7 +135,7 @@ The frontend will be available at `http://localhost:5173`.
    gcloud sql instances create budgetty-db \
      --database-version=POSTGRES_14 \
      --tier=db-f1-micro \
-     --region=us-central1 \
+     --region=europe-north1 \
      --root-password=[DB_PASSWORD]
    ```
 
@@ -152,29 +156,53 @@ The frontend will be available at `http://localhost:5173`.
 1. Create a GKE cluster:
    ```bash
    gcloud container clusters create budgetty-cluster \
-     --zone=us-central1-a \
-     --num-nodes=2 \
-     --machine-type=e2-medium
+     --zone=europe-north1 \
+     --num-nodes=3 \
+     --machine-type=e2-standard-2 \
+     --enable-autoscaling \
+     --min-nodes=1 \
+     --max-nodes=5 \
+     --enable-autorepair \
+     --enable-autoupgrade
    ```
 
 2. Get credentials:
    ```bash
-   gcloud container clusters get-credentials budgetty-cluster --zone=us-central1-a
+   gcloud container clusters get-credentials budgetty-cluster --zone=europe-north1
    ```
 
 ### 4. Deploying the Application
 
-1. Build and push Docker images:
-   ```bash
-   # Build backend image
-   cd backend
-   docker build -t gcr.io/[PROJECT_ID]/budgetty-backend .
-   docker push gcr.io/[PROJECT_ID]/budgetty-backend
+#### Frontend Deployment
 
-   # Build frontend image
-   cd ../frontend
-   docker build -t gcr.io/[PROJECT_ID]/budgetty-frontend .
-   docker push gcr.io/[PROJECT_ID]/budgetty-frontend
+1. Build and push the frontend image:
+   ```bash
+   cd frontend
+   docker build -t gcr.io/[PROJECT_ID]/budgetty-frontend:latest .
+   docker push gcr.io/[PROJECT_ID]/budgetty-frontend:latest
+   ```
+
+2. Deploy the frontend:
+   ```bash
+   kubectl apply -f k8s/frontend/deployment.yaml
+   kubectl apply -f k8s/frontend/service.yaml
+   kubectl apply -f k8s/frontend/ingress.yaml
+   ```
+
+3. Verify frontend deployment:
+   ```bash
+   kubectl get pods -l app=budgetty-frontend
+   kubectl get service budgetty-frontend
+   kubectl get ingress budgetty-frontend
+   ```
+
+#### Backend Deployment
+
+1. Build and push the backend image:
+   ```bash
+   cd backend
+   docker build -t gcr.io/[PROJECT_ID]/budgetty-backend:latest .
+   docker push gcr.io/[PROJECT_ID]/budgetty-backend:latest
    ```
 
 2. Create Kubernetes secrets:
@@ -186,30 +214,42 @@ The frontend will be available at `http://localhost:5173`.
      --from-literal=GOOGLE_CLIENT_SECRET=[GOOGLE_CLIENT_SECRET]
    ```
 
-3. Apply Kubernetes manifests:
+3. Deploy the backend:
    ```bash
-   # Update image references in deployment files
-   sed -i "s|gcr.io/\[PROJECT_ID\]|gcr.io/[PROJECT_ID]|g" k8s/*.yaml
-
-   # Apply manifests
-   kubectl apply -f k8s/
+   kubectl apply -f k8s/backend/deployment.yaml
+   kubectl apply -f k8s/backend/service.yaml
+   kubectl apply -f k8s/backend/ingress.yaml
    ```
 
-4. Configure SSL with cert-manager:
+### 5. SSL and Domain Setup
+
+1. Install cert-manager:
    ```bash
-   # Install cert-manager
    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
-
-   # Create ClusterIssuer
-   kubectl apply -f k8s/cluster-issuer.yaml
    ```
 
-5. Create Ingress:
+2. Create ClusterIssuer:
    ```bash
-   kubectl apply -f k8s/ingress.yaml
+   kubectl apply -f k8s/cert-manager/cluster-issuer.yaml
    ```
 
-### 5. Monitoring and Maintenance
+3. Create static IP addresses:
+   ```bash
+   gcloud compute addresses create budgetty-frontend-ip --global
+   gcloud compute addresses create budgetty-backend-ip --global
+   ```
+
+4. Update DNS records:
+   ```bash
+   # Get the IP addresses
+   gcloud compute addresses list
+
+   # Update your DNS provider with:
+   # budgetty.example.com -> budgetty-frontend-ip
+   # api.budgetty.example.com -> budgetty-backend-ip
+   ```
+
+### 6. Monitoring and Maintenance
 
 1. View logs:
    ```bash
@@ -222,17 +262,18 @@ The frontend will be available at `http://localhost:5173`.
 
 2. Scale deployments:
    ```bash
-   kubectl scale deployment budgetty-backend --replicas=2
-   kubectl scale deployment budgetty-frontend --replicas=2
+   # Scale backend
+   kubectl scale deployment budgetty-backend --replicas=3
+
+   # Scale frontend
+   kubectl scale deployment budgetty-frontend --replicas=3
    ```
 
 3. Update deployments:
    ```bash
    # After building and pushing new images
-   kubectl set image deployment/budgetty-backend \
-     budgetty-backend=gcr.io/[PROJECT_ID]/budgetty-backend:latest
-   kubectl set image deployment/budgetty-frontend \
-     budgetty-frontend=gcr.io/[PROJECT_ID]/budgetty-frontend:latest
+   kubectl rollout restart deployment budgetty-backend
+   kubectl rollout restart deployment budgetty-frontend
    ```
 
 ## Troubleshooting
@@ -250,41 +291,37 @@ The frontend will be available at `http://localhost:5173`.
    - Check database migrations: `npm run migration:status`
 
 3. Frontend issues:
-   - Clear browser cache
-   - Check console for errors
-   - Verify API URL in `.env`
+   - Check logs: `npm run dev`
+   - Verify environment variables
+   - Check API connection: `curl http://localhost:3001/health`
 
-### GCP Deployment
+### Production Deployment
 
-1. Cluster issues:
+1. Check pod status:
    ```bash
-   # Check cluster status
-   gcloud container clusters describe budgetty-cluster --zone=us-central1-a
-
-   # Check node status
-   kubectl get nodes
-   ```
-
-2. Pod issues:
-   ```bash
-   # Check pod status
    kubectl get pods
-
-   # Check pod logs
-   kubectl logs [POD_NAME]
-
-   # Check pod events
    kubectl describe pod [POD_NAME]
    ```
 
-3. Database issues:
+2. Check ingress status:
    ```bash
-   # Check database status
-   gcloud sql instances describe budgetty-db
-
-   # Check database logs
-   gcloud sql instances logs tail budgetty-db
+   kubectl describe ingress budgetty-frontend
+   kubectl describe ingress budgetty-backend
    ```
+
+3. Check SSL certificate status:
+   ```bash
+   kubectl get certificaterequest
+   kubectl get order.acme.cert-manager.io
+   ```
+
+4. View container logs:
+   ```bash
+   kubectl logs -f deployment/budgetty-frontend
+   kubectl logs -f deployment/budgetty-backend
+   ```
+
+For more detailed troubleshooting and deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Contributing
 
