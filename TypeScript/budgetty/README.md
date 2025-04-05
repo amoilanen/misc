@@ -21,7 +21,19 @@ A modern web application for managing personal finances, built with NestJS (back
 
 ## Local Development
 
-### Backend Setup
+### 1. Start PostgreSQL Database
+
+1. Start the PostgreSQL database using Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. Verify the database is running:
+   ```bash
+   docker ps
+   ```
+
+### 2. Backend Setup
 
 1. Navigate to the backend directory:
    ```bash
@@ -44,24 +56,24 @@ A modern web application for managing personal finances, built with NestJS (back
    NODE_ENV=development
    ```
 
-4. Start the PostgreSQL database using Docker Compose:
+   To generate a secure JWT_SECRET, you can use:
    ```bash
-   docker-compose up -d
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
-5. Run database migrations:
+4. Run database migrations:
    ```bash
    npm run migration:run
    ```
 
-6. Start the development server:
+5. Start the development server:
    ```bash
    npm run start:dev
    ```
 
 The backend will be available at `http://localhost:3001`.
 
-### Frontend Setup
+### 3. Frontend Setup
 
 1. Navigate to the frontend directory:
    ```bash
@@ -70,12 +82,13 @@ The backend will be available at `http://localhost:3001`.
 
 2. Install dependencies:
    ```bash
-   npm install
+   npm install --legacy-peer-deps
    ```
 
 3. Create a `.env` file in the frontend directory:
    ```env
    VITE_API_URL=http://localhost:3001
+   VITE_GOOGLE_CLIENT_ID=your_google_client_id
    ```
 
 4. Start the development server:
@@ -87,7 +100,7 @@ The frontend will be available at `http://localhost:5173`.
 
 ## Deployment to Google Cloud Platform
 
-### Prerequisites
+### 1. Prerequisites Setup
 
 1. Install and initialize the Google Cloud SDK:
    ```bash
@@ -111,7 +124,7 @@ The frontend will be available at `http://localhost:5173`.
    gcloud config set project [PROJECT_ID]
    ```
 
-### Database Setup
+### 2. Database Setup
 
 1. Create a Cloud SQL instance:
    ```bash
@@ -134,7 +147,7 @@ The frontend will be available at `http://localhost:5173`.
      --password=[DB_USER_PASSWORD]
    ```
 
-### Kubernetes Cluster Setup
+### 3. Kubernetes Cluster Setup
 
 1. Create a GKE cluster:
    ```bash
@@ -149,7 +162,7 @@ The frontend will be available at `http://localhost:5173`.
    gcloud container clusters get-credentials budgetty-cluster --zone=us-central1-a
    ```
 
-### Deploying the Application
+### 4. Deploying the Application
 
 1. Build and push Docker images:
    ```bash
@@ -196,7 +209,7 @@ The frontend will be available at `http://localhost:5173`.
    kubectl apply -f k8s/ingress.yaml
    ```
 
-### Monitoring and Maintenance
+### 5. Monitoring and Maintenance
 
 1. View logs:
    ```bash
