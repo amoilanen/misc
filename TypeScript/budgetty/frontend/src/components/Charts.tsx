@@ -28,6 +28,12 @@ ChartJS.register(
   ArcElement
 );
 
+// Define interface for transaction details
+interface TransactionDetail {
+  amount: number;
+  description: string;
+}
+
 interface ChartsProps {
   events: Event[];
   categories: Category[];
@@ -58,19 +64,69 @@ export const Charts: React.FC<ChartsProps> = ({ events, categories }) => {
       : startOfMonth(subMonths(now, 12));
     
     const days = eachDayOfInterval({ start: startDate, end: now });
-    const labels = days.map(day => format(day, 'MMM dd'));
     
-    const incomeData = days.map(day => 
+    // Filter days to only include those with events
+    const daysWithEvents = days.filter(day => {
+      const dayStart = new Date(day);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(day);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      return filteredEvents.some(event => {
+        const eventDate = new Date(event.date);
+        return eventDate >= dayStart && eventDate <= dayEnd;
+      });
+    });
+    
+    const labels = daysWithEvents.map(day => format(day, 'MMM dd'));
+    
+    // Create arrays to store both amounts and descriptions
+    const incomeData = daysWithEvents.map(day => 
       filteredEvents
         .filter(event => new Date(event.date) <= day && event.amount > 0)
         .reduce((sum, event) => sum + event.amount, 0)
     );
 
-    const expensesData = days.map(day => 
+    const expensesData = daysWithEvents.map(day => 
       Math.abs(filteredEvents
         .filter(event => new Date(event.date) <= day && event.amount < 0)
         .reduce((sum, event) => sum + event.amount, 0))
     );
+
+    // Store event details for tooltips - only the events that occurred on each specific day
+    const incomeDetails = daysWithEvents.map(day => {
+      // Get events that occurred on this specific day
+      const dayEvents = filteredEvents.filter(event => {
+        const eventDate = new Date(event.date);
+        const dayStart = new Date(day);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(day);
+        dayEnd.setHours(23, 59, 59, 999);
+        return eventDate >= dayStart && eventDate <= dayEnd && event.amount > 0;
+      });
+      
+      return dayEvents.map(event => ({
+        amount: event.amount,
+        description: event.description
+      }));
+    });
+
+    const expensesDetails = daysWithEvents.map(day => {
+      // Get events that occurred on this specific day
+      const dayEvents = filteredEvents.filter(event => {
+        const eventDate = new Date(event.date);
+        const dayStart = new Date(day);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(day);
+        dayEnd.setHours(23, 59, 59, 999);
+        return eventDate >= dayStart && eventDate <= dayEnd && event.amount < 0;
+      });
+      
+      return dayEvents.map(event => ({
+        amount: Math.abs(event.amount),
+        description: event.description
+      }));
+    });
 
     return {
       labels,
@@ -80,14 +136,16 @@ export const Charts: React.FC<ChartsProps> = ({ events, categories }) => {
           data: incomeData,
           borderColor: 'rgb(75, 192, 192)',
           backgroundColor: 'rgba(75, 192, 192, 0.5)',
-          tension: 0.1
+          tension: 0.1,
+          details: incomeDetails
         },
         {
           label: 'Expenses',
           data: expensesData,
           borderColor: 'rgb(255, 99, 132)',
           backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          tension: 0.1
+          tension: 0.1,
+          details: expensesDetails
         }
       ]
     };
@@ -133,6 +191,33 @@ export const Charts: React.FC<ChartsProps> = ({ events, categories }) => {
       title: {
         display: true,
         text: 'Income vs Expenses Over Time'
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.dataset.label || '';
+            const runningTotal = context.parsed.y;
+            const details = context.dataset.details[context.dataIndex];
+            
+            // Format the running total with currency symbol
+            const formattedRunningTotal = `${runningTotal.toFixed(2)}€`;
+            
+            // If there are transaction details for this specific day, include all of them
+            if (details && details.length > 0) {
+              // Create an array with the running total as the first line
+              const tooltipLines = [`${label}: ${formattedRunningTotal}`];
+              
+              // Add each event as a separate line
+              details.forEach((event: TransactionDetail) => {
+                tooltipLines.push(`${event.amount.toFixed(2)}€ - ${event.description}`);
+              });
+              
+              return tooltipLines;
+            }
+            
+            return `${label}: ${formattedRunningTotal}`;
+          }
+        }
       }
     },
     scales: {
