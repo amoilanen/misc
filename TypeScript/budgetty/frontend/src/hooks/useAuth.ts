@@ -13,18 +13,17 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const useAuth = () => {
   const navigate = useNavigate();
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    loading: true,
-    error: null,
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       fetchUser(token);
     } else {
-      setState((prev) => ({ ...prev, loading: false }));
+      setLoading(false);
     }
   }, []);
 
@@ -41,16 +40,22 @@ export const useAuth = () => {
       }
 
       const user = await response.json();
-      setState({ user, loading: false, error: null });
+      setUser(user);
+      setToken(token);
+      localStorage.setItem('token', token);
     } catch (error) {
-      setState({ user: null, loading: false, error: 'Failed to fetch user' });
+      setUser(null);
+      setToken(null);
       localStorage.removeItem('token');
+      setError('Failed to fetch user');
+    } finally {
+      setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
+      setLoading(true);
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -60,27 +65,47 @@ export const useAuth = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Invalid credentials');
+        throw new Error('Login failed');
       }
 
-      const { token, user } = await response.json();
-      localStorage.setItem('token', token);
-      setState({ user, loading: false, error: null });
+      const data = await response.json();
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem('token', data.token);
       navigate('/dashboard');
       toast.success('Logged in successfully');
-    } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to login',
-      }));
-      toast.error(error.message || 'Failed to login');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Login failed');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithToken = async (token: string) => {
+    try {
+      setLoading(true);
+      
+      // Check if user is already logged in
+      const wasLoggedIn = !!user;
+      
+      localStorage.setItem('token', token);
+      await fetchUser(token);
+      
+      // Only show success toast if user wasn't already logged in
+      if (!wasLoggedIn) {
+        toast.success('Logged in successfully');
+      }
+    } catch (error) {
+      setError('Failed to login');
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (data: RegisterData) => {
     try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
+      setLoading(true);
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
@@ -94,17 +119,15 @@ export const useAuth = () => {
       }
 
       const { token, user } = await response.json();
+      setToken(token);
+      setUser(user);
       localStorage.setItem('token', token);
-      setState({ user, loading: false, error: null });
       navigate('/dashboard');
       toast.success('Registered successfully');
-    } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to register',
-      }));
-      toast.error(error.message || 'Failed to register');
+    } catch (error) {
+      setError('Failed to register');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,7 +150,9 @@ export const useAuth = () => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
-      setState({ user: null, loading: false, error: null });
+      setUser(null);
+      setToken(null);
+      setError(null);
       navigate('/login');
       toast.success('Logged out successfully');
     }
@@ -135,7 +160,7 @@ export const useAuth = () => {
 
   const updateProfile = async (data: UpdateProfileData) => {
     try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
+      setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Not authenticated');
@@ -155,23 +180,24 @@ export const useAuth = () => {
       }
 
       const user = await response.json();
-      setState((prev) => ({ ...prev, user, loading: false, error: null }));
+      setUser(user);
+      setToken(token);
+      localStorage.setItem('token', token);
       toast.success('Profile updated successfully');
-    } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to update profile',
-      }));
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error) {
+      setError('Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
-    user: state.user,
-    loading: state.loading,
-    error: state.error,
+    user,
+    loading,
+    error,
+    token,
     login,
+    loginWithToken,
     register,
     loginWithGoogle,
     logout,

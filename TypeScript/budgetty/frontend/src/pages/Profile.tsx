@@ -13,40 +13,40 @@ import { useAuth } from '../hooks/useAuth';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { UpdateProfileData } from '../types';
 
-const schema = yup.object().shape({
+// Create a schema that matches the UpdateProfileData interface
+const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
-  currentPassword: yup.string().when('newPassword', {
-    is: (val: string) => val && val.length > 0,
-    then: yup.string().required('Current password is required'),
-    otherwise: yup.string(),
-  }),
-  newPassword: yup
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .when('currentPassword', {
-      is: (val: string) => val && val.length > 0,
-      then: yup.string().required('New password is required'),
-      otherwise: yup.string(),
-    }),
+  currentPassword: yup.string().optional(),
+  newPassword: yup.string().min(8, 'Password must be at least 8 characters').optional(),
+}).test('password-validation', 'Both current and new passwords are required to change password', function(value) {
+  const { currentPassword, newPassword } = value;
+  
+  // If either password field is filled, both must be filled
+  if ((currentPassword && !newPassword) || (!currentPassword && newPassword)) {
+    return false;
+  }
+  
+  return true;
 });
 
 const Profile = () => {
-  const { user, updateProfile, isLoading } = useAuth();
+  const { user, updateProfile, loading } = useAuth();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
+  } = useForm<UpdateProfileData>({
+    resolver: yupResolver(schema) as any,
     defaultValues: {
       email: user?.email || '',
     },
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: UpdateProfileData) => {
     try {
       setError(null);
       await updateProfile(data);
@@ -57,7 +57,7 @@ const Profile = () => {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <Box
         display="flex"
@@ -127,7 +127,7 @@ const Profile = () => {
             type="submit"
             variant="contained"
             sx={{ mt: 3 }}
-            disabled={isLoading}
+            disabled={loading}
           >
             Update Profile
           </Button>

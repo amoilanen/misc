@@ -29,7 +29,9 @@ const Dashboard = () => {
 
   const totalEvents = events?.length || 0;
   const totalCategories = categories?.length || 0;
-  const totalBudget = events?.reduce((sum, event) => sum + event.amount, 0) || 0;
+  
+  // Ensure totalBudget is always a number
+  const totalBudget = events.reduce((sum, event) => sum + event.amount, 0);
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -81,7 +83,7 @@ const Dashboard = () => {
               Total Budget
             </Typography>
             <Typography component="p" variant="h4">
-              ${totalBudget.toFixed(2)}
+              {totalBudget.toFixed(2)} €
             </Typography>
           </Paper>
         </Grid>

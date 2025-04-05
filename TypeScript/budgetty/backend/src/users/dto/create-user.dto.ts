@@ -18,4 +18,9 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   picture?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  googleId?: string;
 } 

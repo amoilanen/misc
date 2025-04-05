@@ -13,12 +13,14 @@ export interface Category {
 
 export interface Event {
   id: string;
-  title: string;
+  description: string;
   amount: number;
+  currency: string;
   date: string;
-  categoryId: string;
-  description?: string;
+  categoryId?: string;
   userId: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthState {
@@ -44,11 +46,11 @@ export interface UpdateProfileData {
 }
 
 export interface CreateEventData {
-  title: string;
+  description: string;
   amount: number;
+  currency: string;
   date: string;
-  categoryId: string;
-  description?: string;
+  categoryId?: string;
 }
 
 export interface UpdateEventData extends CreateEventData {
@@ -62,4 +64,13 @@ export interface CreateCategoryData {
 
 export interface UpdateCategoryData extends CreateCategoryData {
   id: string;
+}
+
+export enum DateFormat {
+  DD_MM_YYYY = 'DD/MM/YYYY',
+  MM_DD_YYYY = 'MM/DD/YYYY',
+  YYYY_MM_DD = 'YYYY/MM/DD',
+  DD_MM_YY = 'DD/MM/YY',
+  MM_DD_YY = 'MM/DD/YY',
+  YY_MM_DD = 'YY/MM/DD',
 } 

@@ -9,10 +9,15 @@ import {
   UseGuards,
   Req,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
+import { ImportEventsDto } from './dto/import-events.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestWithUser } from '../auth/interfaces/request.interface';
 
@@ -90,5 +95,53 @@ export class EventsController {
   @ApiOperation({ summary: 'Delete event' })
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.eventsService.remove(id, req.user);
+  }
+
+  @Post('import')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Import events from CSV file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        config: {
+          type: 'object',
+          properties: {
+            dateColumn: { type: 'string' },
+            amountColumn: { type: 'string' },
+            descriptionColumn: { type: 'string' },
+            currencyColumn: { type: 'string' },
+            defaultCurrency: { type: 'string' },
+            dateFormat: { type: 'string' },
+            delimiter: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async importFromCsv(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('config') configJson: string,
+    @Req() req: RequestWithUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    let config: ImportEventsDto;
+    try {
+      config = JSON.parse(configJson);
+    } catch (error) {
+      throw new BadRequestException('Invalid configuration JSON');
+    }
+
+    return this.eventsService.importFromCsv(file.buffer, config, req.user);
   }
 } 

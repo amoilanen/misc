@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -18,6 +18,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  TableSortLabel,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useEvents } from '../hooks/useEvents';
@@ -25,14 +30,19 @@ import { useCategories } from '../hooks/useCategories';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import ImportEvents from '../components/ImportEvents';
+import { format } from 'date-fns';
 
 const schema = yup.object().shape({
-  title: yup.string().required('Title is required'),
-  amount: yup.number().required('Amount is required').positive('Amount must be positive'),
+  description: yup.string().required('Description is required'),
+  amount: yup.number().required('Amount is required'),
   date: yup.string().required('Date is required'),
   categoryId: yup.string().required('Category is required'),
-  description: yup.string(),
+  currency: yup.string().default('EUR'),
 });
+
+type SortField = 'date' | 'amount' | 'description';
+type SortOrder = 'asc' | 'desc';
 
 const Events = () => {
   const [open, setOpen] = useState(false);
@@ -47,6 +57,8 @@ const Events = () => {
   } = useForm({
     resolver: yupResolver(schema),
   });
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const handleOpen = (event?: any) => {
     if (event) {
@@ -88,6 +100,28 @@ const Events = () => {
     }
   };
 
+  const handleSort = (field: SortField) => {
+    const isAsc = sortField === field && sortOrder === 'asc';
+    setSortOrder(isAsc ? 'desc' : 'asc');
+    setSortField(field);
+  };
+
+  const sortedEvents = [...events].sort((a, b) => {
+    if (sortField === 'date') {
+      return sortOrder === 'asc' 
+        ? new Date(a.date).getTime() - new Date(b.date).getTime()
+        : new Date(b.date).getTime() - new Date(a.date).getTime();
+    } else if (sortField === 'amount') {
+      return sortOrder === 'asc'
+        ? a.amount - b.amount
+        : b.amount - a.amount;
+    } else {
+      return sortOrder === 'asc'
+        ? a.description.localeCompare(b.description)
+        : b.description.localeCompare(a.description);
+    }
+  });
+
   if (isLoading) {
     return (
       <Box
@@ -116,98 +150,146 @@ const Events = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {events?.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>{event.title}</TableCell>
-                <TableCell>${event.amount.toFixed(2)}</TableCell>
-                <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  {categories?.find((cat) => cat.id === event.categoryId)?.name}
-                </TableCell>
-                <TableCell>{event.description}</TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleOpen(event)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(event.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Import Events
+              </Typography>
+              <ImportEvents />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      <Dialog open={open} onClose={handleClose}>
+      <Box mt={4}>
+        <Typography variant="h5" gutterBottom>
+          Event List
+        </Typography>
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'date'}
+                    direction={sortField === 'date' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('date')}
+                  >
+                    Date
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right">
+                  <TableSortLabel
+                    active={sortField === 'amount'}
+                    direction={sortField === 'amount' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('amount')}
+                  >
+                    Amount
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'description'}
+                    direction={sortField === 'description' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('description')}
+                  >
+                    Description
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sortedEvents.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell>{format(new Date(event.date), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell align="right">
+                    {event.amount.toFixed(2)} €
+                  </TableCell>
+                  <TableCell>{event.description}</TableCell>
+                  <TableCell>
+                    {categories?.find((cat) => cat.id === event.categoryId)?.name}
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton onClick={() => handleOpen(event)} size="small">
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(event.id)} size="small">
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>{editingEvent ? 'Edit Event' : 'Add Event'}</DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Title"
-              margin="normal"
-              {...register('title')}
-              error={!!errors.title}
-              helperText={errors.title?.message}
-            />
-            <TextField
-              fullWidth
-              label="Amount"
-              type="number"
-              margin="normal"
-              {...register('amount')}
-              error={!!errors.amount}
-              helperText={errors.amount?.message}
-            />
-            <TextField
-              fullWidth
-              label="Date"
-              type="date"
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-              {...register('date')}
-              error={!!errors.date}
-              helperText={errors.date?.message}
-            />
-            <TextField
-              fullWidth
-              select
-              label="Category"
-              margin="normal"
-              {...register('categoryId')}
-              error={!!errors.categoryId}
-              helperText={errors.categoryId?.message}
-            >
-              {categories?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              label="Description"
-              margin="normal"
-              multiline
-              rows={4}
-              {...register('description')}
-              error={!!errors.description}
-              helperText={errors.description?.message}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  {...register('description')}
+                  error={!!errors.description}
+                  helperText={errors.description?.message}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Amount"
+                  type="number"
+                  {...register('amount')}
+                  error={!!errors.amount}
+                  helperText={errors.amount?.message}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Date"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  {...register('date')}
+                  error={!!errors.date}
+                  helperText={errors.date?.message}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Category"
+                  {...register('categoryId')}
+                  error={!!errors.categoryId}
+                  helperText={errors.categoryId?.message}
+                >
+                  {categories?.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Currency"
+                  {...register('currency')}
+                  error={!!errors.currency}
+                  helperText={errors.currency?.message}
+                  defaultValue="EUR"
+                />
+              </Grid>
+            </Grid>
           </Box>
         </DialogContent>
         <DialogActions>

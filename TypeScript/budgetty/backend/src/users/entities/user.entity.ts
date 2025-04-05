@@ -19,6 +19,9 @@ export class User {
   @Column({ nullable: true })
   picture?: string;
 
+  @Column({ nullable: true })
+  googleId?: string;
+
   @Column({ default: true })
   isActive: boolean;
 
