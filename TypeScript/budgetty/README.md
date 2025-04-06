@@ -157,11 +157,11 @@ For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT
    ```bash
    gcloud container clusters create budgetty-cluster \
      --zone=europe-north1 \
-     --num-nodes=1 \
-     --machine-type=e2-micro \
+     --num-nodes=2 \
+     --machine-type=e2-small \
      --enable-autoscaling \
-     --min-nodes=1 \
-     --max-nodes=2 \
+     --min-nodes=2 \
+     --max-nodes=3 \
      --enable-autorepair \
      --enable-autoupgrade
    ```
@@ -181,6 +181,11 @@ For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT
    docker build -t gcr.io/[PROJECT_ID]/budgetty-frontend:latest .
    docker push gcr.io/[PROJECT_ID]/budgetty-frontend:latest
    ```
+if required authenticate to GCR (Google Container Registry):
+
+```bash
+gcloud auth configure-docker gcr.io
+```
 
 2. Deploy the frontend:
    ```bash
@@ -205,9 +210,16 @@ For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT
    docker push gcr.io/[PROJECT_ID]/budgetty-backend:latest
    ```
 
+if required authenticate to GCR (Google Container Registry):
+
+```bash
+gcloud auth configure-docker gcr.io
+```
+
 2. Create Kubernetes secrets:
    ```bash
    kubectl create secret generic budgetty-secrets \
+     --from-literal=DATABASE_URL=[DATABASE_URL] \
      --from-literal=DB_PASSWORD=[DB_PASSWORD] \
      --from-literal=JWT_SECRET=[JWT_SECRET] \
      --from-literal=GOOGLE_CLIENT_ID=[GOOGLE_CLIENT_ID] \

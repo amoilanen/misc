@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: budgetty-frontend
+  namespace: budgetty
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: budgetty-frontend
+  template:
+    metadata:
+      labels:
+        app: budgetty-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/budgetty/frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: VITE_API_URL
+          value: "https://api.budgetty.example.com"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20 

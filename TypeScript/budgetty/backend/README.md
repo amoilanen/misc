@@ -67,7 +67,6 @@ http://localhost:3001/api
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
 - `GOOGLE_CALLBACK_URL`: Google OAuth callback URL
-- `ALLOWED_EMAILS`: Comma-separated list of allowed email addresses
 
 ## Testing
 

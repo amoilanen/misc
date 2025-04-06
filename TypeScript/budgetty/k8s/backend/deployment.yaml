@@ -5,7 +5,7 @@ metadata:
   labels:
     app: budgetty-backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: budgetty-backend
@@ -28,36 +28,31 @@ spec:
           valueFrom:
             secretKeyRef:
               name: budgetty-secrets
-              key: database-url
+              key: DATABASE_URL
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: budgetty-secrets
-              key: jwt-secret
+              key: JWT_SECRET
         - name: JWT_EXPIRATION
-          value: "1d"
+          value: "7d"
         - name: FRONTEND_URL
           value: "https://budgetty.example.com"
         - name: GOOGLE_CLIENT_ID
           valueFrom:
             secretKeyRef:
               name: budgetty-secrets
-              key: google-client-id
+              key: GOOGLE_CLIENT_ID
         - name: GOOGLE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: budgetty-secrets
-              key: google-client-secret
-        - name: GOOGLE_CALLBACK_URL
-          value: "https://api.budgetty.example.com/auth/google/callback"
-        - name: ALLOWED_EMAILS
-          valueFrom:
-            secretKeyRef:
-              name: budgetty-secrets
-              key: allowed-emails
+              key: GOOGLE_CLIENT_SECRET
+        - name: API_URL
+          value: "https://api.budgetty.example.com"
         resources:
           requests:
-            cpu: "100m"
+            cpu: "200m"
             memory: "256Mi"
           limits:
             cpu: "500m"
