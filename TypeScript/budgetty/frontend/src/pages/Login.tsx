@@ -1,5 +1,4 @@
-import React from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -21,7 +20,6 @@ const schema = yup.object().shape({
 });
 
 const Login = () => {
-  const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
   const {
     register,

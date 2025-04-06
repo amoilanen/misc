@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useQuery } from '@tanstack/react-query';
 import {
   Event,
   CreateEventData,
-  UpdateEventData,
+  EventFilters,
 } from '../types';
+import { eventService } from '../services/eventService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

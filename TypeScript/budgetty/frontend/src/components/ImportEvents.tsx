@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import {
   Button,
   Box,
-  Grid,
   Typography,
   FormControl,
   InputLabel,
@@ -14,14 +13,6 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { DateFormat } from '../types';
 
-interface ImportConfigFormData {
-  dateColumn: string;
-  amountColumn: string;
-  descriptionColumn: string;
-  dateFormat: DateFormat;
-  delimiter: string;
-}
-
 interface ImportResult {
   imported: number;
   skipped: number;
@@ -30,7 +21,7 @@ interface ImportResult {
 }
 
 const ImportEvents: React.FC = () => {
-  const { getToken } = useAuth();
+  const { token } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [dateColumn, setDateColumn] = useState('');
@@ -72,7 +63,9 @@ const ImportEvents: React.FC = () => {
     formData.append('delimiter', delimiter);
 
     try {
-      const token = await getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
       const response = await fetch('/api/events/import', {
         method: 'POST',
         headers: {
@@ -104,8 +97,8 @@ const ImportEvents: React.FC = () => {
 
   return (
     <form onSubmit={onSubmit}>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box>
           <Box
             sx={{
               border: '2px dashed',
@@ -137,9 +130,9 @@ const ImportEvents: React.FC = () => {
               </Typography>
             )}
           </Box>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12}>
+        <Box>
           <Box
             sx={{
               backgroundColor: 'background.paper',
@@ -152,9 +145,9 @@ const ImportEvents: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               CSV Configuration
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth sx={{ minWidth: '300px' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: '1 1 300px' }}>
+                <FormControl fullWidth>
                   <InputLabel id="date-column-label">Date Column</InputLabel>
                   <Select
                     labelId="date-column-label"
@@ -170,10 +163,10 @@ const ImportEvents: React.FC = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth sx={{ minWidth: '300px' }}>
+              <Box sx={{ flex: '1 1 300px' }}>
+                <FormControl fullWidth>
                   <InputLabel id="amount-column-label">Amount Column</InputLabel>
                   <Select
                     labelId="amount-column-label"
@@ -189,10 +182,10 @@ const ImportEvents: React.FC = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth sx={{ minWidth: '300px' }}>
+              <Box sx={{ flex: '1 1 300px' }}>
+                <FormControl fullWidth>
                   <InputLabel id="description-column-label">Description Column</InputLabel>
                   <Select
                     labelId="description-column-label"
@@ -208,10 +201,10 @@ const ImportEvents: React.FC = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth sx={{ minWidth: '300px' }}>
+              <Box sx={{ flex: '1 1 300px' }}>
+                <FormControl fullWidth>
                   <InputLabel id="date-format-label">Date Format</InputLabel>
                   <Select
                     labelId="date-format-label"
@@ -228,10 +221,10 @@ const ImportEvents: React.FC = () => {
                     <MenuItem value={DateFormat.YY_MM_DD}>YY/MM/DD</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth sx={{ minWidth: '300px' }}>
+              <Box sx={{ flex: '1 1 300px' }}>
+                <FormControl fullWidth>
                   <InputLabel id="delimiter-label">Delimiter</InputLabel>
                   <Select
                     labelId="delimiter-label"
@@ -246,60 +239,56 @@ const ImportEvents: React.FC = () => {
                     <MenuItem value="\t">Tab</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Box>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12}>
+        <Box>
           <Button
             type="submit"
             variant="contained"
             color="primary"
-            fullWidth
-            size="large"
             disabled={!file || !dateColumn || !amountColumn || !descriptionColumn}
-            sx={{ mt: 1, py: 1.5, minWidth: '300px' }}
+            fullWidth
           >
             Import Events
           </Button>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {importResult && (
-        <Box mt={2}>
-          <Alert
-            severity={importResult.errors.length > 0 ? 'warning' : 'success'}
-            action={
-              <Button color="inherit" size="small" onClick={() => setImportResult(null)}>
-                Close
-              </Button>
-            }
-          >
+        <Box sx={{ mt: 2 }}>
+          <Alert severity={importResult.errors.length > 0 ? 'error' : 'success'}>
             <AlertTitle>
-              {importResult.errors.length > 0 ? 'Import Completed with Warnings' : 'Import Successful'}
+              {importResult.errors.length > 0 ? 'Import Failed' : 'Import Successful'}
             </AlertTitle>
             <Typography variant="body2">
-              Imported {importResult.imported} records
-              {importResult.skipped > 0 && `, skipped ${importResult.skipped} records`}
-              {importResult.skippedMissingDate > 0 && ` (${importResult.skippedMissingDate} due to missing dates)`}
+              Imported: {importResult.imported} events
+              {importResult.skipped > 0 && (
+                <>
+                  <br />
+                  Skipped: {importResult.skipped} events
+                </>
+              )}
+              {importResult.skippedMissingDate > 0 && (
+                <>
+                  <br />
+                  Skipped (missing date): {importResult.skippedMissingDate} events
+                </>
+              )}
+              {importResult.errors.length > 0 && (
+                <>
+                  <br />
+                  Errors:
+                  <ul>
+                    {importResult.errors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </Typography>
-            {importResult.errors.length > 0 && (
-              <Box mt={1}>
-                <Typography variant="body2" color="error">
-                  Errors encountered:
-                </Typography>
-                <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                  {importResult.errors.map((error, index) => (
-                    <li key={index}>
-                      <Typography variant="body2" color="error">
-                        {error}
-                      </Typography>
-                    </li>
-                  ))}
-                </ul>
-              </Box>
-            )}
           </Alert>
         </Box>
       )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Container,
   Paper,
@@ -18,11 +18,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Grid,
   Card,
   CardContent,
-  Divider,
   TableSortLabel,
+  MenuItem,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useEvents } from '../hooks/useEvents';
@@ -150,18 +149,20 @@ const Events = () => {
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Import Events
-              </Typography>
-              <ImportEvents />
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr',
+        gap: 3 
+      }}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Import Events
+            </Typography>
+            <ImportEvents />
+          </CardContent>
+        </Card>
+      </Box>
 
       <Box mt={4}>
         <Typography variant="h5" gutterBottom>
@@ -232,17 +233,23 @@ const Events = () => {
         <DialogTitle>{editingEvent ? 'Edit Event' : 'Add Event'}</DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+              gap: 3 
+            }}>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Event Details
+                </Typography>
                 <TextField
                   fullWidth
                   label="Description"
                   {...register('description')}
                   error={!!errors.description}
                   helperText={errors.description?.message}
+                  margin="normal"
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Amount"
@@ -250,36 +257,8 @@ const Events = () => {
                   {...register('amount')}
                   error={!!errors.amount}
                   helperText={errors.amount?.message}
+                  margin="normal"
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Date"
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                  {...register('date')}
-                  error={!!errors.date}
-                  helperText={errors.date?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Category"
-                  {...register('categoryId')}
-                  error={!!errors.categoryId}
-                  helperText={errors.categoryId?.message}
-                >
-                  {categories?.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Currency"
@@ -287,9 +266,42 @@ const Events = () => {
                   error={!!errors.currency}
                   helperText={errors.currency?.message}
                   defaultValue="EUR"
+                  margin="normal"
                 />
-              </Grid>
-            </Grid>
+              </Box>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Additional Information
+                </Typography>
+                <TextField
+                  fullWidth
+                  label="Date"
+                  type="date"
+                  {...register('date')}
+                  error={!!errors.date}
+                  helperText={errors.date?.message}
+                  margin="normal"
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  select
+                  label="Category"
+                  {...register('categoryId')}
+                  error={!!errors.categoryId}
+                  helperText={errors.categoryId?.message}
+                  margin="normal"
+                >
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>

@@ -11,10 +11,9 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import { Box, FormControl, InputLabel, Select, MenuItem, Card, CardContent, CardHeader, Divider, Typography } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import { Box, FormControl, InputLabel, Select, MenuItem, Card, CardContent, CardHeader, Divider } from '@mui/material';
 import { Event, Category } from '../types';
-import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, subMonths, startOfMonth, eachDayOfInterval } from 'date-fns';
 
 // Register Chart.js components
 ChartJS.register(
@@ -294,25 +293,8 @@ export const Charts: React.FC<ChartsProps> = ({ events, categories }) => {
         />
         <Divider />
         <CardContent sx={{ p: 4 }}>
-          <Grid 
-            container 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: 'row', 
-              flexWrap: 'wrap' 
-            }}
-          >
-            <Grid 
-              item
-              padding={1}
-              xs={12} 
-              md={6} 
-              sx={{ 
-                flexGrow: { md: 0 },
-                flexBasis: { md: '50%' },
-                maxWidth: { md: '50%' } 
-              }}
-            >
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ flex: '1 1 50%', minWidth: '300px' }}>
               <Card variant="outlined" sx={{ height: '100%', minHeight: 600 }}>
                 <CardContent>
                   <Box sx={{ height: 550 }}>
@@ -320,19 +302,9 @@ export const Charts: React.FC<ChartsProps> = ({ events, categories }) => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
 
-            <Grid 
-              item
-              padding={1}
-              xs={12} 
-              md={6} 
-              sx={{ 
-                flexGrow: { md: 0 },
-                flexBasis: { md: '50%' },
-                maxWidth: { md: '50%' } 
-              }}
-            >
+            <Box sx={{ flex: '1 1 50%', minWidth: '300px' }}>
               <Card variant="outlined" sx={{ height: '100%', minHeight: 600 }}>
                 <CardContent>
                   <Box sx={{ height: 550 }}>
@@ -340,8 +312,8 @@ export const Charts: React.FC<ChartsProps> = ({ events, categories }) => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </CardContent>
       </Card>
     </Box>

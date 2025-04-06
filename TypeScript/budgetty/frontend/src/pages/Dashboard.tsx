@@ -1,13 +1,8 @@
-import React from 'react';
 import {
   Container,
-  Grid,
   Typography,
   Box,
   CircularProgress,
-  Card,
-  CardContent,
-  Divider,
   Paper,
 } from '@mui/material';
 import { useEvents } from '../hooks/useEvents';
@@ -32,9 +27,6 @@ const Dashboard = () => {
     );
   }
 
-  const totalEvents = events?.length || 0;
-  const totalCategories = categories?.length || 0;
-  
   // Calculate total income and expenses
   const totalIncome = events
     .filter(event => event.amount > 0)
@@ -54,38 +46,36 @@ const Dashboard = () => {
           <Typography variant="h4" gutterBottom>
             Financial Overview
           </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={4}>
-              <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Total Income
-                </Typography>
-                <Typography variant="h5" color="success.main">
-                  {formatCurrency(totalIncome)}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Total Expenses
-                </Typography>
-                <Typography variant="h5" color="error.main">
-                  {formatCurrency(totalExpenses)}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Balance
-                </Typography>
-                <Typography variant="h5" color={balance >= 0 ? 'success.main' : 'error.main'}>
-                  {formatCurrency(balance)}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+            gap: 3 
+          }}>
+            <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Total Income
+              </Typography>
+              <Typography variant="h5" color="success.main">
+                {formatCurrency(totalIncome)}
+              </Typography>
+            </Paper>
+            <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Total Expenses
+              </Typography>
+              <Typography variant="h5" color="error.main">
+                {formatCurrency(totalExpenses)}
+              </Typography>
+            </Paper>
+            <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.default' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Balance
+              </Typography>
+              <Typography variant="h5" color={balance >= 0 ? 'success.main' : 'error.main'}>
+                {formatCurrency(balance)}
+              </Typography>
+            </Paper>
+          </Box>
         </Box>
 
         {/* Charts section */}

@@ -66,6 +66,14 @@ export interface UpdateCategoryData extends CreateCategoryData {
   id: string;
 }
 
+export interface EventFilters {
+  startDate?: Date;
+  endDate?: Date;
+  categoryId?: string;
+  minAmount?: number;
+  maxAmount?: number;
+}
+
 export enum DateFormat {
   DD_MM_YYYY = 'DD/MM/YYYY',
   MM_DD_YYYY = 'MM/DD/YYYY',

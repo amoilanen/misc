@@ -13,7 +13,6 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-  useTheme,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,7 +28,6 @@ const drawerWidth = 240;
 
 export const MainLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const theme = useTheme();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -16,6 +15,8 @@ import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
 const schema = yup.object().shape({
+  firstName: yup.string().required('First name is required'),
+  lastName: yup.string().required('Last name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
   password: yup
     .string()
@@ -39,12 +40,19 @@ const Register = () => {
   });
 
   const onSubmit = async (data: {
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
     confirmPassword: string;
   }) => {
     try {
-      await registerUser(data.email, data.password);
+      await registerUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password
+      });
       navigate('/login');
     } catch (error) {
       console.error('Registration failed:', error);
@@ -79,10 +87,32 @@ const Register = () => {
               margin="normal"
               required
               fullWidth
+              id="firstName"
+              label="First Name"
+              autoComplete="given-name"
+              autoFocus
+              {...register('firstName')}
+              error={!!errors.firstName}
+              helperText={errors.firstName?.message}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="lastName"
+              label="Last Name"
+              autoComplete="family-name"
+              {...register('lastName')}
+              error={!!errors.lastName}
+              helperText={errors.lastName?.message}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
               id="email"
               label="Email Address"
               autoComplete="email"
-              autoFocus
               {...register('email')}
               error={!!errors.email}
               helperText={errors.email?.message}
