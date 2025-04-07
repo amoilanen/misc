@@ -99,6 +99,130 @@ The backend will be available at `http://localhost:3001`.
 
 The frontend will be available at `http://localhost:5173`.
 
+## Local Kubernetes Testing
+
+To test the Kubernetes deployment locally, you can use Minikube or Docker Desktop's built-in Kubernetes. This section will guide you through setting up and testing the deployment locally.
+
+### Prerequisites
+
+- Minikube or Docker Desktop with Kubernetes enabled
+- kubectl CLI tool
+- Helm (optional, for installing cert-manager)
+
+### 1. Start Local Kubernetes Cluster
+
+If using Minikube:
+```bash
+# Start Minikube
+minikube start
+
+# Enable ingress addon
+minikube addons enable ingress
+```
+
+If using Docker Desktop:
+- Enable Kubernetes in Docker Desktop settings
+- Wait for the cluster to be ready
+
+### 2. Configure Local Environment
+
+1. Create a local secrets file:
+```bash
+kubectl create secret generic budgetty-secrets \
+  --from-literal=DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/budgetty \
+  --from-literal=DB_PASSWORD=postgres \
+  --from-literal=JWT_SECRET=your_local_jwt_secret \
+  --from-literal=GOOGLE_CLIENT_ID=your_google_client_id \
+  --from-literal=GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+2. Update the backend deployment image to use a local image:
+```bash
+# Build local images
+docker build -t budgetty-backend:local ./backend
+docker build -t budgetty-frontend:local ./frontend
+
+# Load images into Minikube (if using Minikube)
+minikube image load budgetty-backend:local
+minikube image load budgetty-frontend:local
+```
+
+### 3. Deploy to Local Kubernetes
+
+1. Apply the Kubernetes manifests:
+```bash
+# Deploy backend
+kubectl apply -f k8s/backend/deployment.yaml
+kubectl apply -f k8s/backend/service.yaml
+kubectl apply -f k8s/backend/ingress.yaml
+
+# Deploy frontend
+kubectl apply -f k8s/frontend/deployment.yaml
+kubectl apply -f k8s/frontend/service.yaml
+kubectl apply -f k8s/frontend/ingress.yaml
+```
+
+2. Verify the deployment:
+```bash
+# Check pods
+kubectl get pods
+
+# Check services
+kubectl get services
+
+# Check ingress
+kubectl get ingress
+```
+
+### 4. Access the Application
+
+If using Minikube:
+```bash
+# Get the Minikube IP
+minikube ip
+
+# Add to /etc/hosts (requires sudo):
+# <minikube_ip> budgetty.local api.budgetty.local
+```
+
+If using Docker Desktop:
+- Access the application at `http://localhost`
+
+### 5. Troubleshooting Local Deployment
+
+1. Check pod logs:
+```bash
+# Backend logs
+kubectl logs -f deployment/budgetty-backend
+
+# Frontend logs
+kubectl logs -f deployment/budgetty-frontend
+```
+
+2. Check pod status:
+```bash
+kubectl describe pod <pod-name>
+```
+
+3. Port forwarding for direct access:
+```bash
+# Backend
+kubectl port-forward service/budgetty-backend 3001:80
+
+# Frontend
+kubectl port-forward service/budgetty-frontend 5173:80
+```
+
+4. Clean up:
+```bash
+# Delete all resources
+kubectl delete -f k8s/backend/
+kubectl delete -f k8s/frontend/
+
+# Stop Minikube (if using Minikube)
+minikube stop
+```
+
 ## Deployment to Google Cloud Platform
 
 For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
