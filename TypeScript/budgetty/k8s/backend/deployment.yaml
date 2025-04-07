@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: budgetty-backend
-        image: gcr.io/budgetty/backend:latest
+        image: gcr.io/<YOUR_PROJECT_ID>/budgetty-backend:latest
         ports:
         - containerPort: 3001
         env:
@@ -53,10 +53,10 @@ spec:
         resources:
           requests:
             cpu: "200m"
-            memory: "256Mi"
+            memory: "128Mi"
           limits:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "300m"
+            memory: "256Mi"
         readinessProbe:
           httpGet:
             path: /health

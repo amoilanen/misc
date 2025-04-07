@@ -119,7 +119,6 @@ For detailed deployment instructions, please refer to [DEPLOYMENT.md](DEPLOYMENT
    gcloud services enable container.googleapis.com
    gcloud services enable compute.googleapis.com
    gcloud services enable cloudresourcemanager.googleapis.com
-   gcloud services enable cloudbuild.googleapis.com
    ```
 
 3. Create a new project (if not already created):

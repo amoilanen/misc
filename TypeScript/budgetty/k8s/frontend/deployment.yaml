@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: budgetty-frontend
-  namespace: budgetty
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: budgetty-frontend
@@ -15,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: gcr.io/budgetty/frontend:latest
+        image: gcr.io/<YOUR_PROJECT_ID>/budgetty-frontend:latest
         ports:
         - containerPort: 80
         env:
