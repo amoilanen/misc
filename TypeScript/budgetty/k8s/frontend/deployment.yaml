@@ -14,12 +14,14 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: gcr.io/<YOUR_PROJECT_ID>/budgetty-frontend:latest
+        #image: gcr.io/<YOUR_PROJECT_ID>/budgetty-frontend:latest
+        image: budgetty-frontend:local
         ports:
         - containerPort: 80
         env:
         - name: VITE_API_URL
-          value: "https://api.budgetty.example.com"
+          #value: "https://api.budgetty.example.com"
+          value: "http://localhost:3001"
         resources:
           requests:
             cpu: "100m"

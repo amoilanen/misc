@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: budgetty-backend
-        image: gcr.io/<YOUR_PROJECT_ID>/budgetty-backend:latest
+        #image: gcr.io/<YOUR_PROJECT_ID>/budgetty-backend:latest
+        image: budgetty-backend:local
         ports:
         - containerPort: 3001
         env:
@@ -37,7 +38,8 @@ spec:
         - name: JWT_EXPIRATION
           value: "7d"
         - name: FRONTEND_URL
-          value: "https://budgetty.example.com"
+          #value: "https://budgetty.example.com"
+          value: "http://localhost:5173"
         - name: GOOGLE_CLIENT_ID
           valueFrom:
             secretKeyRef:
@@ -49,14 +51,15 @@ spec:
               name: budgetty-secrets
               key: GOOGLE_CLIENT_SECRET
         - name: API_URL
-          value: "https://api.budgetty.example.com"
+          #value: "https://api.budgetty.example.com"
+          value: "http://localhost:3001"
         resources:
           requests:
-            cpu: "200m"
-            memory: "128Mi"
-          limits:
             cpu: "300m"
-            memory: "256Mi"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1024Mi"
         readinessProbe:
           httpGet:
             path: /health

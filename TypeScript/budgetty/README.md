@@ -101,35 +101,77 @@ The frontend will be available at `http://localhost:5173`.
 
 ## Local Kubernetes Testing
 
-To test the Kubernetes deployment locally, you can use Minikube or Docker Desktop's built-in Kubernetes. This section will guide you through setting up and testing the deployment locally.
+To test the Kubernetes deployment locally, you can use Kind (Kubernetes IN Docker). This section will guide you through setting up and testing the deployment locally.
 
 ### Prerequisites
 
-- Minikube or Docker Desktop with Kubernetes enabled
+- Docker
 - kubectl CLI tool
+- Kind CLI tool
 - Helm (optional, for installing cert-manager)
 
 ### 1. Start Local Kubernetes Cluster
 
-If using Minikube:
-```bash
-# Start Minikube
-minikube start
+1. Install Kind (if not already installed):
+   ```bash
+   # For Linux
+   curl -Lo ./kind https://kind.sigs.k8s.io/v0.20.0/kind-linux-amd64
+   chmod +x ./kind
+   sudo mv ./kind /usr/local/bin/kind
+   ```
 
-# Enable ingress addon
-minikube addons enable ingress
-```
+2. Create a Kind cluster configuration file (kind-config.yaml):
+   ```yaml
+   kind: Cluster
+   apiVersion: kind.x-k8s.io/v1alpha4
+   nodes:
+   - role: control-plane
+     kubeadmConfigPatches:
+     - |
+       kind: InitConfiguration
+       nodeRegistration:
+         kubeletExtraArgs:
+           node-labels: "ingress-ready=true"
+     extraPortMappings:
+     - containerPort: 80
+       hostPort: 80
+       protocol: TCP
+     - containerPort: 443
+       hostPort: 443
+       protocol: TCP
+   ```
 
-If using Docker Desktop:
-- Enable Kubernetes in Docker Desktop settings
-- Wait for the cluster to be ready
+3. Create and start the Kind cluster:
+   ```bash
+   kind create cluster --name budgetty --config kind-config.yaml
+   ```
+
+4. Install the NGINX Ingress Controller:
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+   ```
+
+5. Wait for the ingress controller to be ready:
+   ```bash
+   kubectl wait --namespace ingress-nginx \
+     --for=condition=ready pod \
+     --selector=app.kubernetes.io/component=controller \
+     --timeout=90s
+   ```
 
 ### 2. Configure Local Environment
 
 1. Create a local secrets file:
+
+Check the local IP address at which the local Postgres running with 
+
+```bash
+docker network inspect kind | grep Gateway
+```
+
 ```bash
 kubectl create secret generic budgetty-secrets \
-  --from-literal=DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/budgetty \
+  --from-literal=DATABASE_URL="postgresql://postgres:postgres@${local_postgres_ip_address}:5432/budgetty" \
   --from-literal=DB_PASSWORD=postgres \
   --from-literal=JWT_SECRET=your_local_jwt_secret \
   --from-literal=GOOGLE_CLIENT_ID=your_google_client_id \
@@ -142,9 +184,9 @@ kubectl create secret generic budgetty-secrets \
 docker build -t budgetty-backend:local ./backend
 docker build -t budgetty-frontend:local ./frontend
 
-# Load images into Minikube (if using Minikube)
-minikube image load budgetty-backend:local
-minikube image load budgetty-frontend:local
+# Load images into Kind
+kind load docker-image budgetty-backend:local --name budgetty
+kind load docker-image budgetty-frontend:local --name budgetty
 ```
 
 ### 3. Deploy to Local Kubernetes
@@ -176,17 +218,14 @@ kubectl get ingress
 
 ### 4. Access the Application
 
-If using Minikube:
+If using Kind:
 ```bash
-# Get the Minikube IP
-minikube ip
+# Get the Kind IP
+kind get kubeconfig --name budgetty
 
 # Add to /etc/hosts (requires sudo):
-# <minikube_ip> budgetty.local api.budgetty.local
+# <kind_ip> budgetty.local api.budgetty.local
 ```
-
-If using Docker Desktop:
-- Access the application at `http://localhost`
 
 ### 5. Troubleshooting Local Deployment
 
@@ -213,14 +252,16 @@ kubectl port-forward service/budgetty-backend 3001:80
 kubectl port-forward service/budgetty-frontend 5173:80
 ```
 
+The app is now running and can be accessed at http://localhost:5173
+
 4. Clean up:
 ```bash
 # Delete all resources
 kubectl delete -f k8s/backend/
 kubectl delete -f k8s/frontend/
 
-# Stop Minikube (if using Minikube)
-minikube stop
+# Stop Kind
+kind delete cluster --name budgetty
 ```
 
 ## Deployment to Google Cloud Platform
