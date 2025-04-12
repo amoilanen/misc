@@ -13,11 +13,11 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "test": "node -r tsconfig-paths/register node_modules/.bin/jest",
+    "test:watch": "node -r tsconfig-paths/register node_modules/.bin/jest --watch",
+    "test:cov": "node -r tsconfig-paths/register node_modules/.bin/jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "node -r tsconfig-paths/register node_modules/.bin/jest --config ./test/jest-e2e.json",
     "seed": "ts-node src/database/seeds/run-seed.ts",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/typeorm.config.ts",
@@ -34,6 +34,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/swagger": "^7.4.2",
+    "@nestjs/terminus": "^11.0.0",
     "@nestjs/typeorm": "^10.0.1",
     "antd": "^5.24.6",
     "class-transformer": "^0.5.1",
@@ -92,6 +93,9 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   }
 }

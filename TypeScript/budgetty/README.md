@@ -252,7 +252,7 @@ kubectl port-forward service/budgetty-backend 3001:80
 kubectl port-forward service/budgetty-frontend 5173:80
 ```
 
-The app is now running and can be accessed at http://localhost:5173
+The app is now running and can be accessed at `http://localhost:5173`
 
 4. Clean up:
 ```bash
