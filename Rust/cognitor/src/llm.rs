@@ -101,17 +101,13 @@ pub async fn ask_llm(
 
     // 2. Construct the payload (adjust based on the specific LLM API)
     let request_body = match &model_config.request_format {
-        Some(_format_string) => {
-            let mut map = serde_json::Map::new();
-            map.insert("input".to_string(), serde_json::Value::String(prompt.to_string()));
-            if let Some(context) = &combined_context {
-                map.insert("context".to_string(), serde_json::Value::String(context.to_string()));
-            }
-            if let Some(model_identifier) = &model_config.model_identifier {
-                map.insert("model".to_string(), serde_json::Value::String(model_identifier.to_string()));
-            }
-            // Serialize the map to a JSON string
-            serde_json::to_string(&map).context("Failed to serialize request body")?
+        Some(format_string) => {
+            // Use the format string to construct the request body
+            let formatted_string = format_string
+                .replace("{{prompt}}", &prompt)
+                .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
+
+            formatted_string
         }
         None => {
             let payload = LlmRequestPayload {
@@ -228,19 +224,15 @@ pub async fn generate_plan_llm(
 
 
     // 3. Construct the payload (similar to ask_llm, but using the plan_prompt)
-    // We might need different API parameters for plan generation (e.g., lower temperature?)
+        // We might need different API parameters for plan generation (e.g., lower temperature?)
     let request_body = match &model_config.request_format {
-        Some(_format_string) => {
-            let mut map = serde_json::Map::new();
-            map.insert("prompt".to_string(), serde_json::Value::String(plan_prompt.to_string()));
-            if let Some(context) = &combined_context {
-                map.insert("context".to_string(), serde_json::Value::String(context.to_string()));
-            }
-            if let Some(model_identifier) = &model_config.model_identifier {
-                map.insert("model".to_string(), serde_json::Value::String(model_identifier.to_string()));
-            }
-            // Serialize the map to a JSON string
-            serde_json::to_string(&map).context("Failed to serialize request body")?
+        Some(format_string) => {
+            // Use the format string to construct the request body
+            let formatted_string = format_string
+                .replace("{{prompt}}", &plan_prompt)
+                .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
+
+            formatted_string
         }
         None => {
             // Default payload construction if no format string is provided
@@ -348,5 +340,42 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("Status: 404"));
     }
 
-    // TODO: Add tests for ask_llm using httpmock
+    #[tokio::test]
+    async fn test_ask_llm_with_format_string() {
+        let server = MockServer::start();
+        let client = Client::new();
+
+        let mock_url = server.url("/formatted-test");
+        let mock = server.mock(|when, then| {
+            when.method(POST)
+                .path("/formatted-test")
+                .body(r#"{"model": "test_model", "input": "test prompt", "context": "test context"}"#);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(r#"{"answer": "test answer"}"#);
+        });
+
+        let model_config = Model {
+            name: "Test Model".to_string(),
+            api_url: mock_url.clone(),
+            api_key: None,
+            model_identifier: Some("test_model".to_string()),
+            request_format: Some(r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string()),
+        };
+
+        let prompt = "test prompt";
+        let context_sources = vec!["test_context_file".to_string()];
+
+        // Create a dummy context file
+        fs::write("test_context_file", "test context").unwrap();
+
+        let result = ask_llm(&model_config, prompt, &context_sources, &client).await;
+
+        // Clean up the dummy context file
+        fs::remove_file("test_context_file").unwrap();
+
+        mock.assert();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "test answer");
+    }
 }
