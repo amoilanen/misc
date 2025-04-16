@@ -1,0 +1,10 @@
+Test/make sure that the following work:
+
+- Adding a model
+- Asking a model
+- Prompting a model to act
+  -- Adding context files
+  -- Adding context urls
+  -- Searching web
+
+- Make sure the tests pass
