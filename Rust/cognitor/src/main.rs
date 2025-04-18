@@ -64,6 +64,8 @@ enum ConfigAction {
         #[arg(long)]
         api_key: Option<String>,
         #[arg(long)]
+        api_key_header: Option<String>,
+        #[arg(long)]
         model_identifier: Option<String>, // e.g., "gpt-4", "claude-3-opus"
         #[arg(long)]
         request_format: Option<String>,
@@ -151,11 +153,12 @@ async fn main() -> Result<()> {
 
 fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()> {
     match action {
-        ConfigAction::Add { name, api_url, api_key, model_identifier, request_format } => {
+        ConfigAction::Add { name, api_url, api_key, api_key_header, model_identifier, request_format } => {
             let new_model = Model {
                 name: name.clone(),
                 api_url,
                 api_key,
+                api_key_header,
                 model_identifier,
                 request_format,
             };

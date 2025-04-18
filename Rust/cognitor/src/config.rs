@@ -9,6 +9,7 @@ pub struct Model {
     pub name: String,
     pub api_url: String,
     pub api_key: Option<String>, // API key might be optional depending on the model/service
+    pub api_key_header: Option<String>, // e.g., "x-goog-api-key: YOUR_API_KEY" or "Authorization: Bearer $OPENAI_API_KEY"
     // Add other model-specific parameters if needed, e.g., model name for the API call
     pub model_identifier: Option<String>,
     #[serde(default = "default_request_format")]
@@ -139,6 +140,7 @@ mod tests {
             name: "test-model".to_string(),
             api_url: "http://localhost:8080".to_string(),
             api_key: Some("test-key".to_string()),
+            api_key_header: None,
             model_identifier: Some("gpt-test".to_string()),
             request_format: Some("test-format".to_string()),
         };
@@ -157,8 +159,8 @@ mod tests {
      #[test]
     fn test_get_active_model() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, model_identifier: None, request_format: default_request_format() };
-        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, model_identifier: None, request_format: default_request_format() };
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format() };
+        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format() };
         config.add_model(model1.clone());
         config.add_model(model2.clone());
 
@@ -181,7 +183,7 @@ mod tests {
      #[test]
     fn test_set_default_current_model_errors() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, model_identifier: None, request_format: default_request_format() };
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format() };
         config.add_model(model1.clone());
 
         assert!(config.set_default_model("model1").is_ok());

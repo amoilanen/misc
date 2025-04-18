@@ -105,8 +105,10 @@ pub async fn ask_llm(
             // Use the format string to construct the request body
             let formatted_string = format_string
                 .replace("{{prompt}}", &prompt)
+                .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
                 .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
 
+            println!("Formatted request_body: {}", formatted_string);
             formatted_string
         }
         None => {
@@ -124,10 +126,20 @@ pub async fn ask_llm(
     // 3. Build the request
     let mut request_builder = client.post(&model_config.api_url).body(request_body);
 
-    // Add API key if present (e.g., as a Bearer token)
+   // Add API key if present
     if let Some(api_key) = &model_config.api_key {
-        request_builder = request_builder.bearer_auth(api_key);
-        // Or use other auth methods like .header("Authorization", ...) if needed
+        if let Some(api_key_header) = &model_config.api_key_header {
+            if let Some((header_name, header_value)) = api_key_header.split_once(":") {
+                let header_name = header_name.trim();
+                let header_value = header_value.replace("{{api_key}}", api_key);
+                request_builder = request_builder.header(header_name, header_value);
+            } else {
+                eprintln!("Warning: Invalid api_key_header format. Expected 'Header-Name: Header-Value': '{}'", api_key_header);
+                request_builder = request_builder.bearer_auth(api_key);
+            }
+        } else {
+            request_builder = request_builder.bearer_auth(api_key);
+        }
     }
 
     // 4. Send the request and get response
@@ -230,6 +242,7 @@ pub async fn generate_plan_llm(
             // Use the format string to construct the request body
             let formatted_string = format_string
                 .replace("{{prompt}}", &plan_prompt)
+                .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
                 .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
 
             formatted_string
@@ -359,6 +372,7 @@ mod tests {
             name: "Test Model".to_string(),
             api_url: mock_url.clone(),
             api_key: None,
+            api_key_header: None,
             model_identifier: Some("test_model".to_string()),
             request_format: Some(r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string()),
         };
