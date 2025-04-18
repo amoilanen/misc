@@ -3,6 +3,7 @@ Test/make sure that the following work:
 - Adding a model - DONE
 - Asking a model - DONE
 - Prompting a model to act
+  -- The model should tell the plan of actions and allow the agent to do some actions on the local machine: create files, delete files, edit files
 - Adding context
   -- Adding context files
   -- Adding context urls

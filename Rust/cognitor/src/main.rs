@@ -36,10 +36,14 @@ enum Commands {
         #[arg(short, long, default_value = "false")]
         internet_search: bool,
     },
-    /// Give instructions for the LLM to execute (planning required)
-    Do {
+    /// Ask the LLM to generate a plan and execute it
+    Act {
         /// The instruction or goal for the LLM
         instruction: String,
+
+        /// Automatically confirm and execute all actions in the plan
+        #[arg(long, default_value = "false")]
+        auto_confirm: bool,
 
         /// Files or URLs to provide as context
         #[arg(short, long, value_delimiter = ',')]
@@ -128,25 +132,22 @@ async fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Commands::Do { instruction, context, internet_search: _ } => {
-            println!("Processing 'do' command...");
+        Commands::Act { instruction, context, internet_search: _, auto_confirm } => { // Added auto_confirm
+            println!("Processing 'act' command...");
             if let Some(active_model) = config.get_active_model() {
                 println!("Using model: {}", active_model.name);
                  // Pass the CLI response_json_path
                 match generate_plan_llm(active_model, &instruction, &context, &client, cli.response_json_path.as_deref()).await {
                     Ok(plan) => {
                         plan.display();
-                        match plan.confirm_execution() {
-                            Ok(true) => {
-                                if let Err(exec_err) = executor::execute_plan(&plan).await {
-                                    eprintln!("Error during plan execution: {}", exec_err);
-                                }
-                            }
-                            Ok(false) => println!("Plan execution cancelled by user."),
-                            Err(confirm_err) => eprintln!("Error reading confirmation: {}", confirm_err),
+                        // Pass auto_confirm to the execution logic
+                        if let Err(exec_err) = executor::execute_plan(&plan, auto_confirm).await {
+                            eprintln!("Error during plan execution: {}", exec_err);
                         }
                     }
                     Err(e) => eprintln!("Error generating plan: {}", e),
+                    // TODO: Revisit confirmation logic placement. Maybe move into execute_plan?
+                    // For now, execute_plan will handle confirmation internally based on auto_confirm.
                 }
             } else {
                 eprintln!("Error: No active model configured. Use 'cognitor config add' and 'cognitor config set-default'.");
