@@ -17,6 +17,10 @@ struct Cli {
     /// Use a specific model for this command, overriding default/current
     #[arg(short, long, global = true)]
     model: Option<String>,
+
+    /// JSONPath expression to extract the response text from the LLM API response body
+    #[arg(long, global = true)]
+    response_json_path: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -69,6 +73,8 @@ enum ConfigAction {
         model_identifier: Option<String>, // e.g., "gpt-4", "claude-3-opus"
         #[arg(long)]
         request_format: Option<String>,
+        #[arg(long)]
+        response_json_path: Option<String>, // Add the argument
     },
     /// Set the default model
     SetDefault {
@@ -99,19 +105,22 @@ async fn main() -> Result<()> {
     let mut config = Config::load()?;
     let client = Client::new();
 
-    if let Some(model_name) = cli.model {
-        if config.set_current_model(&model_name).is_err() {
+    // Apply model override first
+    if let Some(model_name) = &cli.model {
+        if config.set_current_model(model_name).is_err() {
             eprintln!("Warning: Model '{}' not found, using default/active model.", model_name);
         }
     }
+    // Note: cli.response_path is handled within the ask_llm/generate_plan_llm functions
 
     match cli.command {
         Commands::Ask { prompt, context, internet_search: _ } => {
-            println!("Processing 'ask' command...");
+            //println!("Processing 'ask' command...");
             if let Some(active_model) = config.get_active_model() {
-                println!("Using model: {}", active_model.name);
-                match ask_llm(active_model, &prompt, &context, &client).await {
-                    Ok(answer) => println!("\nResponse:\n{}", answer),
+                //println!("Using model: {}", active_model.name);
+                // Pass the CLI response_json_path
+                match ask_llm(active_model, &prompt, &context, &client, cli.response_json_path.as_deref()).await {
+                    Ok(answer) => println!("{}\n", answer),
                     Err(e) => eprintln!("Error during LLM call: {}", e),
                 }
             } else {
@@ -123,7 +132,8 @@ async fn main() -> Result<()> {
             println!("Processing 'do' command...");
             if let Some(active_model) = config.get_active_model() {
                 println!("Using model: {}", active_model.name);
-                match generate_plan_llm(active_model, &instruction, &context, &client).await {
+                 // Pass the CLI response_json_path
+                match generate_plan_llm(active_model, &instruction, &context, &client, cli.response_json_path.as_deref()).await {
                     Ok(plan) => {
                         plan.display();
                         match plan.confirm_execution() {
@@ -153,7 +163,7 @@ async fn main() -> Result<()> {
 
 fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()> {
     match action {
-        ConfigAction::Add { name, api_url, api_key, api_key_header, model_identifier, request_format } => {
+        ConfigAction::Add { name, api_url, api_key, api_key_header, model_identifier, request_format, response_json_path } => { // Add param
             let new_model = Model {
                 name: name.clone(),
                 api_url,
@@ -161,6 +171,7 @@ fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()>
                 api_key_header,
                 model_identifier,
                 request_format,
+                response_json_path, // Add field
             };
             config.add_model(new_model);
             config.save()?;

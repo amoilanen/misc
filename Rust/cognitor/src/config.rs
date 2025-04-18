@@ -14,6 +14,8 @@ pub struct Model {
     pub model_identifier: Option<String>,
     #[serde(default = "default_request_format")]
     pub request_format: Option<String>,
+    /// Optional JSONPath to extract the primary response string from the API result
+    pub response_json_path: Option<String>,
 }
 
 fn default_request_format() -> Option<String> {
@@ -143,6 +145,7 @@ mod tests {
             api_key_header: None,
             model_identifier: Some("gpt-test".to_string()),
             request_format: Some("test-format".to_string()),
+            response_json_path: None, // Add the new field
         };
         config.add_model(model.clone());
         config.set_default_model("test-model").unwrap();
@@ -159,8 +162,8 @@ mod tests {
      #[test]
     fn test_get_active_model() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format() };
-        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format() };
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None }; // Add field
+        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None }; // Add field
         config.add_model(model1.clone());
         config.add_model(model2.clone());
 
@@ -183,7 +186,7 @@ mod tests {
      #[test]
     fn test_set_default_current_model_errors() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format() };
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None }; // Add field
         config.add_model(model1.clone());
 
         assert!(config.set_default_model("model1").is_ok());

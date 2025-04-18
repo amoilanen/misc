@@ -49,10 +49,9 @@ Cognitor stores its configuration in `~/.config/cognitor/config.toml`. This file
     ```
 *   **Add a new model:**
     ```bash
-    cargo run -- config add --name=gpt --api-url=https://api.openai.com/v1/responses --api-key=$OPENAI_API_KEY --model-identifier=gpt-4.1-mini --request-format='{"model": "{{model}}", "input": "{{prompt}}"}'"}' --api-key-header="Authorization: Bearer {{api_key}}"
+    cargo run -- config add --name=gemini --api-url=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent --api-key=$GEMINI_API_KEY --api-key-header="x-goog-api-key: {{api_key}}" --model-identifier=gemini-1.5-flash --request-format='{"contents": [{"parts":[{"text": "{{prompt}}"}]}]}' --response-json-path='$.candidates[0].content.parts[0].text'
 
     # Note: API key and model identifier are optional depending on the API.
-    # The current implementation sends a generic payload; adapt llm.rs for specific APIs.
 
     ```
 *   **List configured models:**

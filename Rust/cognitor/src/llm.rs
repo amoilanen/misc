@@ -3,9 +3,10 @@ use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use crate::executor::Plan; // Import Plan struct
-use serde_json; // For parsing the plan JSON
-use std::fs;
+use serde_json::{self, Value}; // Import Value for JSON manipulation
+use std::{fs, path};
 use url::Url; // For URL validation and parsing
+use jsonpath_lib::select as jsonpath_select; // Import jsonpath selector
 
 // --- Basic Context Handling ---
 
@@ -82,8 +83,9 @@ pub async fn ask_llm(
     prompt: &str,
     context_sources: &[String], // File paths or URLs
     client: &Client,
+    response_json_path: Option<&str>, // Optional JSONPath from CLI
 ) -> Result<String> {
-    println!("Preparing request for model: {}", model_config.name);
+    //println!("Preparing request for model: {}", model_config.name);
 
     // 1. Fetch and combine context
     let fetched_context = fetch_context(context_sources, client).await?;
@@ -108,7 +110,7 @@ pub async fn ask_llm(
                 .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
                 .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
 
-            println!("Formatted request_body: {}", formatted_string);
+            //println!("Formatted request_body: {}", formatted_string);
             formatted_string
         }
         None => {
@@ -120,7 +122,7 @@ pub async fn ask_llm(
         }
     };
 
-    println!("Sending request to: {}", model_config.api_url);
+    //println!("Sending request to: {}", model_config.api_url);
     // println!("Payload (debug): {:?}", payload); // Uncomment for debugging
 
     // 3. Build the request
@@ -158,21 +160,35 @@ pub async fn ask_llm(
         );
     }
 
-    // 6. Parse the response (adjust based on the specific LLM API)
-    let response_payload: LlmResponsePayload = response.json().await
-        .with_context(|| "Failed to parse LLM response JSON")?; // Wrap string in closure
+    // 6. Get the response body as text first
+    let response_text = response.text().await
+        .with_context(|| "Failed to read LLM response text")?;
 
-    // println!("Response (debug): {:?}", response_payload); // Uncomment for debugging
+    // println!("Raw Response (debug):\n{}", response_text); // Uncomment for debugging
 
-    // 7. Extract the answer or handle errors from the payload
-    match response_payload.answer {
-        Some(answer) => Ok(answer),
+    // 7. Parse the response text into a generic JSON Value
+    let response_json: Value = serde_json::from_str(&response_text)
+        .with_context(|| format!("Failed to parse LLM response as JSON. Raw response:\n{}", response_text))?;
+
+    // 8. Determine the JSONPath to use (CLI override > Model config > Default)
+    let path_to_use = response_json_path
+        .or(model_config.response_json_path.as_deref())
+        .unwrap_or("$.answer"); // Default path if none provided
+
+    // 9. Use JSONPath to extract the result
+    let selected_values = jsonpath_select(&response_json, path_to_use)
+        .map_err(|e| anyhow::anyhow!("JSONPath selection error: {}", e))?;
+
+    // 10. Extract the first string result
+    match selected_values.first() {
+        Some(Value::String(answer)) => Ok(answer.clone()),
+        Some(other) => anyhow::bail!(
+            "Expected a string at JSONPath '{}', but found: {:?}",
+            path_to_use,
+            other
+        ),
         None => {
-            if let Some(error_msg) = response_payload.error {
-                anyhow::bail!("LLM API returned an error: {}", error_msg)
-            } else {
-                anyhow::bail!("LLM API response did not contain an answer or an error message.")
-            }
+            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, path_to_use);
         }
     }
 }
@@ -183,6 +199,7 @@ pub async fn generate_plan_llm(
     instruction: &str,
     context_sources: &[String], // File paths or URLs
     client: &Client,
+    response_json_path: Option<&str>, // Optional JSONPath from CLI
 ) -> Result<Plan> {
     println!("Generating plan for instruction: '{}'", instruction);
 
@@ -285,13 +302,40 @@ pub async fn generate_plan_llm(
 
     // println!("Raw Plan Response (debug):\n{}", response_text); // Uncomment for debugging
 
-    // 7. Parse the JSON response text into a Plan struct
-    // Trim potential markdown code fences ```json ... ```
-    let clean_response_text = response_text.trim().trim_start_matches("```json").trim_end_matches("```").trim();
-    let plan: Plan = serde_json::from_str(clean_response_text)
-        .with_context(|| format!("Failed to parse LLM plan JSON. Raw response:\n{}", response_text))?;
+    // 7. Parse the response text into a generic JSON Value first to extract the plan string
+    let response_json: Value = serde_json::from_str(&response_text)
+         .with_context(|| format!("Failed to parse LLM planning response as JSON. Raw response:\n{}", response_text))?;
 
-    Ok(plan)
+    // 8. Determine the JSONPath for the plan (CLI override > Model config > Default)
+    //    Using the same response_json_path logic as ask_llm for consistency,
+    //    but the default path needs to point to the plan JSON string.
+    //    A typical default might be "$.plan" or "$.result.plan", adjust as needed.
+    let path_to_use = response_json_path
+        .or(model_config.response_json_path.as_deref())
+        .unwrap_or("$.");
+
+    // 9. Use JSONPath to extract the plan string
+    let selected_values = jsonpath_select(&response_json, path_to_use)
+        .map_err(|e| anyhow::anyhow!("JSONPath selection error for plan: {}", e))?;
+
+    // 10. Extract the plan string and parse it into the Plan struct
+    match selected_values.first() {
+        Some(Value::String(plan_str)) => {
+            // Trim potential markdown code fences ```json ... ``` from the extracted string
+            let clean_plan_str = plan_str.trim().trim_start_matches("```json").trim_end_matches("```").trim();
+            let plan: Plan = serde_json::from_str(clean_plan_str)
+                .with_context(|| format!("Failed to parse extracted plan JSON string. Extracted string:\n{}", clean_plan_str))?;
+            Ok(plan)
+        }
+        Some(other) => anyhow::bail!(
+            "Expected a plan string at JSONPath '{}', but found: {:?}",
+            path_to_use,
+            other
+        ),
+        None => {
+            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, path_to_use);
+        }
+    }
 }
 
 
@@ -375,6 +419,7 @@ mod tests {
             api_key_header: None,
             model_identifier: Some("test_model".to_string()),
             request_format: Some(r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string()),
+            response_json_path: None, // Add the missing field here
         };
 
         let prompt = "test prompt";
@@ -383,7 +428,8 @@ mod tests {
         // Create a dummy context file
         fs::write("test_context_file", "test context").unwrap();
 
-        let result = ask_llm(&model_config, prompt, &context_sources, &client).await;
+        // Pass None for the response_json_path in the test
+        let result = ask_llm(&model_config, prompt, &context_sources, &client, None).await;
 
         // Clean up the dummy context file
         fs::remove_file("test_context_file").unwrap();

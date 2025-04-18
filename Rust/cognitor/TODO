@@ -1,10 +1,14 @@
 Test/make sure that the following work:
 
-- Adding a model
-- Asking a model
+- Adding a model - DONE
+- Asking a model - DONE
 - Prompting a model to act
+- Adding context
   -- Adding context files
   -- Adding context urls
   -- Searching web
 
+- Clean up
 - Make sure the tests pass
+
+- Support interactive sessions with history/post history to the LLM model or reference to the history
