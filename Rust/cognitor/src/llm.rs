@@ -1,10 +1,9 @@
 use crate::config::Model;
 use anyhow::{Context, Result};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
 use crate::executor::Plan;
 use serde_json::{self, Value};
-use std::{fs, path};
+use std::fs;
 use url::Url;
 use jsonpath_lib::select as jsonpath_select;
 
@@ -50,25 +49,13 @@ async fn fetch_context(context_sources: &[String], client: &Client) -> Result<Ve
     Ok(fetched_contents)
 }
 
-#[derive(Serialize, Debug)]
-struct LlmRequestPayload {
-    prompt: String,
-    context: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct LlmResponsePayload {
-    answer: Option<String>,
-    error: Option<String>,
-}
-
 /// Makes a call to the configured LLM for the "ask" command.
 pub async fn ask_llm(
     model_config: &Model,
     prompt: &str,
     context_sources: &[String],
     client: &Client,
-    response_json_path: Option<&str>,
+    response_json_path: &str,
 ) -> Result<String> {
     let fetched_context = fetch_context(context_sources, client).await?;
     let combined_context = if !fetched_context.is_empty() {
@@ -83,25 +70,12 @@ pub async fn ask_llm(
         None
     };
 
-    let request_body = match &model_config.request_format {
-        Some(format_string) => {
-            let formatted_string = format_string
-                .replace("{{prompt}}", &prompt)
-                .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
-                .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
+    let request_body = &model_config.request_format
+        .replace("{{prompt}}", &prompt)
+        .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
+        .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
 
-            formatted_string
-        }
-        None => {
-            let payload = LlmRequestPayload {
-                prompt: prompt.to_string(),
-                context: combined_context,
-            };
-            serde_json::to_string(&payload).context("Failed to serialize request body")?
-        }
-    };
-
-    let mut request_builder = client.post(&model_config.api_url).body(request_body);
+    let mut request_builder = client.post(&model_config.api_url).body(request_body.to_string());
 
     if let Some(api_key) = &model_config.api_key {
         if let Some(api_key_header) = &model_config.api_key_header {
@@ -138,22 +112,18 @@ pub async fn ask_llm(
     let response_json: Value = serde_json::from_str(&response_text)
         .with_context(|| format!("Failed to parse LLM response as JSON. Raw response:\n{}", response_text))?;
 
-    let path_to_use = response_json_path
-        .or(model_config.response_json_path.as_deref())
-        .unwrap_or("$.answer");
-
-    let selected_values = jsonpath_select(&response_json, path_to_use)
+    let selected_values = jsonpath_select(&response_json, response_json_path)
         .map_err(|e| anyhow::anyhow!("JSONPath selection error: {}", e))?;
 
     match selected_values.first() {
         Some(Value::String(answer)) => Ok(answer.clone()),
         Some(other) => anyhow::bail!(
             "Expected a string at JSONPath '{}', but found: {:?}",
-            path_to_use,
+            response_json_path,
             other
         ),
         None => {
-            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, path_to_use);
+            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, response_json_path);
         }
     }
 }
@@ -164,7 +134,7 @@ pub async fn generate_plan_llm(
     instruction: &str,
     context_sources: &[String],
     client: &Client,
-    response_json_path: Option<&str>,
+    response_json_path: &str,
 ) -> Result<Plan> {
     println!("Generating plan for instruction: '{}'", instruction);
 
@@ -213,27 +183,14 @@ pub async fn generate_plan_llm(
         combined_context.as_deref().unwrap_or("No context provided.")
     );
 
-    let request_body = match &model_config.request_format {
-        Some(format_string) => {
-            let formatted_string = format_string
-                .replace("{{prompt}}", &plan_prompt)
-                .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
-                .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
-
-            formatted_string
-        }
-        None => {
-            let payload = LlmRequestPayload {
-                prompt: plan_prompt.to_string(),
-                context: None,
-            };
-            serde_json::to_string(&payload).context("Failed to serialize request body")?
-        }
-    };
+    let request_body = &model_config.request_format
+        .replace("{{prompt}}", &plan_prompt)
+        .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
+        .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
 
     println!("Sending planning request to: {}", model_config.api_url);
 
-    let mut request_builder = client.post(&model_config.api_url).body(request_body);
+    let mut request_builder = client.post(&model_config.api_url).body(request_body.to_string());
     if let Some(api_key) = &model_config.api_key {
         request_builder = request_builder.bearer_auth(api_key);
     }
@@ -257,11 +214,7 @@ pub async fn generate_plan_llm(
     let response_json: Value = serde_json::from_str(&response_text)
          .with_context(|| format!("Failed to parse LLM planning response as JSON. Raw response:\n{}", response_text))?;
 
-    let path_to_use = response_json_path
-        .or(model_config.response_json_path.as_deref())
-        .unwrap_or("$.");
-
-    let selected_values = jsonpath_select(&response_json, path_to_use)
+    let selected_values = jsonpath_select(&response_json, response_json_path)
         .map_err(|e| anyhow::anyhow!("JSONPath selection error for plan: {}", e))?;
 
     match selected_values.first() {
@@ -273,11 +226,11 @@ pub async fn generate_plan_llm(
         }
         Some(other) => anyhow::bail!(
             "Expected a plan string at JSONPath '{}', but found: {:?}",
-            path_to_use,
+            response_json_path,
             other
         ),
         None => {
-            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, path_to_use);
+            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, response_json_path);
         }
     }
 }
@@ -360,8 +313,8 @@ mod tests {
             api_key: None,
             api_key_header: None,
             model_identifier: Some("test_model".to_string()),
-            request_format: Some(r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string()),
-            response_json_path: None,
+            request_format: r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string(),
+            response_json_path: ".".to_string(),
         };
 
         let prompt = "test prompt";
@@ -369,7 +322,7 @@ mod tests {
 
         fs::write("test_context_file", "test context").unwrap();
 
-        let result = ask_llm(&model_config, prompt, &context_sources, &client, None).await;
+        let result = ask_llm(&model_config, prompt, &context_sources, &client, "$.").await;
 
         fs::remove_file("test_context_file").unwrap();
 

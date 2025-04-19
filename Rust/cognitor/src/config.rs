@@ -11,18 +11,12 @@ pub struct Model {
     pub api_key: Option<String>,
     pub api_key_header: Option<String>,
     pub model_identifier: Option<String>,
-    #[serde(default = "default_request_format")]
-    pub request_format: Option<String>,
-    pub response_json_path: Option<String>,
-}
-
-fn default_request_format() -> Option<String> {
-    Some("{\"model\": \"{{model}}\", \"prompt\": \"{{prompt}}\"}".to_string())
+    pub request_format: String,
+    pub response_json_path: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Config {
-    #[serde(default)]
     pub models: HashMap<String, Model>,
     pub default_model: Option<String>,
     pub current_model: Option<String>,
@@ -32,12 +26,10 @@ impl Config {
     pub fn config_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir()
             .context("Failed to find config directory")?
-            .join("cognitor");
+            .join("cliff");
         Ok(config_dir.join("config.toml"))
     }
 
-    /// Loads the configuration from the default path.
-    /// Creates the directory and default config if it doesn't exist.
     pub fn load() -> Result<Self> {
         let path = Self::config_path()?;
         if !path.exists() {
@@ -56,7 +48,6 @@ impl Config {
         }
     }
 
-    /// Saves the configuration to the default path.
     pub fn save(&self) -> Result<()> {
         let path = Self::config_path()?;
         let content = toml::to_string_pretty(self)
@@ -66,8 +57,6 @@ impl Config {
         Ok(())
     }
 
-    /// Gets the currently active model configuration.
-    /// Prefers `current_model`, falls back to `default_model`, then None.
     pub fn get_active_model(&self) -> Option<&Model> {
         self.current_model
             .as_ref()
@@ -75,12 +64,10 @@ impl Config {
             .and_then(|name| self.models.get(name))
     }
 
-     /// Adds or updates a model configuration.
     pub fn add_model(&mut self, model: Model) {
         self.models.insert(model.name.clone(), model);
     }
 
-    /// Sets the default model. Returns error if the model name doesn't exist.
     pub fn set_default_model(&mut self, name: &str) -> Result<()> {
         if self.models.contains_key(name) {
             self.default_model = Some(name.to_string());
@@ -90,7 +77,6 @@ impl Config {
         }
     }
 
-     /// Sets the current model for the session. Returns error if the model name doesn't exist.
     pub fn set_current_model(&mut self, name: &str) -> Result<()> {
         if self.models.contains_key(name) {
             self.current_model = Some(name.to_string());
@@ -100,12 +86,10 @@ impl Config {
         }
     }
 
-    /// Clears the current model selection.
     pub fn clear_current_model(&mut self) {
         self.current_model = None;
     }
 
-    /// Deletes a model configuration. Returns an error if the model name doesn't exist.
     pub fn delete_model(&mut self, name: &str) -> Result<()> {
         if self.models.contains_key(name) {
             self.models.remove(name);
@@ -135,8 +119,8 @@ mod tests {
             api_key: Some("test-key".to_string()),
             api_key_header: None,
             model_identifier: Some("gpt-test".to_string()),
-            request_format: Some("test-format".to_string()),
-            response_json_path: None,
+            request_format: "test-format".to_string(),
+            response_json_path: "$.".to_string(),
         };
         config.add_model(model.clone());
         config.set_default_model("test-model").unwrap();
@@ -153,8 +137,9 @@ mod tests {
      #[test]
     fn test_get_active_model() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None };
-        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None };
+        let request_format = r#"{"input": "{{prompt}}"}"#;
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: request_format.to_string(), response_json_path: "$.".to_string() };
+        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: request_format.to_string(), response_json_path: "$.".to_string() };
         config.add_model(model1.clone());
         config.add_model(model2.clone());
 
@@ -173,7 +158,8 @@ mod tests {
      #[test]
     fn test_set_default_current_model_errors() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None };
+        let request_format = r#"{"input": "{{prompt}}"}"#;
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: request_format.to_string(), response_json_path: "$.".to_string() };
         config.add_model(model1.clone());
 
         assert!(config.set_default_model("model1").is_ok());

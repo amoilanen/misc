@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
 use crate::config::{Config, Model};
 use crate::llm::{ask_llm, generate_plan_llm};
@@ -11,14 +11,12 @@ mod llm;
 #[derive(Parser, Debug)]
 #[command(author, version, about = "CLIFF: Command Line Interface Friend & Facilitator", long_about = "CLIFF: Command Line Interface Friend & Facilitator")]
 struct Cli {
+    /// Command to execute
     #[command(subcommand)]
     command: Commands,
-
+    /// Configured LLM model to use to execute the command
     #[arg(short, long, global = true)]
-    model: Option<String>,
-
-    #[arg(long, global = true)]
-    response_json_path: Option<String>,
+    model: Option<String>
 }
 
 #[derive(Subcommand, Debug)]
@@ -27,27 +25,20 @@ enum Commands {
     Ask {
         /// The prompt/question to ask the LLM
         prompt: String,
-
         /// Files or URLs to provide as context
         #[arg(short, long, value_delimiter = ',')]
-        context: Vec<String>,
-        #[arg(short, long, default_value = "false")]
-        internet_search: bool,
+        context: Vec<String>
     },
     /// Ask the LLM to generate a plan and execute it
     Act {
         /// The instruction or goal for the LLM
         instruction: String,
-
         /// Automatically confirm and execute all actions in the plan
         #[arg(long, default_value = "false")]
         auto_confirm: bool,
-
         /// Files or URLs to provide as context
         #[arg(short, long, value_delimiter = ',')]
-        context: Vec<String>,
-        #[arg(short, long, default_value = "false")]
-        internet_search: bool,
+        context: Vec<String>
     },
     /// Manage LLM configurations
     Config(ConfigArgs),
@@ -55,6 +46,7 @@ enum Commands {
 
 #[derive(Parser, Debug)]
 struct ConfigArgs {
+    /// Configuration sub-command
     #[command(subcommand)]
     action: ConfigAction,
 }
@@ -66,17 +58,17 @@ enum ConfigAction {
         #[arg(short, long)]
         name: String,
         #[arg(long)]
+        model_identifier: Option<String>,
+        #[arg(long)]
         api_url: String,
         #[arg(long)]
         api_key: Option<String>,
         #[arg(long)]
         api_key_header: Option<String>,
         #[arg(long)]
-        model_identifier: Option<String>,
+        request_format: String,
         #[arg(long)]
-        request_format: Option<String>,
-        #[arg(long)]
-        response_json_path: Option<String>,
+        response_json_path: String,
     },
     /// Set the default model
     SetDefault {
@@ -114,34 +106,16 @@ async fn main() -> Result<()> {
     }
 
     match cli.command {
-        Commands::Ask { prompt, context, internet_search: _ } => {
-            if let Some(active_model) = config.get_active_model() {
-                match ask_llm(active_model, &prompt, &context, &client, cli.response_json_path.as_deref()).await {
-                    Ok(answer) => println!("{}\n", answer),
-                    Err(e) => eprintln!("Error during LLM call: {}", e),
-                }
-            } else {
-                eprintln!("Error: No active model configured. Use 'cognitor config add' and 'cognitor config set-default'.");
-                std::process::exit(1);
-            }
+        Commands::Ask { prompt, context } => {
+            let active_model = get_active_model(&config)?;
+            let answer = ask_llm(active_model, &prompt, &context, &client, &active_model.response_json_path).await.context("Error during LLM call")?;
+            println!("{}\n", answer);
         }
-        Commands::Act { instruction, context, internet_search: _, auto_confirm } => {
-            println!("Processing 'act' command...");
-            if let Some(active_model) = config.get_active_model() {
-                println!("Using model: {}", active_model.name);
-                match generate_plan_llm(active_model, &instruction, &context, &client, cli.response_json_path.as_deref()).await {
-                    Ok(plan) => {
-                        plan.display();
-                        if let Err(exec_err) = executor::execute_plan(&plan, auto_confirm).await {
-                            eprintln!("Error during plan execution: {}", exec_err);
-                        }
-                    }
-                    Err(e) => eprintln!("Error generating plan: {}", e),
-                }
-            } else {
-                eprintln!("Error: No active model configured. Use 'cognitor config add' and 'cognitor config set-default'.");
-                std::process::exit(1);
-            }
+        Commands::Act { instruction, context, auto_confirm } => {
+            let active_model = get_active_model(&config)?;
+            let plan = generate_plan_llm(active_model, &instruction, &context, &client, &active_model.response_json_path).await.context("Error during LLM call")?;
+            plan.display();
+            executor::execute_plan(&plan, auto_confirm).await?;
         }
         Commands::Config(args) => {
             handle_config_action(args.action, &mut config)?;
@@ -149,6 +123,10 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn get_active_model(config: &Config) -> Result<&Model> {
+    config.get_active_model().ok_or(anyhow!("Error: No active model configured. Use 'cognitor config add' and 'cognitor config set-default'."))
 }
 
 fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()> {
@@ -183,7 +161,7 @@ fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()>
         ConfigAction::List => {
             println!("Configured Models:");
             if config.models.is_empty() {
-                println!("  No models configured.");
+                println!("No models configured.");
             } else {
                 for (name, model) in &config.models {
                     let is_default = config.default_model.as_ref() == Some(name);
@@ -212,10 +190,10 @@ fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()>
             config.save()?;
             println!("Model '{}' deleted.", name);
         }
-        ConfigAction::Path => match Config::config_path() {
-            Ok(path) => println!("Config file path: {:?}", path),
-            Err(e) => eprintln!("Error determining config path: {}", e),
-        },
+        ConfigAction::Path => {
+            let path = Config::config_path().context("Error determining config path")?;
+            println!("Config file path: {:?}", path)
+        }
     }
     Ok(())
 }
