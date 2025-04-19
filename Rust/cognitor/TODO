@@ -13,3 +13,5 @@ Test/make sure that the following work:
 - Make sure the tests pass
 
 - Support interactive sessions with history/post history to the LLM model or reference to the history
+- Support setting a goal for the goal
+- Add ability to the agent to be able to search file system in order to find the needed information, i.e. given a goal the agent comes up with a plan which can help it gain more context for achieving the goal

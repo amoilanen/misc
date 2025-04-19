@@ -1,24 +1,22 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use crate::config::{Config, Model};
-use crate::llm::{ask_llm, generate_plan_llm}; // Import ask and plan generation
+use crate::llm::{ask_llm, generate_plan_llm};
 use reqwest::Client;
 
 mod config;
-mod executor; // Make the executor module visible
+mod executor;
 mod llm;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = "Cognitor: An LLM Agent CLI")]
+#[command(author, version, about = "CLIFF: Command Line Interface Friend & Facilitator", long_about = "CLIFF: Command Line Interface Friend & Facilitator")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
 
-    /// Use a specific model for this command, overriding default/current
     #[arg(short, long, global = true)]
     model: Option<String>,
 
-    /// JSONPath expression to extract the response text from the LLM API response body
     #[arg(long, global = true)]
     response_json_path: Option<String>,
 }
@@ -74,11 +72,11 @@ enum ConfigAction {
         #[arg(long)]
         api_key_header: Option<String>,
         #[arg(long)]
-        model_identifier: Option<String>, // e.g., "gpt-4", "claude-3-opus"
+        model_identifier: Option<String>,
         #[arg(long)]
         request_format: Option<String>,
         #[arg(long)]
-        response_json_path: Option<String>, // Add the argument
+        response_json_path: Option<String>,
     },
     /// Set the default model
     SetDefault {
@@ -109,20 +107,15 @@ async fn main() -> Result<()> {
     let mut config = Config::load()?;
     let client = Client::new();
 
-    // Apply model override first
     if let Some(model_name) = &cli.model {
         if config.set_current_model(model_name).is_err() {
             eprintln!("Warning: Model '{}' not found, using default/active model.", model_name);
         }
     }
-    // Note: cli.response_path is handled within the ask_llm/generate_plan_llm functions
 
     match cli.command {
         Commands::Ask { prompt, context, internet_search: _ } => {
-            //println!("Processing 'ask' command...");
             if let Some(active_model) = config.get_active_model() {
-                //println!("Using model: {}", active_model.name);
-                // Pass the CLI response_json_path
                 match ask_llm(active_model, &prompt, &context, &client, cli.response_json_path.as_deref()).await {
                     Ok(answer) => println!("{}\n", answer),
                     Err(e) => eprintln!("Error during LLM call: {}", e),
@@ -132,22 +125,18 @@ async fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Commands::Act { instruction, context, internet_search: _, auto_confirm } => { // Added auto_confirm
+        Commands::Act { instruction, context, internet_search: _, auto_confirm } => {
             println!("Processing 'act' command...");
             if let Some(active_model) = config.get_active_model() {
                 println!("Using model: {}", active_model.name);
-                 // Pass the CLI response_json_path
                 match generate_plan_llm(active_model, &instruction, &context, &client, cli.response_json_path.as_deref()).await {
                     Ok(plan) => {
                         plan.display();
-                        // Pass auto_confirm to the execution logic
                         if let Err(exec_err) = executor::execute_plan(&plan, auto_confirm).await {
                             eprintln!("Error during plan execution: {}", exec_err);
                         }
                     }
                     Err(e) => eprintln!("Error generating plan: {}", e),
-                    // TODO: Revisit confirmation logic placement. Maybe move into execute_plan?
-                    // For now, execute_plan will handle confirmation internally based on auto_confirm.
                 }
             } else {
                 eprintln!("Error: No active model configured. Use 'cognitor config add' and 'cognitor config set-default'.");
@@ -164,7 +153,7 @@ async fn main() -> Result<()> {
 
 fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()> {
     match action {
-        ConfigAction::Add { name, api_url, api_key, api_key_header, model_identifier, request_format, response_json_path } => { // Add param
+        ConfigAction::Add { name, api_url, api_key, api_key_header, model_identifier, request_format, response_json_path } => {
             let new_model = Model {
                 name: name.clone(),
                 api_url,
@@ -172,7 +161,7 @@ fn handle_config_action(action: ConfigAction, config: &mut Config) -> Result<()>
                 api_key_header,
                 model_identifier,
                 request_format,
-                response_json_path, // Add field
+                response_json_path,
             };
             config.add_model(new_model);
             config.save()?;

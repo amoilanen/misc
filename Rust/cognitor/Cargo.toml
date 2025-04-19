@@ -1,5 +1,6 @@
-[package]
-name = "cognitor"
+ 
+          [package]
+name = "cliff"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,9 +14,8 @@ reqwest = { version = "0.12.4", features = ["json"] }
 thiserror = "1.0.61"
 anyhow = "1.0.82"
 url = { version = "2.5.0", features = ["serde"] } # For URL parsing in context handling
-serde_json = "1.0" # For parsing LLM plan responses
-jsonpath_lib = "0.3" # For extracting data from JSON responses
+jsonpath_lib = "0.3"
+serde_json = "1.0"
 
 [dev-dependencies]
 httpmock = "0.7"
-serde_json = "1.0" # For executor tests

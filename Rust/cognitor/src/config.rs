@@ -2,19 +2,17 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf; // Removed unused Path import
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Model {
     pub name: String,
     pub api_url: String,
-    pub api_key: Option<String>, // API key might be optional depending on the model/service
-    pub api_key_header: Option<String>, // e.g., "x-goog-api-key: YOUR_API_KEY" or "Authorization: Bearer $OPENAI_API_KEY"
-    // Add other model-specific parameters if needed, e.g., model name for the API call
+    pub api_key: Option<String>,
+    pub api_key_header: Option<String>,
     pub model_identifier: Option<String>,
     #[serde(default = "default_request_format")]
     pub request_format: Option<String>,
-    /// Optional JSONPath to extract the primary response string from the API result
     pub response_json_path: Option<String>,
 }
 
@@ -27,12 +25,11 @@ pub struct Config {
     #[serde(default)]
     pub models: HashMap<String, Model>,
     pub default_model: Option<String>,
-    pub current_model: Option<String>, // Overrides default if set
+    pub current_model: Option<String>,
 }
 
 impl Config {
-    /// Returns the path to the configuration file.
-    pub fn config_path() -> Result<PathBuf> { // Made public
+    pub fn config_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir()
             .context("Failed to find config directory")?
             .join("cognitor");
@@ -44,12 +41,10 @@ impl Config {
     pub fn load() -> Result<Self> {
         let path = Self::config_path()?;
         if !path.exists() {
-            // Create directory if it doesn't exist
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)
                     .with_context(|| format!("Failed to create config directory: {:?}", parent))?;
             }
-            // Create a default empty config file
             let default_config = Config::default();
             default_config.save()?;
             Ok(default_config)
@@ -114,7 +109,6 @@ impl Config {
     pub fn delete_model(&mut self, name: &str) -> Result<()> {
         if self.models.contains_key(name) {
             self.models.remove(name);
-            // If the deleted model was the default or current model, clear it
             if self.default_model.as_ref() == Some(&name.to_string()) {
                 self.default_model = None;
             }
@@ -128,12 +122,9 @@ impl Config {
     }
 }
 
-// Basic tests for config loading/saving
 #[cfg(test)]
 mod tests {
     use super::*;
-    // Removed: use tempfile::tempdir;
-    // Removed unused helper function set_test_config_path
 
     #[test]
     fn test_serialize_deserialize() {
@@ -145,7 +136,7 @@ mod tests {
             api_key_header: None,
             model_identifier: Some("gpt-test".to_string()),
             request_format: Some("test-format".to_string()),
-            response_json_path: None, // Add the new field
+            response_json_path: None,
         };
         config.add_model(model.clone());
         config.set_default_model("test-model").unwrap();
@@ -162,23 +153,19 @@ mod tests {
      #[test]
     fn test_get_active_model() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None }; // Add field
-        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None }; // Add field
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None };
+        let model2 = Model { name: "model2".to_string(), api_url: "url2".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None };
         config.add_model(model1.clone());
         config.add_model(model2.clone());
 
-        // No default, no current
         assert!(config.get_active_model().is_none());
 
-        // Default set
         config.set_default_model("model1").unwrap();
         assert_eq!(config.get_active_model().unwrap().name, "model1");
 
-        // Current set (overrides default)
         config.set_current_model("model2").unwrap();
          assert_eq!(config.get_active_model().unwrap().name, "model2");
 
-        // Current cleared, falls back to default
         config.clear_current_model();
         assert_eq!(config.get_active_model().unwrap().name, "model1");
     }
@@ -186,7 +173,7 @@ mod tests {
      #[test]
     fn test_set_default_current_model_errors() {
         let mut config = Config::default();
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None }; // Add field
+        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: default_request_format(), response_json_path: None };
         config.add_model(model1.clone());
 
         assert!(config.set_default_model("model1").is_ok());
