@@ -1,8 +1,9 @@
-# CLIFF: Command Line Interface Friend & Facilitator
+![cliff Logo](images/cliff.svg)
 
-CLIFF is a command-line tool written in Rust for interacting with Large Language Models (LLMs). It allows you to configure different LLM backends, ask questions, and give instructions for the agent to execute tasks based on a generated plan.
+# cliff
+> cliff - Command Line Interface Friend & Facilitator
 
-![CLIFF Logo](images/cliff.png)
+cliff is a command-line tool written in Rust for interacting with Large Language Models (LLMs). It allows you to configure different LLM backends, ask questions, and give instructions for the agent to execute tasks based on a generated plan.
 
 **⚠️ Security Warning:** The `act` command allows the LLM to generate and execute arbitrary shell commands after user confirmation. Be extremely cautious about the instructions you provide and the plans you approve, especially when interacting with powerful or unfamiliar LLMs. Ensure you understand the commands before confirming execution.
 
