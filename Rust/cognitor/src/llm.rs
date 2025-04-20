@@ -33,11 +33,11 @@ pub async fn ask_llm_for_plan(
 
     let plan_prompt = format!(
         "Based on the following instruction and context, create a step-by-step plan to achieve the goal.
-        Output the plan ONLY as a JSON object matching the following Rust structs:
+        Output the plan ONLY as a JSON object matching the following Typescript interface:
 
         ```rust
     #[derive(Serialize, Deserialize, Debug, Clone)]
-    #[serde(tag = \"action\", rename_all = \"snake_case\")]
+    #[serde(tag = \\\"action\\\", rename_all = \\\"snake_case\\\")]
     pub enum Action {{
         CreateFile {{ path: String, content: String }},
         RunCommand {{ command: String }},
@@ -57,16 +57,17 @@ pub async fn ask_llm_for_plan(
 
         Instruction: {}
 
-        Context:
-        {}
+        Context: {}
 
-        Respond ONLY with the JSON object.",
+        Respond ONLY with a valid JSON object",
         instruction,
         combined_context.as_deref().unwrap_or("No context provided.")
     );
 
     let plan_response = fetch_llm_response(&plan_prompt, model_config, combined_context.as_deref(), client).await?;
-    let plan: Plan = serde_json::from_str(&plan_response)
+    let response_json = strip_json_fence(&plan_response);
+    println!("Response = '{}'", response_json);
+    let plan: Plan = serde_json::from_str(response_json)
         .with_context(|| format!("Failed to parse extracted plan JSON string. Extracted string:\n{}", plan_response))?;
     Ok(plan)
 }
@@ -174,11 +175,45 @@ async fn fetch_llm_response(
     }
 }
 
+fn strip_json_fence(s: &str) -> &str {
+    s.trim().strip_prefix("```json")
+     .and_then(|s| s.strip_suffix("```"))
+     .map(str::trim)
+     .unwrap_or(s)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use httpmock::prelude::*;
     use tokio;
+
+    #[test]
+    fn test_strip_json_fence() {
+        let input = r#"
+        ```json
+        {
+          "steps": [
+            {
+              "action": "create_file",
+              "path": "hello.py",
+              "content": "print('Hello, world!')"
+            }
+          ]
+        }
+        ```"#;
+       let expected = r#"{
+          "steps": [
+            {
+              "action": "create_file",
+              "path": "hello.py",
+              "content": "print('Hello, world!')"
+            }
+          ]
+        }"#;
+       let result = strip_json_fence(input);
+       assert_eq!(result, expected)
+    }
 
     #[tokio::test]
     async fn test_fetch_context_file_not_found() {
