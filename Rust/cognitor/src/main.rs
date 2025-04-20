@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
 use crate::config::{Config, Model};
-use crate::llm::{ask_llm, generate_plan_llm};
+use crate::llm::{ask_llm, ask_llm_for_plan};
 use reqwest::Client;
 
 mod config;
@@ -9,7 +9,7 @@ mod executor;
 mod llm;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "CLIFF: Command Line Interface Friend & Facilitator", long_about = "CLIFF: Command Line Interface Friend & Facilitator")]
+#[command(author, version, about = "CLIFF: Command Line Interface Friendly & Facilitator", long_about = "CLIFF: Command Line Interface Friendly & Facilitator")]
 struct Cli {
     /// Command to execute
     #[command(subcommand)]
@@ -108,12 +108,12 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Ask { prompt, context } => {
             let active_model = get_active_model(&config)?;
-            let answer = ask_llm(active_model, &prompt, &context, &client, &active_model.response_json_path).await.context("Error during LLM call")?;
+            let answer = ask_llm(active_model, &prompt, &context, &client).await.context("Error during LLM call")?;
             println!("{}\n", answer);
         }
         Commands::Act { instruction, context, auto_confirm } => {
             let active_model = get_active_model(&config)?;
-            let plan = generate_plan_llm(active_model, &instruction, &context, &client, &active_model.response_json_path).await.context("Error during LLM call")?;
+            let plan = ask_llm_for_plan(active_model, &instruction, &context, &client).await.context("Error during LLM call")?;
             plan.display();
             executor::execute_plan(&plan, auto_confirm).await?;
         }

@@ -13,50 +13,65 @@ struct ContextContent {
     content: String,
 }
 
-async fn fetch_context(context_sources: &[String], client: &Client) -> Result<Vec<ContextContent>> {
-    let mut fetched_contents = Vec::new();
-
-    for source_str in context_sources {
-        match Url::parse(source_str) {
-            Ok(url) if url.scheme() == "http" || url.scheme() == "https" => {
-                println!("Fetching context from URL: {}", source_str);
-                let response = client.get(url.clone()).send().await
-                    .with_context(|| format!("Failed to fetch URL: {}", source_str))?;
-
-                if !response.status().is_success() {
-                     anyhow::bail!("Failed to fetch URL: {} - Status: {}", source_str, response.status());
-                }
-
-                let content = response.text().await
-                    .with_context(|| format!("Failed to read content from URL: {}", source_str))?;
-
-                fetched_contents.push(ContextContent {
-                    source: source_str.clone(),
-                    content,
-                });
-            }
-            _ => {
-                println!("Reading context from file: {}", source_str);
-                let content = fs::read_to_string(source_str)
-                    .with_context(|| format!("Failed to read file: {}", source_str))?;
-                fetched_contents.push(ContextContent {
-                    source: source_str.clone(),
-                    content,
-                });
-            }
-        }
-    }
-    Ok(fetched_contents)
-}
-
-/// Makes a call to the configured LLM for the "ask" command.
 pub async fn ask_llm(
     model_config: &Model,
     prompt: &str,
     context_sources: &[String],
-    client: &Client,
-    response_json_path: &str,
+    client: &Client
 ) -> Result<String> {
+    let combined_context = get_combined_context(context_sources, client).await?;
+    fetch_llm_response(prompt, model_config, combined_context.as_deref(), client).await
+}
+
+pub async fn ask_llm_for_plan(
+    model_config: &Model,
+    instruction: &str,
+    context_sources: &[String],
+    client: &Client
+) -> Result<Plan> {
+    let combined_context = get_combined_context(context_sources, client).await?;
+
+    let plan_prompt = format!(
+        "Based on the following instruction and context, create a step-by-step plan to achieve the goal.
+        Output the plan ONLY as a JSON object matching the following Rust structs:
+
+        ```rust
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[serde(tag = \"action\", rename_all = \"snake_case\")]
+    pub enum Action {{
+        CreateFile {{ path: String, content: String }},
+        RunCommand {{ command: String }},
+        SearchWeb {{ query: String }},
+        AskUser {{ question: String }},
+        DeleteFile {{ path: String }},
+        EditFile {{ path: String, content: String }},
+        Respond {{ message: String }},
+    }}
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Plan {{
+        pub thought: Option<String>,
+        pub steps: Vec<Action>,
+    }}
+        ```
+
+        Instruction: {}
+
+        Context:
+        {}
+
+        Respond ONLY with the JSON object.",
+        instruction,
+        combined_context.as_deref().unwrap_or("No context provided.")
+    );
+
+    let plan_response = fetch_llm_response(&plan_prompt, model_config, combined_context.as_deref(), client).await?;
+    let plan: Plan = serde_json::from_str(&plan_response)
+        .with_context(|| format!("Failed to parse extracted plan JSON string. Extracted string:\n{}", plan_response))?;
+    Ok(plan)
+}
+
+async fn get_combined_context(context_sources: &[String], client: &Client) -> Result<Option<String>> {
     let fetched_context = fetch_context(context_sources, client).await?;
     let combined_context = if !fetched_context.is_empty() {
         Some(
@@ -69,7 +84,40 @@ pub async fn ask_llm(
     } else {
         None
     };
+    Ok(combined_context)
+}
 
+async fn fetch_context(context_sources: &[String], client: &Client) -> Result<Vec<ContextContent>> {
+    let mut fetched_contents = Vec::new();
+
+    for source in context_sources {
+        let content = if source.starts_with("http://") || source.starts_with("https://") {
+            let url = Url::parse(source)?;
+            let response = client.get(url.clone()).send().await
+                .with_context(|| format!("Failed to fetch URL: {}", source))?;
+            if !response.status().is_success() {
+                anyhow::bail!("Failed to fetch URL: {} - Status: {}", source, response.status());
+            }
+            response.text().await
+                .with_context(|| format!("Failed to read content from URL: {}", source))?
+        } else {
+            fs::read_to_string(source)
+                .with_context(|| format!("Failed to read file: {}", source))?
+        };
+        fetched_contents.push(ContextContent {
+            source: source.clone(),
+            content
+        });
+    }
+    Ok(fetched_contents)
+}
+
+async fn fetch_llm_response(
+    prompt: &str,
+    model_config: &Model,
+    combined_context: Option<&str>,
+    client: &Client
+) -> Result<String> {
     let request_body = &model_config.request_format
         .replace("{{prompt}}", &prompt)
         .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
@@ -105,136 +153,26 @@ pub async fn ask_llm(
             error_body
         );
     }
-
     let response_text = response.text().await
         .with_context(|| "Failed to read LLM response text")?;
-
     let response_json: Value = serde_json::from_str(&response_text)
         .with_context(|| format!("Failed to parse LLM response as JSON. Raw response:\n{}", response_text))?;
 
-    let selected_values = jsonpath_select(&response_json, response_json_path)
+    let selected_values = jsonpath_select(&response_json, &model_config.response_json_path)
         .map_err(|e| anyhow::anyhow!("JSONPath selection error: {}", e))?;
 
     match selected_values.first() {
         Some(Value::String(answer)) => Ok(answer.clone()),
         Some(other) => anyhow::bail!(
             "Expected a string at JSONPath '{}', but found: {:?}",
-            response_json_path,
+            &model_config.response_json_path,
             other
         ),
         None => {
-            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, response_json_path);
+            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_json, &model_config.response_json_path);
         }
     }
 }
-
-/// Generates an execution plan using the LLM for the "do" command.
-pub async fn generate_plan_llm(
-    model_config: &Model,
-    instruction: &str,
-    context_sources: &[String],
-    client: &Client,
-    response_json_path: &str,
-) -> Result<Plan> {
-    println!("Generating plan for instruction: '{}'", instruction);
-
-    let fetched_context = fetch_context(context_sources, client).await?;
-    let combined_context = if !fetched_context.is_empty() {
-        Some(
-            fetched_context
-                .iter()
-                .map(|c| format!("--- Context from {} ---\n{}\n", c.source, c.content))
-                .collect::<Vec<_>>()
-                .join("\n"),
-        )
-    } else {
-        None
-    };
-
-    let plan_prompt = format!(
-        "Based on the following instruction and context, create a step-by-step plan to achieve the goal.
-        Output the plan ONLY as a JSON object matching the following Rust structs:
-
-        ```rust
-        #[derive(Serialize, Deserialize, Debug, Clone)]
-        #[serde(tag = \"action\", rename_all = \"snake_case\")]
-        pub enum Action {{
-            CreateFile {{ path: String, content: String }},
-            RunCommand {{ command: String }},
-            SearchWeb {{ query: String }},
-            AskUser {{ question: String }},
-            Respond {{ message: String }},
-        }}
-
-        #[derive(Serialize, Deserialize, Debug, Clone)]
-        pub struct Plan {{
-            pub thought: Option<String>,
-            pub steps: Vec<Action>,
-        }}
-        ```
-
-        Instruction: {}
-
-        Context:
-        {}
-
-        Respond ONLY with the JSON object.",
-        instruction,
-        combined_context.as_deref().unwrap_or("No context provided.")
-    );
-
-    let request_body = &model_config.request_format
-        .replace("{{prompt}}", &plan_prompt)
-        .replace("{{model}}", &model_config.model_identifier.clone().unwrap_or("?".to_string()))
-        .replace("{{context}}", combined_context.as_deref().unwrap_or(""));
-
-    println!("Sending planning request to: {}", model_config.api_url);
-
-    let mut request_builder = client.post(&model_config.api_url).body(request_body.to_string());
-    if let Some(api_key) = &model_config.api_key {
-        request_builder = request_builder.bearer_auth(api_key);
-    }
-    let response = request_builder.send().await
-        .with_context(|| format!("Failed to send planning request to {}", model_config.api_url))?;
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let error_body = response.text().await.unwrap_or_else(|_| "Could not read error body".to_string());
-        anyhow::bail!(
-            "LLM planning request failed for model '{}' with status: {}. Response: {}",
-            model_config.name,
-            status,
-            error_body
-        );
-    }
-
-    let response_text = response.text().await
-        .with_context(|| "Failed to read LLM planning response text".to_string())?;
-
-    let response_json: Value = serde_json::from_str(&response_text)
-         .with_context(|| format!("Failed to parse LLM planning response as JSON. Raw response:\n{}", response_text))?;
-
-    let selected_values = jsonpath_select(&response_json, response_json_path)
-        .map_err(|e| anyhow::anyhow!("JSONPath selection error for plan: {}", e))?;
-
-    match selected_values.first() {
-        Some(Value::String(plan_str)) => {
-            let clean_plan_str = plan_str.trim().trim_start_matches("```json").trim_end_matches("```").trim();
-            let plan: Plan = serde_json::from_str(clean_plan_str)
-                .with_context(|| format!("Failed to parse extracted plan JSON string. Extracted string:\n{}", clean_plan_str))?;
-            Ok(plan)
-        }
-        Some(other) => anyhow::bail!(
-            "Expected a plan string at JSONPath '{}', but found: {:?}",
-            response_json_path,
-            other
-        ),
-        None => {
-            anyhow::bail!("Could not extract the value using the defined path, response='{}', path = '{}'", &response_text, response_json_path);
-        }
-    }
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -314,7 +252,7 @@ mod tests {
             api_key_header: None,
             model_identifier: Some("test_model".to_string()),
             request_format: r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string(),
-            response_json_path: ".".to_string(),
+            response_json_path: "$.".to_string(),
         };
 
         let prompt = "test prompt";
@@ -322,7 +260,7 @@ mod tests {
 
         fs::write("test_context_file", "test context").unwrap();
 
-        let result = ask_llm(&model_config, prompt, &context_sources, &client, "$.").await;
+        let result = ask_llm(&model_config, prompt, &context_sources, &client).await;
 
         fs::remove_file("test_context_file").unwrap();
 

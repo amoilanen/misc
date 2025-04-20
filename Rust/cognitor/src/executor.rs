@@ -7,19 +7,12 @@ use std::process::{Command, Stdio};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum Action {
-    /// Create a file with the specified content.
     CreateFile { path: String, content: String },
-    /// Execute a shell command.
     RunCommand { command: String },
-    /// Search the web for information (details TBD).
     SearchWeb { query: String },
-    /// Ask the user a question (e.g., for clarification).
     AskUser { question: String },
-    /// Delete a file.
     DeleteFile { path: String },
-    /// Edit/Overwrite a file with new content.
     EditFile { path: String, content: String },
-    /// Final response or summary action.
     Respond { message: String },
 }
 
@@ -29,8 +22,86 @@ pub struct Plan {
     pub steps: Vec<Action>,
 }
 
+impl Action {
+    fn execute(&self) -> Result<()> {
+        match self {
+            Action::CreateFile { path, content } => {
+                println!("Action: Create file '{}'", path);
+                if let Some(parent_dir) = std::path::Path::new(path).parent() {
+                    fs::create_dir_all(parent_dir)
+                        .with_context(|| format!("Failed to create parent directories for '{}'", path))?;
+                }
+                fs::write(path, content)
+                    .with_context(|| format!("Failed to write file: {}", path))?;
+                println!("Success: File '{}' created.", path);
+            },
+            Action::EditFile { path, content } => {
+                println!("Action: Edit/Overwrite file '{}'", path);
+                if !std::path::Path::new(path).exists() {
+                    println!("Warning: File '{}' does not exist, creating it.", path);
+                    if let Some(parent_dir) = std::path::Path::new(path).parent() {
+                        fs::create_dir_all(parent_dir)
+                            .with_context(|| format!("Failed to create parent directories for '{}'", path))?;
+                    }
+                }
+                fs::write(path, content)
+                    .with_context(|| format!("Failed to write file: {}", path))?;
+                println!("Success: File '{}' updated.", path);
+            },
+            Action::DeleteFile { path } => {
+                println!("Action: Delete file '{}'", path);
+                if std::path::Path::new(path).exists() {
+                    fs::remove_file(path)
+                        .with_context(|| format!("Failed to delete file: {}", path))?;
+                    println!("Success: File '{}' deleted.", path);
+                } else {
+                    println!("Warning: File '{}' does not exist, skipping deletion.", path);
+                }
+            },
+            Action::RunCommand { command } => {
+                println!("Action: Run command `{}`", command);
+                let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+                let mut cmd = Command::new(shell);
+                cmd.arg("-c");
+                cmd.arg(command);
+
+                cmd.stdin(Stdio::inherit());
+                cmd.stdout(Stdio::inherit());
+                cmd.stderr(Stdio::inherit());
+
+                let status = cmd.status()
+                    .with_context(|| format!("Failed to execute command: {}", command))?;
+
+                if status.success() {
+                    println!("Success: Command executed successfully.");
+                } else {
+                    anyhow::bail!("Command failed with status: {}", status);
+                }
+            },
+            Action::SearchWeb { query } => {
+                //TODO:
+                println!("  Action: Search web for '{}'", query);
+                println!("  (Web search not yet implemented)");
+                println!("  Skipping: Web search functionality is not available.");
+            },
+            Action::AskUser { question } => {
+                //TODO:
+                println!("  Action: Ask user '{}'", question);
+                println!("  (Asking user not yet implemented)");
+                println!("  Skipping: Asking user functionality is not available.");
+            },
+            Action::Respond { message } => {
+                //TODO:
+                println!("--- Final Response ---");
+                println!("{}", message);
+                println!("----------------------");
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Plan {
-    /// Displays the plan to the user in a readable format.
     pub fn display(&self) {
         println!("\n--- Proposed Plan ---");
         if let Some(thought) = &self.thought {
@@ -55,7 +126,6 @@ impl Plan {
     }
 }
 
-/// Executes the plan step by step, asking for confirmation unless auto_confirm is true.
 pub async fn execute_plan(plan: &Plan, auto_confirm: bool) -> Result<()> {
     println!("\n--- Executing Plan ---");
     if plan.steps.is_empty() {
@@ -67,102 +137,35 @@ pub async fn execute_plan(plan: &Plan, auto_confirm: bool) -> Result<()> {
 
     for (i, action) in plan.steps.iter().enumerate() {
         println!("\n--- Step {}/{}: {:?} ---", i + 1, plan.steps.len(), action);
-
-        let mut confirmed = current_auto_confirm;
-        if !current_auto_confirm {
-            print!("Execute this step? (y/N/all): ");
-            io::stdout().flush()?;
-            let mut input = String::new();
-            io::stdin().read_line(&mut input)?;
-            let choice = input.trim().to_lowercase();
-            if choice == "y" || choice == "yes" {
-                confirmed = true;
-            } else if choice == "a" || choice == "all" {
-                confirmed = true;
-                current_auto_confirm = true;
-            } else {
-                println!("Skipping step {}.", i + 1);
-                continue;
-            }
-        }
-
+        let (new_auto_confirm, confirmed) = ask_for_confirmation(current_auto_confirm).await?;
+        current_auto_confirm = new_auto_confirm;
         if confirmed {
-            match action {
-                Action::CreateFile { path, content } => {
-                    println!("  Action: Create file '{}'", path);
-                    if let Some(parent_dir) = std::path::Path::new(path).parent() {
-                        fs::create_dir_all(parent_dir)
-                            .with_context(|| format!("Failed to create parent directories for '{}'", path))?;
-                    }
-                    fs::write(path, content)
-                        .with_context(|| format!("Failed to write file: {}", path))?;
-                    println!("  Success: File '{}' created.", path);
-                }
-                Action::EditFile { path, content } => {
-                    println!("  Action: Edit/Overwrite file '{}'", path);
-                    if !std::path::Path::new(path).exists() {
-                        println!("  Warning: File '{}' does not exist, creating it.", path);
-                        if let Some(parent_dir) = std::path::Path::new(path).parent() {
-                            fs::create_dir_all(parent_dir)
-                                .with_context(|| format!("Failed to create parent directories for '{}'", path))?;
-                        }
-                    }
-                    fs::write(path, content)
-                        .with_context(|| format!("Failed to write file: {}", path))?;
-                    println!("  Success: File '{}' updated.", path);
-                }
-                Action::DeleteFile { path } => {
-                    println!("  Action: Delete file '{}'", path);
-                    if std::path::Path::new(path).exists() {
-                        fs::remove_file(path)
-                            .with_context(|| format!("Failed to delete file: {}", path))?;
-                        println!("  Success: File '{}' deleted.", path);
-                    } else {
-                        println!("  Warning: File '{}' does not exist, skipping deletion.", path);
-                    }
-                }
-                Action::RunCommand { command } => {
-                    println!("  Action: Run command `{}`", command);
-                    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-                    let mut cmd = Command::new(shell);
-                    cmd.arg("-c");
-                    cmd.arg(command);
-
-                    cmd.stdin(Stdio::inherit());
-                    cmd.stdout(Stdio::inherit());
-                    cmd.stderr(Stdio::inherit());
-
-                    let status = cmd.status()
-                        .with_context(|| format!("Failed to execute command: {}", command))?;
-
-                    if status.success() {
-                        println!("  Success: Command executed successfully.");
-                    } else {
-                        anyhow::bail!("Command failed with status: {}", status);
-                    }
-                }
-                Action::SearchWeb { query } => {
-                    println!("  Action: Search web for '{}'", query);
-                    println!("  (Web search not yet implemented)");
-                    println!("  Skipping: Web search functionality is not available.");
-                }
-                Action::AskUser { question } => {
-                    println!("  Action: Ask user '{}'", question);
-                    println!("  (Asking user not yet implemented)");
-                    println!("  Skipping: Asking user functionality is not available.");
-                }
-                Action::Respond { message } => {
-                    println!("--- Final Response ---");
-                    println!("{}", message);
-                    println!("----------------------");
-                }
-            }
+            action.execute()?;
         } else {
             println!("Skipping step {}.", i + 1);
         }
     }
     println!("\n--- Plan Execution Finished ---");
     Ok(())
+}
+
+async fn ask_for_confirmation(current_auto_confirm: bool) -> Result<(bool, bool)> {
+    let mut current_auto_confirm = current_auto_confirm;
+    let mut confirmed = current_auto_confirm;
+    if !current_auto_confirm {
+        print!("Execute this step? (y/N/all): ");
+        io::stdout().flush()?;
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let choice = input.trim().to_lowercase();
+        if choice == "y" || choice == "yes" {
+            confirmed = true;
+        } else if choice == "a" || choice == "all" {
+            confirmed = true;
+            current_auto_confirm = true;
+        }
+    }
+    Ok((current_auto_confirm, confirmed))
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 ![cliff Logo](images/cliff.svg)
 
 # cliff
-> cliff - Command Line Interface Friend & Facilitator
+> cliff - Command Line Interface FriendlyD Facilitator
 
 cliff is a command-line tool written in Rust for interacting with Large Language Models (LLMs). It allows you to configure different LLM backends, ask questions, and give instructions for the agent to execute tasks based on a generated plan.
 
