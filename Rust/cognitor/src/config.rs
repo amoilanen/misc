@@ -109,9 +109,10 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
 
     #[test]
-    fn test_serialize_deserialize() {
+    fn test_serialize_deserialize() -> Result<()> {
         let mut config = Config::default();
         let model = Model {
             name: "test-model".to_string(),
@@ -123,19 +124,20 @@ mod tests {
             response_json_path: "$.".to_string(),
         };
         config.add_model(model.clone());
-        config.set_default_model("test-model").unwrap();
+        config.set_default_model("test-model")?;
 
-        let serialized = toml::to_string_pretty(&config).unwrap();
-        let deserialized: Config = toml::from_str(&serialized).unwrap();
+        let serialized = toml::to_string_pretty(&config)?;
+        let deserialized: Config = toml::from_str(&serialized)?;
 
         assert_eq!(config.default_model, deserialized.default_model);
         assert_eq!(config.models.len(), 1);
         assert_eq!(deserialized.models.len(), 1);
         assert_eq!(config.models.get("test-model").unwrap().api_url, deserialized.models.get("test-model").unwrap().api_url);
+        Ok(())
     }
 
      #[test]
-    fn test_get_active_model() {
+    fn test_get_active_model() -> Result<()> {
         let mut config = Config::default();
         let request_format = r#"{"input": "{{prompt}}"}"#;
         let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: request_format.to_string(), response_json_path: "$.".to_string() };
@@ -145,22 +147,23 @@ mod tests {
 
         assert!(config.get_active_model().is_none());
 
-        config.set_default_model("model1").unwrap();
+        config.set_default_model("model1")?;
         assert_eq!(config.get_active_model().unwrap().name, "model1");
 
-        config.set_current_model("model2").unwrap();
+        config.set_current_model("model2")?;
          assert_eq!(config.get_active_model().unwrap().name, "model2");
 
         config.clear_current_model();
         assert_eq!(config.get_active_model().unwrap().name, "model1");
+        Ok(())
     }
 
      #[test]
     fn test_set_default_current_model_errors() {
         let mut config = Config::default();
         let request_format = r#"{"input": "{{prompt}}"}"#;
-        let model1 = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: request_format.to_string(), response_json_path: "$.".to_string() };
-        config.add_model(model1.clone());
+        let model = Model { name: "model1".to_string(), api_url: "url1".to_string(), api_key: None, api_key_header: None, model_identifier: None, request_format: request_format.to_string(), response_json_path: "$.".to_string() };
+        config.add_model(model.clone());
 
         assert!(config.set_default_model("model1").is_ok());
         assert!(config.set_default_model("nonexistent").is_err());

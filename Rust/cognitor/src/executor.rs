@@ -4,7 +4,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::process::{Command, Stdio};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum Action {
     CreateFile { path: String, content: String },
@@ -13,10 +13,22 @@ pub enum Action {
     AskUser { question: String },
     DeleteFile { path: String },
     EditFile { path: String, content: String },
+    // Respond to the LLM
     Respond { message: String },
+    /*
+    //TODO: Implement also the following commands
+    ReadFile { path: String },
+    FindFiles { pattern: String },
+    ReadWebPage { url: String },
+    AppendToFile { path: String, content: String },
+    MoveFile { source: String, destination: String },
+    CopyFile { source: String, destination: String },
+    ListDirectory { path: String },
+    CheckPathExists { path: String },
+    */
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Plan {
     pub thought: Option<String>,
     pub steps: Vec<Action>,
@@ -173,7 +185,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_plan_serialization() {
+    fn test_plan_serialization() -> Result<()> {
         let plan = Plan {
             thought: Some("Create a hello world script and run it".to_string()),
             steps: vec![
@@ -184,18 +196,15 @@ mod tests {
                 Action::RunCommand {
                     command: "bash hello.sh".to_string(),
                 },
-                 Action::Respond { message: "Script executed.".to_string() },
+                Action::Respond {
+                    message: "Script executed.".to_string()
+                },
             ],
         };
 
-        let json = serde_json::to_string_pretty(&plan).unwrap();
-        println!("Serialized Plan:\n{}", json);
-
-        let deserialized_plan: Plan = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(plan.steps.len(), deserialized_plan.steps.len());
-        assert!(matches!(deserialized_plan.steps[0], Action::CreateFile { .. }));
-        assert!(matches!(deserialized_plan.steps[1], Action::RunCommand { .. }));
-        assert!(matches!(deserialized_plan.steps[2], Action::Respond { message: _ }));
+        let serialized_plan = serde_json::to_string_pretty(&plan)?;
+        let deserialized_plan: Plan = serde_json::from_str(&serialized_plan)?;
+        assert_eq!(plan, deserialized_plan);
+        Ok(())
     }
 }

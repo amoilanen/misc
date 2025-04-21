@@ -7,7 +7,7 @@ use std::fs;
 use url::Url;
 use jsonpath_lib::select as jsonpath_select;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct ContextContent {
     source: String,
     content: String,
@@ -78,7 +78,7 @@ async fn get_combined_context(context_sources: &[String], client: &Client) -> Re
         Some(
             fetched_context
                 .iter()
-                .map(|c| format!("--- Context from {} ---\n{}\n", c.source, c.content))
+                .map(|c| format!("Context from {}:\n{}\n", c.source, c.content))
                 .collect::<Vec<_>>()
                 .join("\n"),
         )
@@ -225,25 +225,26 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_fetch_context_url_success() {
+    async fn test_fetch_context_url_success() -> Result<()> {
         let server = MockServer::start();
-        let client = Client::new();
-
         let mock_url = server.url("/test-page");
+        let content = "<html>Hello World</html>";
         let mock = server.mock(|when, then| {
             when.method(GET).path("/test-page");
-            then.status(200).body("<html>Hello World</html>");
+            then.status(200).body(content);
         });
 
+        let client = Client::new();
+
         let sources = vec![mock_url.clone()];
-        let result = fetch_context(&sources, &client).await;
+        let result = fetch_context(&sources, &client).await?;
 
         mock.assert();
-        assert!(result.is_ok());
-        let contents = result.unwrap();
-        assert_eq!(contents.len(), 1);
-        assert_eq!(contents[0].source, mock_url);
-        assert_eq!(contents[0].content, "<html>Hello World</html>");
+        assert_eq!(result, vec![ContextContent {
+            source: mock_url.to_string(),
+            content: content.to_string()
+        }]);
+        Ok(())
     }
 
      #[tokio::test]
@@ -274,7 +275,7 @@ mod tests {
         let mock = server.mock(|when, then| {
             when.method(POST)
                 .path("/formatted-test")
-                .body(r#"{"model": "test_model", "input": "test prompt", "context": "test context"}"#);
+                .body("{\"model\": \"test_model\", \"input\": \"test prompt\", \"context\": \"Context from test_context_file:\ntest context\n\"}");
             then.status(200)
                 .header("Content-Type", "application/json")
                 .body(r#"{"answer": "test answer"}"#);
@@ -287,7 +288,7 @@ mod tests {
             api_key_header: None,
             model_identifier: Some("test_model".to_string()),
             request_format: r#"{"model": "{{model}}", "input": "{{prompt}}", "context": "{{context}}"}"#.to_string(),
-            response_json_path: "$.".to_string(),
+            response_json_path: "$.answer".to_string(),
         };
 
         let prompt = "test prompt";
