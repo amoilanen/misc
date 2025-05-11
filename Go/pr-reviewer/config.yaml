@@ -1,0 +1,18 @@
+github:
+  webhook_secret: "your-webhook-secret"
+  app_id: "your-github-app-id"
+  private_key_path: "path/to/private-key.pem"
+
+llm:
+  provider: "openrouter"  # or "openai", "anthropic", "gemini"
+  api_key: "your-api-key"
+  model: "anthropic/claude-3-opus"  # or other model name supported by OpenRouter
+
+repositories:
+  - owner: "organization"
+    name: "repo-name"
+    branch: "main"
+
+server:
+  port: 8080
+  host: "0.0.0.0" 
