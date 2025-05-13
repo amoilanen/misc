@@ -11,16 +11,13 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	// Create a temporary config file
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	// Create a private key file
 	privateKeyPath := filepath.Join(tmpDir, "private-key.pem")
 	err := os.WriteFile(privateKeyPath, []byte("fake-private-key"), 0600)
 	require.NoError(t, err)
 
-	// Write test config
 	configContent := `
 github:
   webhook_secret: "test-secret"
@@ -41,12 +38,10 @@ server:
 	err = os.WriteFile(configPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 
-	// Test loading config
 	config, err := LoadConfig(configPath)
 	require.NoError(t, err)
 	assert.NotNil(t, config)
 
-	// Verify config values
 	assert.Equal(t, "test-secret", config.GitHub.WebhookSecret)
 	assert.Equal(t, "12345", config.GitHub.AppID)
 	assert.Equal(t, privateKeyPath, config.GitHub.PrivateKeyPath)
@@ -141,23 +136,19 @@ repositories: []
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create temporary config file
 			tmpDir := t.TempDir()
 			configPath := filepath.Join(tmpDir, "config.yaml")
 
-			// Create private key file if it's referenced in the config
 			privateKeyPath := filepath.Join(tmpDir, "test-key.pem")
 			if !tt.expectError {
 				err := os.WriteFile(privateKeyPath, []byte("fake-private-key"), 0600)
 				require.NoError(t, err)
 			}
 
-			// Write config with the full path to the private key
 			configContent := fmt.Sprintf(tt.config, privateKeyPath)
 			err := os.WriteFile(configPath, []byte(configContent), 0644)
 			require.NoError(t, err)
 
-			// Test loading config
 			config, err := LoadConfig(configPath)
 			if tt.expectError {
 				assert.Error(t, err)

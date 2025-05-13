@@ -12,23 +12,19 @@ import (
 )
 
 func main() {
-	// Parse command line flags
 	configPath := flag.String("config", "config.yaml", "path to config file")
 	flag.Parse()
 
-	// Load configuration
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Create server
 	srv, err := server.NewServer(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -39,7 +35,6 @@ func main() {
 		}
 	}()
 
-	// Wait for shutdown signal
 	<-sigChan
 	log.Println("Shutting down...")
 }

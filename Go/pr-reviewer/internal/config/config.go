@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds all configuration for the application
 type Config struct {
 	GitHub       GitHubConfig       `mapstructure:"github"`
 	LLM          LLMConfig          `mapstructure:"llm"`
@@ -15,34 +14,29 @@ type Config struct {
 	Server       ServerConfig       `mapstructure:"server"`
 }
 
-// GitHubConfig holds GitHub-specific configuration
 type GitHubConfig struct {
 	WebhookSecret  string `mapstructure:"webhook_secret"`
 	AppID          string `mapstructure:"app_id"`
 	PrivateKeyPath string `mapstructure:"private_key_path"`
 }
 
-// LLMConfig holds LLM provider configuration
 type LLMConfig struct {
 	Provider string `mapstructure:"provider"`
 	APIKey   string `mapstructure:"api_key"`
 	Model    string `mapstructure:"model"`
 }
 
-// RepositoryConfig holds repository-specific configuration
 type RepositoryConfig struct {
 	Owner  string `mapstructure:"owner"`
 	Name   string `mapstructure:"name"`
 	Branch string `mapstructure:"branch"`
 }
 
-// ServerConfig holds server configuration
 type ServerConfig struct {
 	Port int    `mapstructure:"port"`
 	Host string `mapstructure:"host"`
 }
 
-// LoadConfig loads the configuration from the specified file
 func LoadConfig(configPath string) (*Config, error) {
 	viper.SetConfigFile(configPath)
 	viper.AutomaticEnv()
@@ -56,7 +50,6 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// Validate required fields
 	if err := validateConfig(&config); err != nil {
 		return nil, err
 	}
@@ -64,7 +57,6 @@ func LoadConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-// validateConfig checks if all required configuration fields are present
 func validateConfig(config *Config) error {
 	if config.GitHub.WebhookSecret == "" {
 		return fmt.Errorf("github webhook secret is required")

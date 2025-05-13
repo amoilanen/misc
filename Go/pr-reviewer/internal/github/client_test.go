@@ -1,8 +1,10 @@
 package github
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,19 +30,24 @@ func TestGetPullRequestDiffs(t *testing.T) {
 			w.Write([]byte(`{"number": 1}`))
 			return
 		}
-		if r.URL.Path == "/test-owner/test-repo/pull/1.diff" {
+		if r.URL.Path == "/test-owner/test-repo/pull/1.diff" || r.URL.Path == "//test-owner/test-repo/pull/1.diff" {
+			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("test diff content"))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
+	defer server.Close()
 
 	// Create a client with the test server
 	client := &Client{
 		client: github.NewClient(nil),
-		ctx:    nil,
+		ctx:    context.Background(),
 	}
+	baseURL, err := url.Parse(server.URL + "/")
+	require.NoError(t, err)
+	client.client.BaseURL = baseURL
 
 	// Test getting PR diffs
 	diff, err := client.GetPullRequestDiffs("test-owner", "test-repo", 1)
@@ -81,9 +88,10 @@ func TestCloneRepository(t *testing.T) {
 
 	// Create a client
 	client := NewClient("test-token")
+	client.client.BaseURL = nil // Reset the BaseURL to use the local repository
 
 	// Test cloning the repository
-	cloneDir, err := client.CloneRepository("test-owner", "test-repo", "main")
+	cloneDir, err := client.CloneRepository(repoDir, "", "master")
 	require.NoError(t, err)
 	defer os.RemoveAll(cloneDir)
 
@@ -103,15 +111,19 @@ func TestCreateReviewComment(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
+	defer server.Close()
 
 	// Create a client with the test server
 	client := &Client{
 		client: github.NewClient(nil),
-		ctx:    nil,
+		ctx:    context.Background(),
 	}
+	baseURL, err := url.Parse(server.URL + "/")
+	require.NoError(t, err)
+	client.client.BaseURL = baseURL
 
 	// Test creating a review comment
-	err := client.CreateReviewComment("test-owner", "test-repo", 1, "test comment", "test.txt", 1)
+	err = client.CreateReviewComment("test-owner", "test-repo", 1, "test comment", "test.txt", 1)
 	require.NoError(t, err)
 }
 
@@ -120,17 +132,21 @@ func TestGetFileContent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/test-owner/test-repo/contents/test.txt" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"content": "dGVzdCBjb250ZW50"}`))
+			w.Write([]byte(`{"content": "dGVzdCBjb250ZW50", "encoding": "base64"}`))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
+	defer server.Close()
 
 	// Create a client with the test server
 	client := &Client{
 		client: github.NewClient(nil),
-		ctx:    nil,
+		ctx:    context.Background(),
 	}
+	baseURL, err := url.Parse(server.URL + "/")
+	require.NoError(t, err)
+	client.client.BaseURL = baseURL
 
 	// Test getting file content
 	content, err := client.GetFileContent("test-owner", "test-repo", "test.txt", "main")

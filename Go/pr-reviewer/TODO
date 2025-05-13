@@ -1,0 +1,3 @@
+- Review existing code
+- Run the app locally and make sure that it posts correct comments when a PR review is needed
+- Deploy the app to AWS and test is there
