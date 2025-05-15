@@ -10,72 +10,61 @@ import (
 	"strings"
 )
 
-// Provider represents an LLM provider
 type Provider string
 
 const (
-	ProviderOpenAI     Provider = "openai"
-	ProviderAnthropic  Provider = "anthropic"
 	ProviderGemini     Provider = "gemini"
 	ProviderOpenRouter Provider = "openrouter"
 )
 
-// Action represents an action that the LLM can request
 type Action string
 
 const (
-	ActionComment     Action = "comment"      // Add a review comment
-	ActionReadFile    Action = "read_file"    // Request to read a specific file
-	ActionListFiles   Action = "list_files"   // Request to list files in a directory
-	ActionSearchFiles Action = "search_files" // Search for files matching a pattern
+	ActionComment     Action = "comment"
+	ActionReadFile    Action = "read_file"
+	ActionListFiles   Action = "list_files"
+	ActionSearchFiles Action = "search_files"
+	FinishReview      Action = "finish_review"
 )
 
-// LLMRequest represents a request from the LLM
-type LLMRequest struct {
+type LLMAction struct {
 	Action Action         `json:"action"`
 	Params map[string]any `json:"params"`
 }
 
-// LLMResponse represents a response to the LLM
 type LLMResponse struct {
 	Type    string `json:"type"`
 	Content any    `json:"content"`
 	Error   string `json:"error,omitempty"`
 }
 
-// Client represents an LLM client
 type Client struct {
-	provider Provider
-	apiKey   string
-	model    string
-	client   *http.Client
-	BaseURL  string // Optional: override for testing
-	// Callback functions for handling LLM requests
+	provider      Provider
+	apiKey        string
+	model         string
+	client        *http.Client
+	BaseURL       string
 	onReadFile    func(path string) (string, error)
 	onListFiles   func(dir string) ([]string, error)
 	onSearchFiles func(pattern string) ([]string, error)
 }
 
-// ReviewComment represents a comment from the LLM
 type ReviewComment struct {
 	Path    string `json:"path"`
 	Line    int    `json:"line"`
 	Content string `json:"content"`
 }
 
-// Message represents a chat message
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// ChatRequest represents a chat completion request
 type ChatRequest struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
 }
 
-// GeminiRequest represents a Gemini API request
 type GeminiRequest struct {
 	Contents []struct {
 		Parts []struct {
@@ -105,17 +94,17 @@ func (c *Client) SetCallbacks(
 	c.onSearchFiles = onSearchFiles
 }
 
-// ReviewCode reviews code changes and returns comments
 func (c *Client) ReviewCode(ctx context.Context, diff string, additionalContext map[string]string) ([]ReviewComment, error) {
 	// Start a conversation with the LLM
 	messages := []Message{
 		{
-			Role: "system",
+			Role: "pr-reviewer-agent",
 			Content: `You are a code reviewer. You can:
 1. Review code changes and provide comments
 2. Request to read specific files for more context
 3. List files in a directory
 4. Search for files matching a pattern
+5. Finish review
 
 To request an action, respond with a JSON object in this format:
 {
@@ -134,39 +123,36 @@ Available actions:
   params: { "dir": "directory path" }
 - search_files: Search for files
   params: { "pattern": "search pattern" }
+- finish_review: Finish review of the PR, no more comments to add
 
 To provide a review comment, use the comment action.
-To request more context, use read_file, list_files, or search_files actions.`,
+To request more context, use read_file, list_files, or search_files actions.
+To finish the review use the finish_review action`,
 		},
 		{
-			Role:    "user",
+			Role:    "pr-reviewer-agent",
 			Content: buildPrompt(diff, additionalContext),
 		},
 	}
 
-	// Start the conversation loop
 	var comments []ReviewComment
 	for {
-		// Get response from LLM
-		response, err := c.getLLMResponse(ctx, messages)
+		llmActionRaw, err := c.getLLMResponse(ctx, messages)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LLM response: %w", err)
 		}
 
-		// Parse the response as a request
-		var request LLMRequest
-		if err := json.Unmarshal([]byte(response), &request); err != nil {
+		var llmAction LLMAction
+		if err := json.Unmarshal([]byte(llmActionRaw), &llmAction); err != nil {
 			return nil, fmt.Errorf("failed to parse LLM request: %w", err)
 		}
 
-		// Handle the request
-		llmResponse, err := c.handleRequest(request)
+		llmResponse, err := c.handleAction(llmAction)
 		if err != nil {
 			return nil, fmt.Errorf("failed to handle LLM request: %w", err)
 		}
 
-		// If the response is a comment, add it to the list
-		if request.Action == ActionComment {
+		if llmAction.Action == ActionComment {
 			comment, ok := llmResponse.Content.(ReviewComment)
 			if !ok {
 				return nil, fmt.Errorf("invalid comment format")
@@ -174,18 +160,16 @@ To request more context, use read_file, list_files, or search_files actions.`,
 			comments = append(comments, comment)
 		}
 
-		// Add the response to the conversation
 		messages = append(messages, Message{
-			Role:    "assistant",
-			Content: response,
+			Role:    "LLM",
+			Content: llmActionRaw,
 		})
 		messages = append(messages, Message{
-			Role:    "user",
-			Content: fmt.Sprintf("Response: %s", llmResponse),
+			Role:    "pr-reviewer-agent",
+			Content: fmt.Sprintf("Output of previous LLM action: %s", llmResponse),
 		})
 
-		// If the LLM didn't request any action, we're done
-		if request.Action == "" {
+		if llmAction.Action == FinishReview {
 			break
 		}
 	}
@@ -193,13 +177,12 @@ To request more context, use read_file, list_files, or search_files actions.`,
 	return comments, nil
 }
 
-// handleRequest handles an LLM request
-func (c *Client) handleRequest(request LLMRequest) (LLMResponse, error) {
-	switch request.Action {
+func (c *Client) handleAction(action LLMAction) (LLMResponse, error) {
+	switch action.Action {
 	case ActionComment:
-		path, _ := request.Params["path"].(string)
-		line, _ := request.Params["line"].(float64)
-		content, _ := request.Params["content"].(string)
+		path, _ := action.Params["path"].(string)
+		line, _ := action.Params["line"].(float64)
+		content, _ := action.Params["content"].(string)
 		return LLMResponse{
 			Type: "comment",
 			Content: ReviewComment{
@@ -213,7 +196,7 @@ func (c *Client) handleRequest(request LLMRequest) (LLMResponse, error) {
 		if c.onReadFile == nil {
 			return LLMResponse{Type: "error", Error: "read_file callback not set"}, nil
 		}
-		path, _ := request.Params["path"].(string)
+		path, _ := action.Params["path"].(string)
 		content, err := c.onReadFile(path)
 		if err != nil {
 			return LLMResponse{Type: "error", Error: err.Error()}, nil
@@ -224,7 +207,7 @@ func (c *Client) handleRequest(request LLMRequest) (LLMResponse, error) {
 		if c.onListFiles == nil {
 			return LLMResponse{Type: "error", Error: "list_files callback not set"}, nil
 		}
-		dir, _ := request.Params["dir"].(string)
+		dir, _ := action.Params["dir"].(string)
 		files, err := c.onListFiles(dir)
 		if err != nil {
 			return LLMResponse{Type: "error", Error: err.Error()}, nil
@@ -235,7 +218,7 @@ func (c *Client) handleRequest(request LLMRequest) (LLMResponse, error) {
 		if c.onSearchFiles == nil {
 			return LLMResponse{Type: "error", Error: "search_files callback not set"}, nil
 		}
-		pattern, _ := request.Params["pattern"].(string)
+		pattern, _ := action.Params["pattern"].(string)
 		files, err := c.onSearchFiles(pattern)
 		if err != nil {
 			return LLMResponse{Type: "error", Error: err.Error()}, nil
@@ -247,13 +230,8 @@ func (c *Client) handleRequest(request LLMRequest) (LLMResponse, error) {
 	}
 }
 
-// getLLMResponse gets a response from the LLM
 func (c *Client) getLLMResponse(ctx context.Context, messages []Message) (string, error) {
 	switch c.provider {
-	case ProviderOpenAI:
-		return c.getOpenAIResponse(ctx, messages)
-	case ProviderAnthropic:
-		return c.getAnthropicResponse(ctx, messages)
 	case ProviderGemini:
 		return c.getGeminiResponse(ctx, messages)
 	case ProviderOpenRouter:
@@ -263,130 +241,6 @@ func (c *Client) getLLMResponse(ctx context.Context, messages []Message) (string
 	}
 }
 
-// getOpenAIResponse gets a response from OpenAI
-func (c *Client) getOpenAIResponse(ctx context.Context, messages []Message) (string, error) {
-	url := c.BaseURL
-	if url == "" {
-		url = "https://api.openai.com/v1/chat/completions"
-	}
-	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	body := ChatRequest{
-		Model:    c.model,
-		Messages: messages,
-	}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req.Body = io.NopCloser(bytes.NewBuffer(jsonBody))
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var result struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("no response from OpenAI")
-	}
-
-	return result.Choices[0].Message.Content, nil
-}
-
-// getAnthropicResponse gets a response from Anthropic
-func (c *Client) getAnthropicResponse(ctx context.Context, messages []Message) (string, error) {
-	url := c.BaseURL
-	if url == "" {
-		url = "https://api.anthropic.com/v1/messages"
-	}
-	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("x-api-key", c.apiKey)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("anthropic-version", "2023-06-01")
-
-	// Convert messages to Anthropic format
-	var anthropicMessages []struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	}
-	for _, msg := range messages {
-		anthropicMessages = append(anthropicMessages, struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		}{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
-
-	body := struct {
-		Model    string      `json:"model"`
-		Messages interface{} `json:"messages"`
-	}{
-		Model:    c.model,
-		Messages: anthropicMessages,
-	}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req.Body = io.NopCloser(bytes.NewBuffer(jsonBody))
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var result struct {
-		Content []struct {
-			Text string `json:"text"`
-		} `json:"content"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	if len(result.Content) == 0 {
-		return "", fmt.Errorf("no response from Anthropic")
-	}
-
-	return result.Content[0].Text, nil
-}
-
-// getGeminiResponse gets a response from Gemini
 func (c *Client) getGeminiResponse(ctx context.Context, messages []Message) (string, error) {
 	url := c.BaseURL
 	if url == "" {
@@ -400,7 +254,6 @@ func (c *Client) getGeminiResponse(ctx context.Context, messages []Message) (str
 	req.Header.Set("x-goog-api-key", c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	// Convert messages to Gemini format
 	var parts []struct {
 		Text string `json:"text"`
 	}

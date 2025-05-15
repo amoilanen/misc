@@ -200,7 +200,7 @@ func TestHandleRequest(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		request        LLMRequest
+		request        LLMAction
 		onReadFile     func(path string) (string, error)
 		onListFiles    func(dir string) ([]string, error)
 		onSearchFiles  func(pattern string) ([]string, error)
@@ -210,7 +210,7 @@ func TestHandleRequest(t *testing.T) {
 	}{
 		{
 			name: "Comment action",
-			request: LLMRequest{
+			request: LLMAction{
 				Action: ActionComment,
 				Params: map[string]any{
 					"path":    "test.go",
@@ -227,7 +227,7 @@ func TestHandleRequest(t *testing.T) {
 		},
 		{
 			name: "Read file action",
-			request: LLMRequest{
+			request: LLMAction{
 				Action: ActionReadFile,
 				Params: map[string]any{
 					"path": "test.go",
@@ -241,7 +241,7 @@ func TestHandleRequest(t *testing.T) {
 		},
 		{
 			name: "List files action",
-			request: LLMRequest{
+			request: LLMAction{
 				Action: ActionListFiles,
 				Params: map[string]any{
 					"dir": "test",
@@ -255,7 +255,7 @@ func TestHandleRequest(t *testing.T) {
 		},
 		{
 			name: "Search files action",
-			request: LLMRequest{
+			request: LLMAction{
 				Action: ActionSearchFiles,
 				Params: map[string]any{
 					"pattern": "*.go",
@@ -269,7 +269,7 @@ func TestHandleRequest(t *testing.T) {
 		},
 		{
 			name: "Unknown action",
-			request: LLMRequest{
+			request: LLMAction{
 				Action: "unknown",
 			},
 			expectedType:  "error",
