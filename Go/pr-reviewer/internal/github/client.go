@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/amoilanen/pr-reviewer/internal/types"
 	"github.com/google/go-github/v57/github"
 	"golang.org/x/oauth2"
 )
@@ -108,4 +109,57 @@ func (c *Client) SearchFiles(owner, repo, path string, pattern, ref string) ([]s
 	}
 
 	return matchingFiles, nil
+}
+
+func (c *Client) GetPullRequestComments(owner, repo string, prNumber int) ([]types.PRComment, error) {
+	comments, _, err := c.client.PullRequests.ListComments(c.ctx, owner, repo, prNumber, &github.PullRequestListCommentsOptions{
+		Sort:      "created",
+		Direction: "asc",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get PR comments: %w", err)
+	}
+
+	var result []types.PRComment
+	for _, comment := range comments {
+		result = append(result, types.PRComment{
+			ID:        comment.GetID(),
+			Body:      comment.GetBody(),
+			Path:      comment.GetPath(),
+			Line:      comment.GetLine(),
+			ThreadID:  comment.GetInReplyTo(),
+			InReplyTo: comment.GetInReplyTo(),
+		})
+	}
+
+	return result, nil
+}
+
+func (c *Client) ResolveThread(owner, repo string, prNumber int, threadID int64) error {
+	body := "Resolved"
+	comment := &github.PullRequestComment{
+		Body:      &body,
+		InReplyTo: &threadID,
+	}
+
+	_, _, err := c.client.PullRequests.CreateComment(c.ctx, owner, repo, prNumber, comment)
+	if err != nil {
+		return fmt.Errorf("failed to resolve thread: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Client) ReplyToThread(owner, repo string, prNumber int, threadID int64, body string) error {
+	comment := &github.PullRequestComment{
+		Body:      &body,
+		InReplyTo: &threadID,
+	}
+
+	_, _, err := c.client.PullRequests.CreateComment(c.ctx, owner, repo, prNumber, comment)
+	if err != nil {
+		return fmt.Errorf("failed to reply to thread: %w", err)
+	}
+
+	return nil
 }

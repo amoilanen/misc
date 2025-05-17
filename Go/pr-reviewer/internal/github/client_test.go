@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -245,4 +246,111 @@ func TestSearchFilesError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, files)
 	assert.Contains(t, err.Error(), "failed to get repository contents")
+}
+
+func TestGetPullRequestComments(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/repos/test-owner/test-repo/pulls/1/comments" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`[
+				{
+					"id": 1,
+					"body": "test comment 1",
+					"path": "test.txt",
+					"line": 1,
+					"in_reply_to_id": null
+				},
+				{
+					"id": 2,
+					"body": "test comment 2",
+					"path": "test.txt",
+					"line": 2,
+					"in_reply_to_id": 1
+				}
+			]`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	client := &Client{
+		client: github.NewClient(nil),
+		ctx:    context.Background(),
+	}
+	baseURL, err := url.Parse(server.URL + "/")
+	require.NoError(t, err)
+	client.client.BaseURL = baseURL
+
+	comments, err := client.GetPullRequestComments("test-owner", "test-repo", 1)
+	require.NoError(t, err)
+	require.Len(t, comments, 2)
+
+	assert.Equal(t, int64(1), comments[0].ID)
+	assert.Equal(t, "test comment 1", comments[0].Body)
+	assert.Equal(t, "test.txt", comments[0].Path)
+	assert.Equal(t, 1, comments[0].Line)
+	assert.Equal(t, int64(0), comments[0].ThreadID)
+	assert.Equal(t, int64(0), comments[0].InReplyTo)
+
+	assert.Equal(t, int64(2), comments[1].ID)
+	assert.Equal(t, "test comment 2", comments[1].Body)
+	assert.Equal(t, "test.txt", comments[1].Path)
+	assert.Equal(t, 2, comments[1].Line)
+	assert.Equal(t, int64(1), comments[1].ThreadID)
+	assert.Equal(t, int64(1), comments[1].InReplyTo)
+}
+
+func TestResolveThread(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/repos/test-owner/test-repo/pulls/1/comments" {
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			assert.Contains(t, string(body), `"body":"Resolved"`)
+			assert.Contains(t, string(body), `"in_reply_to_id":123`)
+
+			w.WriteHeader(http.StatusCreated)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	client := &Client{
+		client: github.NewClient(nil),
+		ctx:    context.Background(),
+	}
+	baseURL, err := url.Parse(server.URL + "/")
+	require.NoError(t, err)
+	client.client.BaseURL = baseURL
+
+	err = client.ResolveThread("test-owner", "test-repo", 1, 123)
+	require.NoError(t, err)
+}
+
+func TestReplyToThread(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/repos/test-owner/test-repo/pulls/1/comments" {
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			assert.Contains(t, string(body), `"body":"test reply"`)
+			assert.Contains(t, string(body), `"in_reply_to_id":123`)
+
+			w.WriteHeader(http.StatusCreated)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	client := &Client{
+		client: github.NewClient(nil),
+		ctx:    context.Background(),
+	}
+	baseURL, err := url.Parse(server.URL + "/")
+	require.NoError(t, err)
+	client.client.BaseURL = baseURL
+
+	err = client.ReplyToThread("test-owner", "test-repo", 1, 123, "test reply")
+	require.NoError(t, err)
 }

@@ -45,6 +45,15 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			repo := cfg.Repositories[0]
 			return gh.SearchFiles(repo.Owner, repo.Name, pattern, path, repo.Branch)
 		},
+		func(owner, repo string, prNumber int, threadID int64) error {
+			return gh.ResolveThread(owner, repo, prNumber, threadID)
+		},
+		func(owner, repo string, prNumber int, threadID int64, body string) error {
+			return gh.ReplyToThread(owner, repo, prNumber, threadID, body)
+		},
+		func(owner, repo string, prNumber int, path string, line int, content string) error {
+			return gh.CreateReviewComment(owner, repo, prNumber, content, path, line)
+		},
 	)
 
 	return &Server{
@@ -131,6 +140,17 @@ func (s *Server) processPullRequest(ctx context.Context, owner, repo string, prN
 		return
 	}
 
+	// Get existing comments
+	existingComments, err := s.gh.GetPullRequestComments(owner, repo, prNumber)
+	if err != nil {
+		s.logger.Error("failed to get PR comments",
+			zap.String("owner", owner),
+			zap.String("repo", repo),
+			zap.Int("pr", prNumber),
+			zap.Error(err))
+		return
+	}
+
 	// Get additional context files
 	additionalContext := make(map[string]string)
 	for _, file := range getContextFiles() {
@@ -145,7 +165,7 @@ func (s *Server) processPullRequest(ctx context.Context, owner, repo string, prN
 	}
 
 	// Get LLM review
-	comments, err := s.llm.ReviewCode(ctx, diff, additionalContext)
+	_, err = s.llm.ReviewCode(ctx, diff, additionalContext, existingComments, owner, repo, prNumber)
 	if err != nil {
 		s.logger.Error("failed to get LLM review",
 			zap.String("owner", owner),
@@ -153,19 +173,6 @@ func (s *Server) processPullRequest(ctx context.Context, owner, repo string, prN
 			zap.Int("pr", prNumber),
 			zap.Error(err))
 		return
-	}
-
-	// Post comments
-	for _, comment := range comments {
-		if err := s.gh.CreateReviewComment(owner, repo, prNumber, comment.Content, comment.Path, comment.Line); err != nil {
-			s.logger.Error("failed to create review comment",
-				zap.String("owner", owner),
-				zap.String("repo", repo),
-				zap.Int("pr", prNumber),
-				zap.String("path", comment.Path),
-				zap.Int("line", comment.Line),
-				zap.Error(err))
-		}
 	}
 }
 

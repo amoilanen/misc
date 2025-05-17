@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/amoilanen/pr-reviewer/internal/types"
 )
 
 type Provider string
@@ -25,28 +27,33 @@ const (
 	ActionListFiles   Action = "list_files"
 	ActionSearchFiles Action = "search_files"
 	FinishReview      Action = "finish_review"
+	ResolveThread     Action = "resolve_thread"
+	ReplyInThread     Action = "reply_in_thread"
 )
 
-type LLMAction struct {
+type ActionRequestedByLLM struct {
 	Action Action         `json:"action"`
 	Params map[string]any `json:"params"`
 }
 
-type LLMResponse struct {
+type ResponseToLLM struct {
 	Type    string `json:"type"`
 	Content any    `json:"content"`
 	Error   string `json:"error,omitempty"`
 }
 
 type Client struct {
-	provider      Provider
-	apiKey        string
-	model         string
-	client        *http.Client
-	BaseURL       string
-	onReadFile    func(path string) (string, error)
-	onListFiles   func(dir string) ([]string, error)
-	onSearchFiles func(pattern string, path string) ([]string, error)
+	provider        Provider
+	apiKey          string
+	model           string
+	client          *http.Client
+	BaseURL         string
+	onReadFile      func(path string) (string, error)
+	onListFiles     func(dir string) ([]string, error)
+	onSearchFiles   func(pattern string, path string) ([]string, error)
+	onResolveThread func(owner, repo string, prNumber int, threadID int64) error
+	onReplyToThread func(owner, repo string, prNumber int, threadID int64, body string) error
+	onComment       func(owner, repo string, prNumber int, path string, line int, content string) error
 }
 
 type ReviewComment struct {
@@ -56,7 +63,7 @@ type ReviewComment struct {
 }
 
 type Message struct {
-	From    string `json:"from"`
+	Role    string `json:"from"`
 	Content string `json:"content"`
 }
 
@@ -86,22 +93,30 @@ func (c *Client) SetCallbacks(
 	onReadFile func(path string) (string, error),
 	onListFiles func(dir string) ([]string, error),
 	onSearchFiles func(pattern string, path string) ([]string, error),
+	onResolveThread func(owner, repo string, prNumber int, threadID int64) error,
+	onReplyToThread func(owner, repo string, prNumber int, threadID int64, body string) error,
+	onComment func(owner, repo string, prNumber int, path string, line int, content string) error,
 ) {
 	c.onReadFile = onReadFile
 	c.onListFiles = onListFiles
 	c.onSearchFiles = onSearchFiles
+	c.onResolveThread = onResolveThread
+	c.onReplyToThread = onReplyToThread
+	c.onComment = onComment
 }
 
-func (c *Client) ReviewCode(ctx context.Context, diff string, additionalContext map[string]string) ([]ReviewComment, error) {
+func (c *Client) ReviewCode(ctx context.Context, diff string, additionalContext map[string]string, existingComments []types.PRComment, owner, repo string, prNumber int) ([]ReviewComment, error) {
 	messages := []Message{
 		{
-			From: "pr-reviewer-agent",
+			Role: "system",
 			Content: `You are a code reviewer. You can:
 1. Review code changes and provide comments
 2. Request to read specific files for more context
 3. List files in a directory
 4. Search for files matching a pattern
 5. Finish review
+6. Resolve existing comment threads
+7. Reply to existing comment threads
 
 To request an action, respond with a JSON object in this format:
 {
@@ -119,50 +134,46 @@ Available actions:
 - list_files: List files in a directory
   params: { "dir": "directory path" }
 - search_files: Search for files
-  params: { "pattern": "search pattern", "path": "path to search from" }
+  params: { "pattern": "search pattern", "path": "path to recursively search from" }
 - finish_review: Finish review of the PR, no more comments to add
+- resolve_thread: Resolve an existing comment thread
+  params: { "thread_id": "comment thread ID" }
+- reply_in_thread: Reply to an existing comment thread
+  params: { "thread_id": "comment thread ID", "content": "reply text" }
 
 To provide a review comment, use the comment action.
 To request more context, use read_file, list_files, or search_files actions.
-To finish the review use the finish_review action`,
+To finish the review use the finish_review action.
+To resolve or reply to existing comment threads, use resolve_thread or reply_in_thread actions.`,
 		},
 		{
-			From:    "pr-reviewer-agent",
-			Content: buildPrompt(diff, additionalContext),
+			Role:    "user",
+			Content: buildPrompt(diff, additionalContext, existingComments),
 		},
 	}
 
-	var comments []ReviewComment
 	for {
 		llmActionRaw, err := c.getLLMResponse(ctx, messages)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LLM response: %w", err)
 		}
 
-		var llmAction LLMAction
+		var llmAction ActionRequestedByLLM
 		if err := json.Unmarshal([]byte(llmActionRaw), &llmAction); err != nil {
 			return nil, fmt.Errorf("failed to parse LLM request: %w", err)
 		}
 
-		llmResponse, err := c.handleAction(llmAction)
+		llmResponse, err := c.handleAction(llmAction, owner, repo, prNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to handle LLM request: %w", err)
 		}
 
-		if llmAction.Action == ActionComment {
-			comment, ok := llmResponse.Content.(ReviewComment)
-			if !ok {
-				return nil, fmt.Errorf("invalid comment format")
-			}
-			comments = append(comments, comment)
-		}
-
 		messages = append(messages, Message{
-			From:    "LLM",
+			Role:    "assistant",
 			Content: llmActionRaw,
 		})
 		messages = append(messages, Message{
-			From:    "pr-reviewer-agent",
+			Role:    "user",
 			Content: fmt.Sprintf("Output of previous LLM action: %s", llmResponse),
 		})
 
@@ -171,16 +182,23 @@ To finish the review use the finish_review action`,
 		}
 	}
 
-	return comments, nil
+	return nil, nil
 }
 
-func (c *Client) handleAction(action LLMAction) (LLMResponse, error) {
+func (c *Client) handleAction(action ActionRequestedByLLM, owner, repo string, prNumber int) (ResponseToLLM, error) {
 	switch action.Action {
 	case ActionComment:
+		if c.onComment == nil {
+			return ResponseToLLM{Type: "error", Error: "comment callback not set"}, nil
+		}
 		path, _ := action.Params["path"].(string)
 		line, _ := action.Params["line"].(float64)
 		content, _ := action.Params["content"].(string)
-		return LLMResponse{
+		err := c.onComment(owner, repo, prNumber, path, int(line), content)
+		if err != nil {
+			return ResponseToLLM{Type: "error", Error: err.Error()}, nil
+		}
+		return ResponseToLLM{
 			Type: "comment",
 			Content: ReviewComment{
 				Path:    path,
@@ -191,40 +209,63 @@ func (c *Client) handleAction(action LLMAction) (LLMResponse, error) {
 
 	case ActionReadFile:
 		if c.onReadFile == nil {
-			return LLMResponse{Type: "error", Error: "read_file callback not set"}, nil
+			return ResponseToLLM{Type: "error", Error: "read_file callback not set"}, nil
 		}
 		path, _ := action.Params["path"].(string)
 		content, err := c.onReadFile(path)
 		if err != nil {
-			return LLMResponse{Type: "error", Error: err.Error()}, nil
+			return ResponseToLLM{Type: "error", Error: err.Error()}, nil
 		}
-		return LLMResponse{Type: "file_content", Content: content}, nil
+		return ResponseToLLM{Type: "file_content", Content: content}, nil
 
 	case ActionListFiles:
 		if c.onListFiles == nil {
-			return LLMResponse{Type: "error", Error: "list_files callback not set"}, nil
+			return ResponseToLLM{Type: "error", Error: "list_files callback not set"}, nil
 		}
 		dir, _ := action.Params["dir"].(string)
 		files, err := c.onListFiles(dir)
 		if err != nil {
-			return LLMResponse{Type: "error", Error: err.Error()}, nil
+			return ResponseToLLM{Type: "error", Error: err.Error()}, nil
 		}
-		return LLMResponse{Type: "file_list", Content: files}, nil
+		return ResponseToLLM{Type: "file_list", Content: files}, nil
 
 	case ActionSearchFiles:
 		if c.onSearchFiles == nil {
-			return LLMResponse{Type: "error", Error: "search_files callback not set"}, nil
+			return ResponseToLLM{Type: "error", Error: "search_files callback not set"}, nil
 		}
 		pattern, _ := action.Params["pattern"].(string)
 		path, _ := action.Params["path"].(string)
 		files, err := c.onSearchFiles(pattern, path)
 		if err != nil {
-			return LLMResponse{Type: "error", Error: err.Error()}, nil
+			return ResponseToLLM{Type: "error", Error: err.Error()}, nil
 		}
-		return LLMResponse{Type: "file_list", Content: files}, nil
+		return ResponseToLLM{Type: "file_list", Content: files}, nil
+
+	case ResolveThread:
+		if c.onResolveThread == nil {
+			return ResponseToLLM{Type: "error", Error: "resolve_thread callback not set"}, nil
+		}
+		threadID, _ := action.Params["thread_id"].(float64)
+		err := c.onResolveThread(owner, repo, prNumber, int64(threadID))
+		if err != nil {
+			return ResponseToLLM{Type: "error", Error: err.Error()}, nil
+		}
+		return ResponseToLLM{Type: "thread_resolved", Content: nil}, nil
+
+	case ReplyInThread:
+		if c.onReplyToThread == nil {
+			return ResponseToLLM{Type: "error", Error: "reply_in_thread callback not set"}, nil
+		}
+		threadID, _ := action.Params["thread_id"].(float64)
+		content, _ := action.Params["content"].(string)
+		err := c.onReplyToThread(owner, repo, prNumber, int64(threadID), content)
+		if err != nil {
+			return ResponseToLLM{Type: "error", Error: err.Error()}, nil
+		}
+		return ResponseToLLM{Type: "thread_reply", Content: nil}, nil
 
 	default:
-		return LLMResponse{Type: "error", Error: "unknown action"}, nil
+		return ResponseToLLM{Type: "error", Error: "unknown action"}, nil
 	}
 }
 
@@ -259,7 +300,7 @@ func (c *Client) getGeminiResponse(ctx context.Context, messages []Message) (str
 		parts = append(parts, struct {
 			Text string `json:"text"`
 		}{
-			Text: fmt.Sprintf("%s: %s", msg.From, msg.Content),
+			Text: fmt.Sprintf("%s: %s", msg.Role, msg.Content),
 		})
 	}
 
@@ -311,7 +352,6 @@ func (c *Client) getGeminiResponse(ctx context.Context, messages []Message) (str
 	return result.Candidates[0].Content.Parts[0].Text, nil
 }
 
-// getOpenRouterResponse gets a response from OpenRouter
 func (c *Client) getOpenRouterResponse(ctx context.Context, messages []Message) (string, error) {
 	url := c.BaseURL
 	if url == "" {
@@ -366,8 +406,7 @@ func (c *Client) getOpenRouterResponse(ctx context.Context, messages []Message) 
 	return result.Choices[0].Message.Content, nil
 }
 
-// buildPrompt builds the prompt for the LLM
-func buildPrompt(diff string, additionalContext map[string]string) string {
+func buildPrompt(diff string, additionalContext map[string]string, existingComments []types.PRComment) string {
 	var sb strings.Builder
 	sb.WriteString("Please review the following code changes:\n\n")
 	sb.WriteString(diff)
@@ -375,5 +414,14 @@ func buildPrompt(diff string, additionalContext map[string]string) string {
 	for path, content := range additionalContext {
 		sb.WriteString(fmt.Sprintf("\nFile: %s\n%s\n", path, content))
 	}
+
+	if len(existingComments) > 0 {
+		sb.WriteString("\nExisting comments:\n")
+		for _, comment := range existingComments {
+			sb.WriteString(fmt.Sprintf("\nThread ID: %d\nFile: %s\nLine: %d\nComment: %s\n",
+				comment.ThreadID, comment.Path, comment.Line, comment.Body))
+		}
+	}
+
 	return sb.String()
 }

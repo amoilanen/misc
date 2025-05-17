@@ -2,6 +2,8 @@ module github.com/amoilanen/pr-reviewer
 
 go 1.21
 
+replace github.com/amoilanen/pr-reviewer/ => ./
+
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/go-github/v57 v57.0.0

@@ -1,4 +1,6 @@
 - Review existing code
+- Also the existing PR comments should be provided as a context to LLM
+- Implement support for actions ResolveThread, ReplyInThread which can be used by LLM
 - Run the app locally and make sure that it posts correct comments when a PR review is needed
   -- Test pushing subsequent updates to the PR (empty updates), the reviewer should not leave duplicate comments (existing comments should be provided in the initial prompt to LLM)
   -- Test addressing PR comments, reviewer should be able to resolve the comments
