@@ -160,7 +160,6 @@ func TestVerifyWebhookSignature(t *testing.T) {
 }
 
 func TestGetContextFiles(t *testing.T) {
-	// Test cases would go here
-	// For now, just test that it returns an empty list
-	assert.Empty(t, getContextFiles("test-dir"))
+	files := getContextFiles()
+	assert.Equal(t, []string{"README.md", "go.mod", "go.sum"}, files)
 }

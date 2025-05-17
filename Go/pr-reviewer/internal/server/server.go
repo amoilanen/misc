@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -33,6 +31,21 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	gh := github.NewClient(cfg.GitHub.AppID)
 	llmClient := llm.NewClient(llm.Provider(cfg.LLM.Provider), cfg.LLM.APIKey, cfg.LLM.Model)
+
+	llmClient.SetCallbacks(
+		func(path string) (string, error) {
+			repo := cfg.Repositories[0]
+			return gh.GetFileContent(repo.Owner, repo.Name, path, repo.Branch)
+		},
+		func(dir string) ([]string, error) {
+			repo := cfg.Repositories[0]
+			return gh.ListDirectoryContents(repo.Owner, repo.Name, dir, repo.Branch)
+		},
+		func(pattern string, path string) ([]string, error) {
+			repo := cfg.Repositories[0]
+			return gh.SearchFiles(repo.Owner, repo.Name, pattern, path, repo.Branch)
+		},
+	)
 
 	return &Server{
 		config: cfg,
@@ -118,28 +131,17 @@ func (s *Server) processPullRequest(ctx context.Context, owner, repo string, prN
 		return
 	}
 
-	// Clone repository
-	repoDir, err := s.gh.CloneRepository(owner, repo, "main")
-	if err != nil {
-		s.logger.Error("failed to clone repository",
-			zap.String("owner", owner),
-			zap.String("repo", repo),
-			zap.Error(err))
-		return
-	}
-	defer os.RemoveAll(repoDir)
-
 	// Get additional context files
 	additionalContext := make(map[string]string)
-	for _, file := range getContextFiles(repoDir) {
-		content, err := os.ReadFile(filepath.Join(repoDir, file))
+	for _, file := range getContextFiles() {
+		content, err := s.gh.GetFileContent(owner, repo, file, "main")
 		if err != nil {
 			s.logger.Warn("failed to read context file",
 				zap.String("file", file),
 				zap.Error(err))
 			continue
 		}
-		additionalContext[file] = string(content)
+		additionalContext[file] = content
 	}
 
 	// Get LLM review
@@ -175,8 +177,11 @@ func verifyWebhookSignature(signature string, body io.ReadCloser, secret string)
 }
 
 // getContextFiles returns a list of files to provide as context
-func getContextFiles(repoDir string) []string {
-	// Implementation would go here
-	// For now, return an empty list
-	return []string{}
+func getContextFiles() []string {
+	// Return a list of important files to fetch from GitHub
+	return []string{
+		"README.md",
+		"go.mod",
+		"go.sum",
+	}
 }

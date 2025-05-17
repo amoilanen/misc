@@ -46,7 +46,7 @@ type Client struct {
 	BaseURL       string
 	onReadFile    func(path string) (string, error)
 	onListFiles   func(dir string) ([]string, error)
-	onSearchFiles func(pattern string) ([]string, error)
+	onSearchFiles func(pattern string, path string) ([]string, error)
 }
 
 type ReviewComment struct {
@@ -56,7 +56,7 @@ type ReviewComment struct {
 }
 
 type Message struct {
-	Role    string `json:"role"`
+	From    string `json:"from"`
 	Content string `json:"content"`
 }
 
@@ -73,7 +73,6 @@ type GeminiRequest struct {
 	} `json:"contents"`
 }
 
-// NewClient creates a new LLM client
 func NewClient(provider Provider, apiKey, model string) *Client {
 	return &Client{
 		provider: provider,
@@ -83,11 +82,10 @@ func NewClient(provider Provider, apiKey, model string) *Client {
 	}
 }
 
-// SetCallbacks sets the callback functions for handling LLM requests
 func (c *Client) SetCallbacks(
 	onReadFile func(path string) (string, error),
 	onListFiles func(dir string) ([]string, error),
-	onSearchFiles func(pattern string) ([]string, error),
+	onSearchFiles func(pattern string, path string) ([]string, error),
 ) {
 	c.onReadFile = onReadFile
 	c.onListFiles = onListFiles
@@ -95,10 +93,9 @@ func (c *Client) SetCallbacks(
 }
 
 func (c *Client) ReviewCode(ctx context.Context, diff string, additionalContext map[string]string) ([]ReviewComment, error) {
-	// Start a conversation with the LLM
 	messages := []Message{
 		{
-			Role: "pr-reviewer-agent",
+			From: "pr-reviewer-agent",
 			Content: `You are a code reviewer. You can:
 1. Review code changes and provide comments
 2. Request to read specific files for more context
@@ -122,7 +119,7 @@ Available actions:
 - list_files: List files in a directory
   params: { "dir": "directory path" }
 - search_files: Search for files
-  params: { "pattern": "search pattern" }
+  params: { "pattern": "search pattern", "path": "path to search from" }
 - finish_review: Finish review of the PR, no more comments to add
 
 To provide a review comment, use the comment action.
@@ -130,7 +127,7 @@ To request more context, use read_file, list_files, or search_files actions.
 To finish the review use the finish_review action`,
 		},
 		{
-			Role:    "pr-reviewer-agent",
+			From:    "pr-reviewer-agent",
 			Content: buildPrompt(diff, additionalContext),
 		},
 	}
@@ -161,11 +158,11 @@ To finish the review use the finish_review action`,
 		}
 
 		messages = append(messages, Message{
-			Role:    "LLM",
+			From:    "LLM",
 			Content: llmActionRaw,
 		})
 		messages = append(messages, Message{
-			Role:    "pr-reviewer-agent",
+			From:    "pr-reviewer-agent",
 			Content: fmt.Sprintf("Output of previous LLM action: %s", llmResponse),
 		})
 
@@ -219,7 +216,8 @@ func (c *Client) handleAction(action LLMAction) (LLMResponse, error) {
 			return LLMResponse{Type: "error", Error: "search_files callback not set"}, nil
 		}
 		pattern, _ := action.Params["pattern"].(string)
-		files, err := c.onSearchFiles(pattern)
+		path, _ := action.Params["path"].(string)
+		files, err := c.onSearchFiles(pattern, path)
 		if err != nil {
 			return LLMResponse{Type: "error", Error: err.Error()}, nil
 		}
@@ -261,7 +259,7 @@ func (c *Client) getGeminiResponse(ctx context.Context, messages []Message) (str
 		parts = append(parts, struct {
 			Text string `json:"text"`
 		}{
-			Text: fmt.Sprintf("%s: %s", msg.Role, msg.Content),
+			Text: fmt.Sprintf("%s: %s", msg.From, msg.Content),
 		})
 	}
 

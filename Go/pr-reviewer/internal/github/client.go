@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"os/exec"
+	"strings"
 
 	"github.com/google/go-github/v57/github"
 	"golang.org/x/oauth2"
@@ -44,31 +43,6 @@ func (c *Client) GetPullRequestDiffs(owner, repo string, prNumber int) (string, 
 	return string(diff), nil
 }
 
-func (c *Client) CloneRepository(owner, repo, branch string) (string, error) {
-	tmpDir, err := os.MkdirTemp("", "pr-reviewer-*")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
-	}
-
-	var cloneURL string
-	if c.client.BaseURL == nil || owner == "" || owner == "." || owner == "/" || owner == repo || len(repo) == 0 || owner == repo {
-		// If BaseURL is nil or owner looks like a URL, use owner as the full URL
-		cloneURL = owner
-	} else if len(owner) > 7 && (owner[:7] == "http://" || owner[:8] == "https://" || owner[:7] == "file://") {
-		cloneURL = owner
-	} else {
-		cloneURL = fmt.Sprintf("%s/%s/%s.git", c.client.BaseURL.String(), owner, repo)
-	}
-
-	cmd := exec.Command("git", "clone", "-b", branch, cloneURL, tmpDir)
-	if err := cmd.Run(); err != nil {
-		os.RemoveAll(tmpDir)
-		return "", fmt.Errorf("failed to clone repository: %w", err)
-	}
-
-	return tmpDir, nil
-}
-
 func (c *Client) CreateReviewComment(owner, repo string, prNumber int, body string, path string, line int) error {
 	comment := &github.PullRequestComment{
 		Body:     &body,
@@ -96,4 +70,42 @@ func (c *Client) GetFileContent(owner, repo, path, ref string) (string, error) {
 	}
 
 	return decoded, nil
+}
+
+func (c *Client) ListDirectoryContents(owner, repo, path, ref string) ([]string, error) {
+	_, contents, _, err := c.client.Repositories.GetContents(c.ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: ref})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get directory contents: %w", err)
+	}
+
+	var files []string
+	for _, content := range contents {
+		files = append(files, content.GetPath())
+	}
+
+	return files, nil
+}
+
+func (c *Client) SearchFiles(owner, repo, path string, pattern, ref string) ([]string, error) {
+	_, contents, _, err := c.client.Repositories.GetContents(c.ctx, owner, repo, path, &github.RepositoryContentGetOptions{Ref: ref})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository contents: %w", err)
+	}
+
+	var matchingFiles []string
+	for _, content := range contents {
+		if content.GetType() == "dir" {
+			subFiles, err := c.SearchFiles(owner, repo, content.GetPath(), pattern, ref)
+			if err != nil {
+				return nil, err
+			}
+			matchingFiles = append(matchingFiles, subFiles...)
+		} else if content.GetType() == "file" {
+			if strings.Contains(content.GetPath(), pattern) {
+				matchingFiles = append(matchingFiles, content.GetPath())
+			}
+		}
+	}
+
+	return matchingFiles, nil
 }

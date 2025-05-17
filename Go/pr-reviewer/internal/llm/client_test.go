@@ -83,18 +83,12 @@ func TestReviewCode(t *testing.T) {
 					// First request - return a comment
 					r.Header.Set("X-Request-Count", "1")
 					switch tt.provider {
-					case ProviderOpenAI, ProviderOpenRouter:
+					case ProviderOpenRouter:
 						w.Write([]byte(`{
 							"choices": [{
 								"message": {
 									"content": "{\"action\":\"comment\",\"params\":{\"path\":\"test.go\",\"line\":10,\"content\":\"Consider adding error handling here\"}}"
 								}
-							}]
-						}`))
-					case ProviderAnthropic:
-						w.Write([]byte(`{
-							"content": [{
-								"text": "{\"action\":\"comment\",\"params\":{\"path\":\"test.go\",\"line\":10,\"content\":\"Consider adding error handling here\"}}"
 							}]
 						}`))
 					case ProviderGemini:
