@@ -1,3 +1,7 @@
 - Review existing code
 - Run the app locally and make sure that it posts correct comments when a PR review is needed
+  -- Test pushing subsequent updates to the PR (empty updates), the reviewer should not leave duplicate comments (existing comments should be provided in the initial prompt to LLM)
+  -- Test addressing PR comments, reviewer should be able to resolve the comments
 - Deploy the app to AWS and test is there
+
+- Instead of a local configuration with hardcoded repos there should be a database and an admin interface where repos to watch can be added together with the models to use
