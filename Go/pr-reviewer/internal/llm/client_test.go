@@ -8,82 +8,86 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/amoilanen/pr-reviewer/internal/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewClient(t *testing.T) {
-	client := NewClient(ProviderOpenAI, "test-key", "gpt-4")
+	client := NewClient(ProviderGemini, "test-key", "gemini-pro")
 	assert.NotNil(t, client)
-	assert.Equal(t, ProviderOpenAI, client.provider)
+	assert.Equal(t, ProviderGemini, client.provider)
 	assert.Equal(t, "test-key", client.apiKey)
-	assert.Equal(t, "gpt-4", client.model)
+	assert.Equal(t, "gemini-pro", client.model)
 	assert.NotNil(t, client.client)
 }
 
 func TestReviewCode(t *testing.T) {
 	tests := []struct {
-		name           string
-		provider       Provider
-		diff           string
-		context        map[string]string
-		expectedError  bool
-		expectedResult []ReviewComment
+		name             string
+		provider         Provider
+		diff             string
+		context          map[string]string
+		existingComments []types.PRComment
+		owner            string
+		repo             string
+		prNumber         int
+		expectedError    bool
+		expectedResult   []ReviewComment
 	}{
 		{
-			name:     "OpenAI review",
-			provider: ProviderOpenAI,
+			name:     "Gemini review",
+			provider: ProviderGemini,
 			diff:     "test diff",
 			context: map[string]string{
 				"test.go": "test content",
 			},
-			expectedError: false,
-			expectedResult: []ReviewComment{
-				{
-					Path:    "test.go",
-					Line:    10,
-					Content: "Consider adding error handling here",
-				},
-			},
+			existingComments: []types.PRComment{},
+			owner:            "test-owner",
+			repo:             "test-repo",
+			prNumber:         1,
+			expectedError:    false,
+			expectedResult:   []ReviewComment{},
 		},
 		{
-			name:     "Anthropic review",
-			provider: ProviderAnthropic,
+			name:     "OpenRouter review",
+			provider: ProviderOpenRouter,
 			diff:     "test diff",
 			context: map[string]string{
 				"test.go": "test content",
 			},
-			expectedError: false,
-			expectedResult: []ReviewComment{
-				{
-					Path:    "test.go",
-					Line:    10,
-					Content: "Consider adding error handling here",
-				},
-			},
+			existingComments: []types.PRComment{},
+			owner:            "test-owner",
+			repo:             "test-repo",
+			prNumber:         1,
+			expectedError:    false,
+			expectedResult:   []ReviewComment{},
 		},
 		{
-			name:          "Invalid provider",
-			provider:      "invalid",
-			diff:          "test diff",
-			context:       map[string]string{},
-			expectedError: true,
+			name:             "Invalid provider",
+			provider:         "invalid",
+			diff:             "test diff",
+			context:          map[string]string{},
+			existingComments: []types.PRComment{},
+			owner:            "test-owner",
+			repo:             "test-repo",
+			prNumber:         1,
+			expectedError:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
 			// Create a test server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// Send mock response based on provider
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 
-				// Check if this is the first request
-				if r.Header.Get("X-Request-Count") == "" {
-					// First request - return a comment
-					r.Header.Set("X-Request-Count", "1")
-					switch tt.provider {
-					case ProviderOpenRouter:
+				requestCount++
+				switch tt.provider {
+				case ProviderOpenRouter:
+					if requestCount == 1 {
 						w.Write([]byte(`{
 							"choices": [{
 								"message": {
@@ -91,7 +95,17 @@ func TestReviewCode(t *testing.T) {
 								}
 							}]
 						}`))
-					case ProviderGemini:
+					} else {
+						w.Write([]byte(`{
+							"choices": [{
+								"message": {
+									"content": "{\"action\":\"finish_review\",\"params\":{}}"
+								}
+							}]
+						}`))
+					}
+				case ProviderGemini:
+					if requestCount == 1 {
 						w.Write([]byte(`{
 							"candidates": [{
 								"content": {
@@ -101,30 +115,12 @@ func TestReviewCode(t *testing.T) {
 								}
 							}]
 						}`))
-					}
-				} else {
-					// Second request - return empty action to end conversation
-					switch tt.provider {
-					case ProviderOpenAI, ProviderOpenRouter:
-						w.Write([]byte(`{
-							"choices": [{
-								"message": {
-									"content": "{\"action\":\"\",\"params\":{}}"
-								}
-							}]
-						}`))
-					case ProviderAnthropic:
-						w.Write([]byte(`{
-							"content": [{
-								"text": "{\"action\":\"\",\"params\":{}}"
-							}]
-						}`))
-					case ProviderGemini:
+					} else {
 						w.Write([]byte(`{
 							"candidates": [{
 								"content": {
 									"parts": [{
-										"text": "{\"action\":\"\",\"params\":{}}"
+										"text": "{\"action\":\"finish_review\",\"params\":{}}"
 									}]
 								}
 							}]
@@ -151,10 +147,13 @@ func TestReviewCode(t *testing.T) {
 			client.SetCallbacks(
 				func(path string) (string, error) { return "test content", nil },
 				func(dir string) ([]string, error) { return []string{"test.go"}, nil },
-				func(pattern string) ([]string, error) { return []string{"test.go"}, nil },
+				func(pattern string, path string) ([]string, error) { return []string{"test.go"}, nil },
+				func(owner string, repo string, prNumber int, threadID int64) error { return nil },
+				func(owner string, repo string, prNumber int, threadID int64, body string) error { return nil },
+				func(owner string, repo string, prNumber int, path string, line int, content string) error { return nil },
 			)
 
-			comments, err := client.ReviewCode(context.Background(), tt.diff, tt.context)
+			comments, err := client.ReviewCode(context.Background(), tt.diff, tt.context, tt.existingComments, tt.owner, tt.repo, tt.prNumber)
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -173,8 +172,16 @@ func TestBuildPrompt(t *testing.T) {
 		"test.go": "test content",
 		"main.go": "main content",
 	}
+	existingComments := []types.PRComment{
+		{
+			ThreadID: 1,
+			Path:     "test.go",
+			Line:     10,
+			Body:     "Test comment",
+		},
+	}
 
-	prompt := buildPrompt(diff, context)
+	prompt := buildPrompt(diff, context, existingComments)
 
 	// Check that all expected substrings are present
 	expectedSubstrings := []string{
@@ -183,24 +190,32 @@ func TestBuildPrompt(t *testing.T) {
 		"Additional context:",
 		"File: test.go\ntest content",
 		"File: main.go\nmain content",
+		"Existing comments:",
+		"Thread ID: 1",
+		"File: test.go",
+		"Line: 10",
+		"Comment: Test comment",
 	}
 	for _, substr := range expectedSubstrings {
 		assert.Contains(t, prompt, substr)
 	}
 }
 
-func TestHandleRequest(t *testing.T) {
-	client := NewClient(ProviderOpenAI, "test-key", "gpt-4")
+func TestHandleAction(t *testing.T) {
+	client := NewClient(ProviderGemini, "test-key", "gemini-pro")
 
 	tests := []struct {
-		name           string
-		request        ActionRequestedByLLM
-		onReadFile     func(path string) (string, error)
-		onListFiles    func(dir string) ([]string, error)
-		onSearchFiles  func(pattern string) ([]string, error)
-		expectedType   string
-		expectedError  bool
-		expectedResult any
+		name            string
+		request         ActionRequestedByLLM
+		onReadFile      func(path string) (string, error)
+		onListFiles     func(dir string) ([]string, error)
+		onSearchFiles   func(pattern string, path string) ([]string, error)
+		onResolveThread func(owner, repo string, prNumber int, threadID int64) error
+		onReplyToThread func(owner, repo string, prNumber int, threadID int64, body string) error
+		onComment       func(owner, repo string, prNumber int, path string, line int, content string) error
+		expectedType    string
+		expectedError   bool
+		expectedResult  any
 	}{
 		{
 			name: "Comment action",
@@ -211,6 +226,9 @@ func TestHandleRequest(t *testing.T) {
 					"line":    10.0,
 					"content": "test comment",
 				},
+			},
+			onComment: func(owner, repo string, prNumber int, path string, line int, content string) error {
+				return nil
 			},
 			expectedType: "comment",
 			expectedResult: ReviewComment{
@@ -253,13 +271,43 @@ func TestHandleRequest(t *testing.T) {
 				Action: ActionSearchFiles,
 				Params: map[string]any{
 					"pattern": "*.go",
+					"path":    ".",
 				},
 			},
-			onSearchFiles: func(pattern string) ([]string, error) {
+			onSearchFiles: func(pattern string, path string) ([]string, error) {
 				return []string{"test.go"}, nil
 			},
 			expectedType:   "file_list",
 			expectedResult: []string{"test.go"},
+		},
+		{
+			name: "Resolve thread action",
+			request: ActionRequestedByLLM{
+				Action: ResolveThread,
+				Params: map[string]any{
+					"thread_id": 1.0,
+				},
+			},
+			onResolveThread: func(owner, repo string, prNumber int, threadID int64) error {
+				return nil
+			},
+			expectedType:   "thread_resolved",
+			expectedResult: nil,
+		},
+		{
+			name: "Reply in thread action",
+			request: ActionRequestedByLLM{
+				Action: ReplyInThread,
+				Params: map[string]any{
+					"thread_id": 1.0,
+					"content":   "test reply",
+				},
+			},
+			onReplyToThread: func(owner, repo string, prNumber int, threadID int64, body string) error {
+				return nil
+			},
+			expectedType:   "thread_reply",
+			expectedResult: nil,
 		},
 		{
 			name: "Unknown action",
@@ -273,8 +321,15 @@ func TestHandleRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client.SetCallbacks(tt.onReadFile, tt.onListFiles, tt.onSearchFiles)
-			response, err := client.handleRequest(tt.request)
+			client.SetCallbacks(
+				tt.onReadFile,
+				tt.onListFiles,
+				tt.onSearchFiles,
+				tt.onResolveThread,
+				tt.onReplyToThread,
+				tt.onComment,
+			)
+			response, err := client.handleAction(tt.request, "test-owner", "test-repo", 1)
 
 			if tt.expectedError {
 				assert.Equal(t, "unknown action", response.Error)

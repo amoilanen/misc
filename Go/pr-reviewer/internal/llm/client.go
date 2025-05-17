@@ -152,6 +152,8 @@ To resolve or reply to existing comment threads, use resolve_thread or reply_in_
 		},
 	}
 
+	comments := []ReviewComment{}
+
 	for {
 		llmActionRaw, err := c.getLLMResponse(ctx, messages)
 		if err != nil {
@@ -182,7 +184,7 @@ To resolve or reply to existing comment threads, use resolve_thread or reply_in_
 		}
 	}
 
-	return nil, nil
+	return comments, nil
 }
 
 func (c *Client) handleAction(action ActionRequestedByLLM, owner, repo string, prNumber int) (ResponseToLLM, error) {
