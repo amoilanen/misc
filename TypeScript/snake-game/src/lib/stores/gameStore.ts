@@ -1,8 +1,9 @@
 import { writable } from 'svelte/store';
 import type { GameState, Direction, Position, GameConfig } from '$lib/types';
+import { GRID_SIZE } from '$lib/constants';
 
 const DEFAULT_CONFIG: GameConfig = {
-    gridSize: 20,
+    gridSize: GRID_SIZE,
     initialSpeed: 200,
     speedIncrease: 5
 };
@@ -38,7 +39,7 @@ function createGameStore(config: GameConfig = DEFAULT_CONFIG) {
                 if (state.isGameOver) return state;
 
                 const head = { ...state.snake[0] };
-                
+
                 switch (state.direction) {
                     case 'UP':
                         head.y = (head.y - 1 + config.gridSize) % config.gridSize;
@@ -104,4 +105,4 @@ function createGameStore(config: GameConfig = DEFAULT_CONFIG) {
     };
 }
 
-export const gameStore = createGameStore(); 
+export const gameStore = createGameStore();

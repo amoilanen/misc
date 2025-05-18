@@ -3,9 +3,12 @@
     import { browser } from '$app/environment';
     import { gameStore } from '$lib/stores/gameStore';
     import type { Direction } from '$lib/types';
+    import { GRID_SIZE } from '$lib/constants';
 
     let gameLoop: number;
-    let speed = 200;
+    let INITIAL_SPEED = 200;
+    let MINIMAL_POSSIBLE_SPEED = 50
+    let speed = INITIAL_SPEED;
 
     export function handleKeydown(event: KeyboardEvent) {
         const keyMap: Record<string, Direction> = {
@@ -28,13 +31,13 @@
 
     function startGame() {
         gameStore.reset();
-        speed = 200;
+        speed = INITIAL_SPEED;
         if (gameLoop) {
             clearInterval(gameLoop);
         }
         gameLoop = setInterval(() => {
             gameStore.moveSnake();
-            speed = Math.max(50, speed - 5);
+            speed = Math.max(MINIMAL_POSSIBLE_SPEED, speed - 5);
         }, speed);
     }
 
@@ -61,23 +64,23 @@
 </script>
 
 {#if browser}
-    <div class="game-container" tabindex="-1">
+    <div class="game-container">
         <div class="game-header">
             <h1>Snake Game</h1>
             <div class="score">Score: {$gameStore.score}</div>
         </div>
 
-        <div class="game-board" style="--grid-size: 20;">
-            {#each Array(400) as _, i}
-                {@const x = i % 20}
-                {@const y = Math.floor(i / 20)}
-                {@const isSnake = $gameStore.snake.some(segment => segment.x === x && segment.y === y)}
-                {@const isFood = $gameStore.food.x === x && $gameStore.food.y === y}
-                <div 
-                    class="cell" 
-                    class:snake={isSnake}
-                    class:food={isFood}
-                ></div>
+        <div class="game-board" style="--grid-size: {GRID_SIZE};">
+            {#each Array(GRID_SIZE) as _, y}
+                {#each Array(GRID_SIZE) as _, x}
+                   {@const isSnake = $gameStore.snake.some(segment => segment.x === x && segment.y === y)}
+                   {@const isFood = $gameStore.food.x === x && $gameStore.food.y === y}
+                   <div
+                       class="cell"
+                       class:snake={isSnake}
+                       class:food={isFood}
+                   ></div>
+                {/each}
             {/each}
         </div>
 
@@ -123,8 +126,8 @@
     }
 
     .cell {
-        width: 20px;
-        height: 20px;
+        width: 1.25rem;
+        height: 1.25rem;
         background-color: #34495e;
     }
 
@@ -169,4 +172,4 @@
         text-align: center;
         color: #7f8c8d;
     }
-</style> 
+</style>
