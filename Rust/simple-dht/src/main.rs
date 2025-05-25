@@ -6,6 +6,9 @@ use tokio::{
 };
 use rand::Rng;
 use sha2::{Digest, Sha256};
+use std::net::SocketAddr;
+use std::str::FromStr;
+use simple_dht::{DhtNode, NodeId, rpc::RpcServer};
 
 #[derive(Clone, Debug)]
 struct PeerInfo {
@@ -22,33 +25,33 @@ struct Node {
 }
 
 #[tokio::main]
-async fn main() {
-    let port = env::args().nth(1).unwrap_or("4000".into());
-    let addr = format!("127.0.0.1:{}", port);
-    let id = random_id();
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::init();
 
-    let node = Node {
-        id: id.clone(),
-        addr: addr.clone(),
-        peers: Arc::new(Mutex::new(Vec::new())),
-        store: Arc::new(Mutex::new(HashMap::new())),
-    };
-
-    // Optionally bootstrap from known peer
-    if let Some(bootstrap_addr) = env::args().nth(2) {
-        bootstrap(&node, bootstrap_addr).await;
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        println!("Usage: {} <port> [bootstrap_addr]", args[0]);
+        return Ok(());
     }
 
-    println!("Node {} listening on {}", &node.id[..8], addr);
-    let listener = TcpListener::bind(&addr).await.unwrap();
+    let port = args[1].parse::<u16>()?;
+    let addr = SocketAddr::from_str(&format!("127.0.0.1:{}", port))?;
+    
+    let node = DhtNode::new(addr);
+    println!("Starting DHT node {} on {}", node.id.0.iter().map(|b| format!("{:02x}", b)).collect::<String>(), addr);
 
-    loop {
-        let (stream, _) = listener.accept().await.unwrap();
-        let node = node.clone();
-        tokio::spawn(async move {
-            handle_client(stream, node).await;
-        });
+    // Bootstrap if bootstrap address is provided
+    if args.len() > 2 {
+        let bootstrap_addr = SocketAddr::from_str(&args[2])?;
+        println!("Bootstrapping from {}", bootstrap_addr);
+        node.bootstrap(bootstrap_addr).await?;
     }
+
+    // Start RPC server
+    let server = RpcServer::new(node);
+    server.start().await?;
+
+    Ok(())
 }
 
 async fn bootstrap(node: &Node, bootstrap_addr: String) {
