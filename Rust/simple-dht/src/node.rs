@@ -1,11 +1,11 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::{NodeId, NodeInfo, DhtNode, routing::RoutingTable, storage::Storage, rpc::{RpcClient, RpcRequest, RpcResponse}, ALPHA};
+use crate::{DhtKey, NodeInfo, DhtNode, routing::RoutingTable, storage::Storage, rpc::{RpcClient, RpcRequest, RpcResponse, RpcServer}, ALPHA};
 
 impl DhtNode {
     pub fn new(addr: SocketAddr) -> Self {
-        let id = NodeId::random();
+        let id = DhtKey::random();
         Self {
             id: id.clone(),
             addr,
@@ -27,7 +27,7 @@ impl DhtNode {
         Ok(())
     }
 
-    pub async fn find_node(&self, target: NodeId) -> Result<Vec<NodeInfo>, Box<dyn std::error::Error>> {
+    pub async fn find_node(&self, target: DhtKey) -> Result<Vec<NodeInfo>, Box<dyn std::error::Error>> {
         // First get the closest nodes from our routing table
         let closest = self.routing_table.lock().await.find_closest(&target, ALPHA);
         if closest.is_empty() {
@@ -94,18 +94,26 @@ impl DhtNode {
         Ok(result)
     }
 
-    pub async fn store(&self, key: NodeId, value: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn store(&self, key: DhtKey, value: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+        // First store locally
+        self.storage.lock().await.store(key.clone(), value.clone(), None);
+        
+        // Find the k closest nodes to the key
         let closest = self.find_node(key.clone()).await?;
         
+        // Store on the k closest nodes
         for node in closest {
             let client = RpcClient::new(node.addr);
-            let _ = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await;
+            if let Err(e) = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await {
+                eprintln!("Failed to store value on node {}: {}", node.addr, e);
+                // Continue with other nodes even if one fails
+            }
         }
 
         Ok(())
     }
 
-    pub async fn find_value(&self, key: NodeId) -> Result<Option<Vec<u8>>, Box<dyn std::error::Error>> {
+    pub async fn find_value(&self, key: DhtKey) -> Result<Option<Vec<u8>>, Box<dyn std::error::Error>> {
         // First check local storage
         if let Some(value) = self.storage.lock().await.get(&key) {
             return Ok(Some(value.to_vec()));
@@ -157,12 +165,12 @@ mod tests {
     #[tokio::test]
     async fn test_node_find_node() {
         let node = create_test_node();
-        let target = NodeId::random();
+        let target = DhtKey::random();
         
         // Add some nodes to routing table
         let test_nodes: Vec<_> = (0..3).map(|i| {
             NodeInfo {
-                id: NodeId::random(),
+                id: DhtKey::random(),
                 addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4001 + i as u16),
             }
         }).collect();
@@ -209,7 +217,7 @@ mod tests {
     #[tokio::test]
     async fn test_node_store_find_value() {
         let node = create_test_node();
-        let key = NodeId::random();
+        let key = DhtKey::random();
         let value = b"test value".to_vec();
 
         // Store value locally
@@ -250,7 +258,7 @@ mod tests {
         // Spawn multiple concurrent operations
         for i in 0..5 {
             let node = node.clone();
-            let key = NodeId::random();
+            let key = DhtKey::random();
             let value = format!("test value {}", i).into_bytes();
             
             handles.push(tokio::spawn(async move {

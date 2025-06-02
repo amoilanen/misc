@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use crate::NodeId;
+use crate::DhtKey;
 
 #[derive(Clone, Debug)]
 pub struct Value {
@@ -22,7 +22,7 @@ impl Value {
 }
 
 pub struct Storage {
-    values: HashMap<NodeId, Value>,
+    values: HashMap<DhtKey, Value>,
 }
 
 impl Storage {
@@ -32,11 +32,11 @@ impl Storage {
         }
     }
 
-    pub fn store(&mut self, key: NodeId, value: Vec<u8>, ttl: Option<Duration>) {
+    pub fn store(&mut self, key: DhtKey, value: Vec<u8>, ttl: Option<Duration>) {
         self.values.insert(key, Value::new(value, ttl));
     }
 
-    pub fn get(&self, key: &NodeId) -> Option<&[u8]> {
+    pub fn get(&self, key: &DhtKey) -> Option<&[u8]> {
         self.values.get(key).and_then(|v| {
             if v.is_expired() {
                 None
@@ -46,7 +46,7 @@ impl Storage {
         })
     }
 
-    pub fn remove(&mut self, key: &NodeId) {
+    pub fn remove(&mut self, key: &DhtKey) {
         self.values.remove(key);
     }
 
@@ -63,14 +63,12 @@ mod tests {
     #[test]
     fn test_storage_basic_operations() {
         let mut storage = Storage::new();
-        let key = NodeId::random();
+        let key = DhtKey::random();
         let value = b"test value".to_vec();
 
-        // Test store and get
         storage.store(key.clone(), value.clone(), None);
         assert_eq!(storage.get(&key), Some(value.as_slice()));
 
-        // Test remove
         storage.remove(&key);
         assert_eq!(storage.get(&key), None);
     }
@@ -78,10 +76,9 @@ mod tests {
     #[test]
     fn test_storage_ttl() {
         let mut storage = Storage::new();
-        let key = NodeId::random();
+        let key = DhtKey::random();
         let value = b"test value".to_vec();
 
-        // Store with short TTL
         storage.store(key.clone(), value.clone(), Some(Duration::from_millis(100)));
         assert_eq!(storage.get(&key), Some(value.as_slice()));
 
@@ -93,8 +90,8 @@ mod tests {
     #[test]
     fn test_storage_cleanup() {
         let mut storage = Storage::new();
-        let key1 = NodeId::random();
-        let key2 = NodeId::random();
+        let key1 = DhtKey::random();
+        let key2 = DhtKey::random();
         let value = b"test value".to_vec();
 
         // Store one value with TTL and one without

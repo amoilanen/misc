@@ -2,15 +2,15 @@ use std::net::SocketAddr;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use serde::{Serialize, Deserialize};
-use crate::{NodeId, NodeInfo, DhtNode, ALPHA};
+use crate::{DhtKey, NodeInfo, DhtNode, ALPHA};
 use crate::utils::random_port;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RpcRequest {
     Ping,
-    FindNode(NodeId),
-    Store(NodeId, Vec<u8>),
-    FindValue(NodeId),
+    FindNode(DhtKey),
+    Store(DhtKey, Vec<u8>),
+    FindValue(DhtKey),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -19,6 +19,7 @@ pub enum RpcResponse {
     Nodes(Vec<NodeInfo>),
     Value(Vec<u8>),
     NotFound,
+    Ok,
 }
 
 pub struct RpcServer {
@@ -74,7 +75,7 @@ impl RpcServer {
             RpcRequest::Store(key, value) => {
                 let mut storage = node.storage.lock().await;
                 storage.store(key, value, None);
-                Ok(RpcResponse::Pong)
+                Ok(RpcResponse::Ok)
             }
 
             RpcRequest::FindValue(key) => {
@@ -115,10 +116,7 @@ impl RpcClient {
 mod tests {
     use super::*;
     use std::net::{IpAddr, Ipv4Addr};
-    use tokio::runtime::Runtime;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
-    use crate::{DhtNode, routing::RoutingTable, storage::Storage};
+    use crate::DhtNode;
 
     fn create_test_node() -> DhtNode {
         let port = random_port(4000, 5000);
@@ -145,16 +143,16 @@ mod tests {
         assert!(matches!(response, RpcResponse::Pong));
 
         // Test find node
-        let target = NodeId::random();
+        let target = DhtKey::random();
         let response = client.send_request(RpcRequest::FindNode(target.clone())).await.unwrap();
         assert!(matches!(response, RpcResponse::Nodes(_)));
 
         // Test store and find value
-        let key = NodeId::random();
+        let key = DhtKey::random();
         let value = b"test value".to_vec();
         
         let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await.unwrap();
-        assert!(matches!(response, RpcResponse::Pong));
+        assert!(matches!(response, RpcResponse::Ok));
 
         let response = client.send_request(RpcRequest::FindValue(key)).await.unwrap();
         match response {
@@ -192,12 +190,12 @@ mod tests {
         let mut handles = Vec::new();
         for i in 0..5 {
             let client = RpcClient::new(node.addr);
-            let key = NodeId::random();
+            let key = DhtKey::random();
             let value = format!("test value {}", i).into_bytes();
             
             handles.push(tokio::spawn(async move {
                 let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await.unwrap();
-                assert!(matches!(response, RpcResponse::Pong));
+                assert!(matches!(response, RpcResponse::Ok));
                 
                 let response = client.send_request(RpcRequest::FindValue(key)).await.unwrap();
                 match response {

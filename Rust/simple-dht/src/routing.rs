@@ -1,7 +1,6 @@
-use std::collections::HashMap;
+use std::time::Instant;
 use std::net::SocketAddr;
-use std::time::{Duration, Instant};
-use crate::{NodeId, NodeInfo, K, KEY_SIZE};
+use crate::{DhtKey, NodeInfo, K, KEY_SIZE};
 
 #[derive(Clone, Debug)]
 pub struct Bucket {
@@ -19,24 +18,19 @@ impl Bucket {
 
     pub fn update(&mut self, node: NodeInfo) -> bool {
         self.last_updated = Instant::now();
-        
-        // If node exists, move it to the end (most recently seen)
         if let Some(pos) = self.nodes.iter().position(|n| n.id == node.id) {
             self.nodes.remove(pos);
             self.nodes.push(node);
             return true;
         }
-
-        // If bucket is not full, add the node
         if self.nodes.len() < K {
             self.nodes.push(node);
             return true;
         }
-
         false
     }
 
-    pub fn remove(&mut self, node_id: &NodeId) {
+    pub fn remove(&mut self, node_id: &DhtKey) {
         if let Some(pos) = self.nodes.iter().position(|n| &n.id == node_id) {
             self.nodes.remove(pos);
         }
@@ -45,11 +39,11 @@ impl Bucket {
 
 pub struct RoutingTable {
     buckets: Vec<Bucket>,
-    node_id: NodeId,
+    node_id: DhtKey,
 }
 
 impl RoutingTable {
-    pub fn new(node_id: NodeId) -> Self {
+    pub fn new(node_id: DhtKey) -> Self {
         Self {
             buckets: vec![Bucket::new(); KEY_SIZE],
             node_id,
@@ -62,13 +56,13 @@ impl RoutingTable {
         self.buckets[bucket_index].update(node)
     }
 
-    pub fn remove(&mut self, node_id: &NodeId) {
+    pub fn remove(&mut self, node_id: &DhtKey) {
         let distance = self.node_id.distance(node_id);
         let bucket_index = self.get_bucket_index(distance);
         self.buckets[bucket_index].remove(node_id);
     }
 
-    pub fn find_closest(&self, target: &NodeId, count: usize) -> Vec<NodeInfo> {
+    pub fn find_closest(&self, target: &DhtKey, count: usize) -> Vec<NodeInfo> {
         let mut nodes = Vec::new();
         let distance = self.node_id.distance(target);
         let bucket_index = self.get_bucket_index(distance);
@@ -76,19 +70,11 @@ impl RoutingTable {
         // Add nodes from the target bucket
         nodes.extend(self.buckets[bucket_index].nodes.clone());
 
-        // Add nodes from adjacent buckets if needed
-        let mut left = bucket_index;
+        // Add nodes from buckets to the right (closer nodes) if needed
         let mut right = bucket_index + 1;
-        
-        while nodes.len() < count && (left > 0 || right < self.buckets.len()) {
-            if left > 0 {
-                nodes.extend(self.buckets[left - 1].nodes.clone());
-                left -= 1;
-            }
-            if right < self.buckets.len() {
-                nodes.extend(self.buckets[right].nodes.clone());
-                right += 1;
-            }
+        while nodes.len() < count && right < self.buckets.len() {
+            nodes.extend(self.buckets[right].nodes.clone());
+            right += 1;
         }
 
         // Sort by distance to target and take closest nodes
@@ -125,7 +111,7 @@ mod tests {
 
     fn create_test_node(port: u16) -> NodeInfo {
         NodeInfo {
-            id: NodeId::random(),
+            id: DhtKey::random(),
             addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port),
         }
     }
@@ -166,14 +152,14 @@ mod tests {
 
     #[test]
     fn test_routing_table_basic() {
-        let node_id = NodeId::random();
+        let node_id = DhtKey::random();
         let rt = RoutingTable::new(node_id.clone());
         assert_eq!(rt.buckets.len(), KEY_SIZE);
     }
 
     #[test]
     fn test_routing_table_update() {
-        let node_id = NodeId::random();
+        let node_id = DhtKey::random();
         let mut rt = RoutingTable::new(node_id.clone());
         let test_node = create_test_node(4000);
 
@@ -186,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_routing_table_find_closest() {
-        let node_id = NodeId::random();
+        let node_id = DhtKey::random();
         let mut rt = RoutingTable::new(node_id.clone());
         
         // Add nodes with different distances
@@ -196,7 +182,7 @@ mod tests {
         }
 
         // Find closest nodes
-        let target = NodeId::random();
+        let target = DhtKey::random();
         let closest = rt.find_closest(&target, 3);
         assert_eq!(closest.len(), 3);
 
@@ -210,7 +196,7 @@ mod tests {
 
     #[test]
     fn test_bucket_index_calculation() {
-        let node_id = NodeId::random();
+        let node_id = DhtKey::random();
         let rt = RoutingTable::new(node_id.clone());
 
         // Test special cases
