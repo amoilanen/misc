@@ -78,9 +78,9 @@ impl DhtNode {
 
         // Convert found node IDs back to NodeInfo
         let mut result = Vec::new();
-        for id in found {
-            if let Some(node) = closest.iter().find(|n| n.id == id) {
-                result.push(node.clone());
+        for node in closest {
+            if found.contains(&node.id) {
+                result.push(node);
             }
         }
 
@@ -167,10 +167,14 @@ mod tests {
         let node = create_test_node();
         let target = DhtKey::random();
         
-        // Add some nodes to routing table
+        // Create test nodes with deterministic IDs for more stable testing
         let test_nodes: Vec<_> = (0..3).map(|i| {
+            let mut id = DhtKey::random();
+            // Ensure nodes are at different distances from target
+            let mut bytes = id.0;
+            bytes[0] = i as u8;  // Make IDs deterministic but different
             NodeInfo {
-                id: DhtKey::random(),
+                id: DhtKey(bytes),
                 addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4001 + i as u16),
             }
         }).collect();
@@ -180,6 +184,9 @@ mod tests {
             let added = node.routing_table.lock().await.update(test_node.clone());
             assert!(added, "Failed to add node to routing table");
         }
+
+        // Wait a bit to ensure routing table updates are processed
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
         // Verify nodes are in routing table
         {
@@ -205,12 +212,16 @@ mod tests {
                 "Returned node not in test nodes: {:?}", node);
         }
 
+        // Additional verification: ensure we got all test nodes back
+        assert_eq!(nodes.len(), test_nodes.len(), 
+            "Expected {} nodes but got {}", test_nodes.len(), nodes.len());
+
         // Verify nodes are sorted by distance to target
         for i in 0..nodes.len() - 1 {
             let dist1 = target.distance(&nodes[i].id);
             let dist2 = target.distance(&nodes[i + 1].id);
             assert!(dist1 <= dist2, 
-                "Nodes not sorted by distance: {} <= {}", dist1, dist2);
+                "Nodes not sorted by distance: dist1 {:?} > dist2 {:?}", dist1, dist2);
         }
     }
 

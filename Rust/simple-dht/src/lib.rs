@@ -39,20 +39,12 @@ impl DhtKey {
     }
 
     // XOR distance https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf
-    pub fn distance(&self, other: &DhtKey) -> u128 {
+    pub fn distance(&self, other: &DhtKey) -> [u8; 32] {
         let mut xor_result = [0u8; 32];
         for i in 0..32 {
             xor_result[i] = self.0[i] ^ other.0[i];
         }
-
-        // Find the first non-zero byte to determine the most significant bit
-        for (i, &byte) in xor_result.iter().enumerate() {
-            if byte != 0 {
-                // Calculate the bit position from the left (0-based)
-                return (i * 8 + byte.leading_zeros() as usize) as u128;
-            }
-        }
-        0 // Nodes are identical
+        xor_result
     }
 }
 
@@ -75,7 +67,7 @@ mod tests {
     fn test_distance_identical_nodes() {
         let id1 = DhtKey([0u8; 32]);
         let id2 = DhtKey([0u8; 32]);
-        assert_eq!(id1.distance(&id2), 0);
+        assert_eq!(id1.distance(&id2), [0u8; 32]);
     }
 
     #[test]
@@ -84,7 +76,9 @@ mod tests {
         let mut id2 = [0u8; 32];
         id1[0] = 0b10000000; // MSB is 1
         id2[0] = 0b00000000; // MSB is 0
-        assert_eq!(DhtKey(id1).distance(&DhtKey(id2)), 0);
+        let mut expected = [0u8; 32];
+        expected[0] = 0b10000000;
+        assert_eq!(DhtKey(id1).distance(&DhtKey(id2)), expected);
     }
 
     #[test]
@@ -93,7 +87,9 @@ mod tests {
         let mut id2 = [0u8; 32];
         id1[31] = 0b00000001; // LSB is 1
         id2[31] = 0b00000000; // LSB is 0
-        assert_eq!(DhtKey(id1).distance(&DhtKey(id2)), 255);
+        let mut expected = [0u8; 32];
+        expected[31] = 0b00000001;
+        assert_eq!(DhtKey(id1).distance(&DhtKey(id2)), expected);
     }
 
     #[test]
@@ -102,7 +98,9 @@ mod tests {
         let mut id2 = [0u8; 32];
         id1[15] = 0b00010000; // Different bit in middle byte
         id2[15] = 0b00000000;
-        assert_eq!(DhtKey(id1).distance(&DhtKey(id2)), 123);
+        let mut expected = [0u8; 32];
+        expected[15] = 0b00010000;
+        assert_eq!(DhtKey(id1).distance(&DhtKey(id2)), expected);
     }
 
     #[test]
@@ -110,6 +108,6 @@ mod tests {
         let id1 = DhtKey::random();
         let id2 = DhtKey::random();
         let distance = id1.distance(&id2);
-        assert!(distance <= 255); // Distance should be between 0 and 255
+        assert_ne!(distance, [0u8; 32]); // Distance should not be zero for random IDs
     }
 }

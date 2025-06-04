@@ -77,7 +77,14 @@ impl RoutingTable {
             right += 1;
         }
 
-        // Sort by distance to target and take closest nodes
+        // Add nodes from buckets to the left (further nodes) if needed
+        let mut left = bucket_index;
+        while nodes.len() < count && left > 0 {
+            left -= 1;
+            nodes.extend(self.buckets[left].nodes.clone());
+        }
+
+        // Sort by distance to target
         nodes.sort_by(|a, b| {
             let dist_a = target.distance(&a.id);
             let dist_b = target.distance(&b.id);
@@ -88,19 +95,24 @@ impl RoutingTable {
         nodes
     }
 
-    fn get_bucket_index(&self, distance: u128) -> usize {
-        if distance == 0 {
+    pub fn get_bucket_index(&self, distance: [u8; 32]) -> usize {
+        if distance == [0u8; 32] {
             return 0;
         }
         
-        // For non-zero distances, calculate the bucket index based on the number of bits
-        // needed to represent the distance
-        let bits = 128 - distance.leading_zeros() as usize;
-        if bits >= KEY_SIZE {
-            KEY_SIZE - 1
-        } else {
-            KEY_SIZE - bits
+        // Find the first non-zero byte
+        for (i, &byte) in distance.iter().enumerate() {
+            if byte != 0 {
+                // Calculate the bit position from the left (0-based)
+                let bit_pos = i * 8 + byte.leading_zeros() as usize;
+                return if bit_pos >= KEY_SIZE {
+                    KEY_SIZE - 1
+                } else {
+                    bit_pos
+                };
+            }
         }
+        0 // Should never reach here if distance != [0u8; 32]
     }
 }
 
@@ -175,22 +187,43 @@ mod tests {
         let node_id = DhtKey::random();
         let mut rt = RoutingTable::new(node_id.clone());
         
-        // Add nodes with different distances
-        let nodes: Vec<_> = (0..5).map(|i| create_test_node(4000 + i as u16)).collect();
+        // Create nodes with deterministic distances
+        let nodes: Vec<_> = (0..5).map(|i| {
+            let mut id = DhtKey::random();
+            // Make IDs deterministic but different
+            let mut bytes = id.0;
+            bytes[0] = i as u8;
+            NodeInfo {
+                id: DhtKey(bytes),
+                addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4000 + i as u16),
+            }
+        }).collect();
+
+        // Add nodes to routing table
         for node in &nodes {
-            rt.update(node.clone());
+            assert!(rt.update(node.clone()), "Failed to add node to routing table");
         }
 
         // Find closest nodes
         let target = DhtKey::random();
         let closest = rt.find_closest(&target, 3);
-        assert_eq!(closest.len(), 3);
+        assert_eq!(closest.len(), 3, "Expected 3 closest nodes");
 
-        // Verify they are sorted by distance
+        // Verify they are sorted by distance to target
         for i in 0..closest.len() - 1 {
             let dist1 = target.distance(&closest[i].id);
             let dist2 = target.distance(&closest[i + 1].id);
-            assert!(dist1 <= dist2);
+            assert!(dist1 <= dist2, 
+                "Nodes not sorted by distance: dist1 {:?} > dist2 {:?}", dist1, dist2);
+        }
+
+        // Verify all returned nodes are from our test set
+        let test_node_ids: std::collections::HashSet<_> = nodes.iter()
+            .map(|n| n.id.clone())
+            .collect();
+        for node in &closest {
+            assert!(test_node_ids.contains(&node.id), 
+                "Returned node not in test nodes: {:?}", node);
         }
     }
 
@@ -199,96 +232,32 @@ mod tests {
         let node_id = DhtKey::random();
         let rt = RoutingTable::new(node_id.clone());
 
-        // Test special cases
-        assert_eq!(rt.get_bucket_index(0), 0, "Zero distance should map to bucket 0");
-        assert_eq!(rt.get_bucket_index(u128::MAX), KEY_SIZE - 1, "Maximum distance should map to last bucket");
+        // Test edge cases
+        assert_eq!(rt.get_bucket_index([0u8; 32]), 0, "Zero distance should map to bucket 0");
+        
+        // Test maximum distance (all bits set)
+        let mut max_distance = [0u8; 32];
+        max_distance[0] = 0b10000000; // Set MSB
+        assert_eq!(rt.get_bucket_index(max_distance), 0, "MSB set should map to bucket 0");
 
-        // Test powers of 2 (these are important boundary cases)
-        for i in 0..KEY_SIZE {
-            let distance = 1u128 << i;
-            let expected_index = if i >= KEY_SIZE { KEY_SIZE - 1 } else { KEY_SIZE - i - 1 };
-            assert_eq!(
-                rt.get_bucket_index(distance),
-                expected_index,
-                "Distance 2^{} should map to bucket {}",
-                i,
-                expected_index
-            );
-        }
+        // Test minimum non-zero distance (LSB set)
+        let mut min_distance = [0u8; 32];
+        min_distance[31] = 0b00000001; // Set LSB
+        assert_eq!(rt.get_bucket_index(min_distance), 255, "LSB set should map to bucket 255");
 
-        // Test values just before and after powers of 2
-        for i in 1..KEY_SIZE {
-            let power = 1u128 << i;
-            let before_power = power - 1;
-            let after_power = power + 1;
-            let expected_index = KEY_SIZE - i;
-
-            assert_eq!(
-                rt.get_bucket_index(before_power),
-                expected_index,
-                "Distance {} (before 2^{}) should map to bucket {}",
-                before_power,
-                i,
-                expected_index
-            );
-
-            assert_eq!(
-                rt.get_bucket_index(after_power),
-                expected_index,
-                "Distance {} (after 2^{}) should map to bucket {}",
-                after_power,
-                i,
-                expected_index
-            );
-        }
-
-        // Test some random distances to ensure general correctness
-        let test_distances = [
-            (1, KEY_SIZE - 1),
-            (3, KEY_SIZE - 2),
-            (7, KEY_SIZE - 3),
-            (15, KEY_SIZE - 4),
-            (31, KEY_SIZE - 5),
-            (63, KEY_SIZE - 6),
-            (127, KEY_SIZE - 7),
-            (255, KEY_SIZE - 8),
-            (511, KEY_SIZE - 9),
-            (1023, KEY_SIZE - 10),
-        ];
-
-        for (distance, expected_index) in test_distances {
-            assert_eq!(
-                rt.get_bucket_index(distance),
-                expected_index,
-                "Distance {} should map to bucket {}",
-                distance,
-                expected_index
-            );
-        }
-
-        // Test that all distances in a bucket range map to the same bucket
-        for i in 0..KEY_SIZE {
-            let bucket_start = if i == 0 { 0 } else { 1u128 << (KEY_SIZE - i - 1) };
-            let bucket_end = if i == KEY_SIZE - 1 { u128::MAX } else { (1u128 << (KEY_SIZE - i)) - 1 };
-            
-            let expected_index = i;
-            let test_distances = [
-                bucket_start,
-                bucket_start + 1,
-                (bucket_start + bucket_end) / 2,
-                bucket_end - 1,
-                bucket_end,
-            ];
-
-            for distance in test_distances {
+        // Test middle distances
+        for i in 0..32 {
+            for bit in 0..8 {
+                let mut distance = [0u8; 32];
+                distance[i] = 1 << bit;
+                let expected_bucket = i * 8 + (7 - bit);
                 assert_eq!(
                     rt.get_bucket_index(distance),
-                    expected_index,
-                    "Distance {} in bucket range [{}, {}] should map to bucket {}",
-                    distance,
-                    bucket_start,
-                    bucket_end,
-                    expected_index
+                    expected_bucket,
+                    "Distance with bit {} set in byte {} should map to bucket {}",
+                    bit,
+                    i,
+                    expected_bucket
                 );
             }
         }

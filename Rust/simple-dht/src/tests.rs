@@ -35,8 +35,10 @@ mod tests {
         let id1 = NodeId::from("test1");
         let id2 = NodeId::from("test2");
         let id3 = NodeId::from("test1");
-        assert!(id1.distance(&id2) > 0);
-        assert_eq!(id1.distance(&id3), 0);
+        let dist1 = id1.distance(&id2);
+        let dist2 = id1.distance(&id3);
+        assert!(dist1 != [0u8; 32]);
+        assert_eq!(dist2, [0u8; 32]);
     }
 
     // Routing table tests
