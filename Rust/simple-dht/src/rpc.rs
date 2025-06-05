@@ -4,6 +4,8 @@ use tokio::net::{TcpListener, TcpStream};
 use serde::{Serialize, Deserialize};
 use crate::{DhtKey, NodeInfo, DhtNode, ALPHA};
 use crate::utils::random_port;
+use std::fmt;
+use tokio::task::JoinError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RpcRequest {
@@ -117,6 +119,34 @@ mod tests {
     use super::*;
     use std::net::{IpAddr, Ipv4Addr};
     use crate::DhtNode;
+    use std::fmt;
+
+    #[derive(Debug)]
+    struct TestError(Box<dyn std::error::Error>);
+
+    impl fmt::Display for TestError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    impl std::error::Error for TestError {}
+
+    impl From<Box<dyn std::error::Error>> for TestError {
+        fn from(err: Box<dyn std::error::Error>) -> Self {
+            TestError(err)
+        }
+    }
+
+    impl From<JoinError> for TestError {
+        fn from(err: JoinError) -> Self {
+            TestError(Box::new(err))
+        }
+    }
+
+    // Make TestError Send + Sync
+    unsafe impl Send for TestError {}
+    unsafe impl Sync for TestError {}
 
     fn create_test_node() -> DhtNode {
         let port = random_port(4000, 5000);
@@ -125,7 +155,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rpc_client_server_basic() {
+    async fn test_rpc_client_server_basic() -> Result<(), TestError> {
         let node = create_test_node();
         let server = RpcServer::new(node.clone());
         
@@ -139,22 +169,22 @@ mod tests {
 
         // Test ping
         let client = RpcClient::new(node.addr);
-        let response = client.send_request(RpcRequest::Ping).await.unwrap();
+        let response = client.send_request(RpcRequest::Ping).await?;
         assert!(matches!(response, RpcResponse::Pong));
 
         // Test find node
         let target = DhtKey::random();
-        let response = client.send_request(RpcRequest::FindNode(target.clone())).await.unwrap();
+        let response = client.send_request(RpcRequest::FindNode(target.clone())).await?;
         assert!(matches!(response, RpcResponse::Nodes(_)));
 
         // Test store and find value
         let key = DhtKey::random();
         let value = b"test value".to_vec();
         
-        let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await.unwrap();
+        let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await?;
         assert!(matches!(response, RpcResponse::Ok));
 
-        let response = client.send_request(RpcRequest::FindValue(key)).await.unwrap();
+        let response = client.send_request(RpcRequest::FindValue(key)).await?;
         match response {
             RpcResponse::Value(v) => assert_eq!(v, value),
             _ => panic!("Expected Value response"),
@@ -162,19 +192,21 @@ mod tests {
 
         // Cleanup
         server_handle.abort();
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_rpc_error_handling() {
+    async fn test_rpc_error_handling() -> Result<(), TestError> {
         let client = RpcClient::new(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9999));
         
         // Test connection error
         let result = client.send_request(RpcRequest::Ping).await;
         assert!(result.is_err());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_rpc_concurrent_requests() {
+    async fn test_rpc_concurrent_requests() -> Result<(), TestError> {
         let node = create_test_node();
         let server = RpcServer::new(node.clone());
         
@@ -194,23 +226,25 @@ mod tests {
             let value = format!("test value {}", i).into_bytes();
             
             handles.push(tokio::spawn(async move {
-                let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await.unwrap();
+                let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await?;
                 assert!(matches!(response, RpcResponse::Ok));
                 
-                let response = client.send_request(RpcRequest::FindValue(key)).await.unwrap();
+                let response = client.send_request(RpcRequest::FindValue(key)).await?;
                 match response {
                     RpcResponse::Value(v) => assert_eq!(v, value),
                     _ => panic!("Expected Value response"),
                 }
+                Ok::<(), TestError>(())
             }));
         }
 
         // Wait for all requests to complete
         for handle in handles {
-            handle.await.unwrap();
+            handle.await??;
         }
 
         // Cleanup
         server_handle.abort();
+        Ok(())
     }
 } 

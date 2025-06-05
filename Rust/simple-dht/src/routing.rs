@@ -189,7 +189,7 @@ mod tests {
         
         // Create nodes with deterministic distances
         let nodes: Vec<_> = (0..5).map(|i| {
-            let mut id = DhtKey::random();
+            let id = DhtKey::random();
             // Make IDs deterministic but different
             let mut bytes = id.0;
             bytes[0] = i as u8;

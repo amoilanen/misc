@@ -169,7 +169,7 @@ mod tests {
         
         // Create test nodes with deterministic IDs for more stable testing
         let test_nodes: Vec<_> = (0..3).map(|i| {
-            let mut id = DhtKey::random();
+            let id = DhtKey::random();
             // Ensure nodes are at different distances from target
             let mut bytes = id.0;
             bytes[0] = i as u8;  // Make IDs deterministic but different
