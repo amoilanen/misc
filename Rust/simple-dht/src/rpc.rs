@@ -7,12 +7,44 @@ use crate::utils::random_port;
 use std::fmt;
 use tokio::task::JoinError;
 
+#[derive(Debug)]
+pub enum RpcError {
+    IoError(std::io::Error),
+    SerializationError(serde_json::Error),
+    ConnectionError(String),
+}
+
+impl std::fmt::Display for RpcError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RpcError::IoError(e) => write!(f, "IO error: {}", e),
+            RpcError::SerializationError(e) => write!(f, "Serialization error: {}", e),
+            RpcError::ConnectionError(e) => write!(f, "Connection error: {}", e),
+        }
+    }
+}
+
+impl std::error::Error for RpcError {}
+
+impl From<std::io::Error> for RpcError {
+    fn from(err: std::io::Error) -> Self {
+        RpcError::IoError(err)
+    }
+}
+
+impl From<serde_json::Error> for RpcError {
+    fn from(err: serde_json::Error) -> Self {
+        RpcError::SerializationError(err)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RpcRequest {
     Ping,
     FindNode(DhtKey),
     Store(DhtKey, Vec<u8>),
     FindValue(DhtKey),
+    GetNodeId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,6 +54,7 @@ pub enum RpcResponse {
     Value(Vec<u8>),
     NotFound,
     Ok,
+    NodeId(DhtKey),
 }
 
 pub struct RpcServer {
@@ -33,7 +66,7 @@ impl RpcServer {
         Self { node }
     }
 
-    pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn start(&self) -> Result<(), RpcError> {
         let listener = TcpListener::bind(self.node.addr).await?;
         println!("RPC server listening on {}", self.node.addr);
 
@@ -48,14 +81,27 @@ impl RpcServer {
         }
     }
 
-    async fn handle_connection(stream: TcpStream, node: DhtNode) -> Result<(), Box<dyn std::error::Error>> {
+    async fn handle_connection(stream: TcpStream, node: DhtNode) -> Result<(), RpcError> {
+        let peer_addr = stream.peer_addr()?;
+
         let (r, mut w) = stream.into_split();
         let mut reader = BufReader::new(r);
         let mut line = String::new();
 
+        let mut sender = NodeInfo {
+            id: DhtKey::random(),
+            addr: peer_addr,
+        };
+
+        // Exchange node IDs
+        let client = RpcClient::new(peer_addr);
+        if let Ok(RpcResponse::NodeId(id)) = client.send_request(RpcRequest::GetNodeId).await {
+            sender.id = id;
+        }
+
         while reader.read_line(&mut line).await? > 0 {
             let request: RpcRequest = serde_json::from_str(&line)?;
-            let response = Self::handle_request(&node, request).await?;
+            let response = Self::handle_request(&node, request, sender.clone()).await?;
             w.write_all(serde_json::to_string(&response)?.as_bytes()).await?;
             w.write_all(b"\n").await?;
             line.clear();
@@ -64,7 +110,9 @@ impl RpcServer {
         Ok(())
     }
 
-    async fn handle_request(node: &DhtNode, request: RpcRequest) -> Result<RpcResponse, Box<dyn std::error::Error>> {
+    async fn handle_request(node: &DhtNode, request: RpcRequest, sender: NodeInfo) -> Result<RpcResponse, RpcError> {
+        node.routing_table.lock().await.update(sender.clone());
+
         match request {
             RpcRequest::Ping => Ok(RpcResponse::Pong),
             
@@ -87,6 +135,8 @@ impl RpcServer {
                     None => Ok(RpcResponse::NotFound),
                 }
             }
+
+            RpcRequest::GetNodeId => Ok(RpcResponse::NodeId(node.id.clone())),
         }
     }
 }
@@ -100,7 +150,7 @@ impl RpcClient {
         Self { addr }
     }
 
-    pub async fn send_request(&self, request: RpcRequest) -> Result<RpcResponse, Box<dyn std::error::Error>> {
+    pub async fn send_request(&self, request: RpcRequest) -> Result<RpcResponse, RpcError> {
         let mut stream = TcpStream::connect(self.addr).await?;
         let request_str = serde_json::to_string(&request)?;
         stream.write_all(request_str.as_bytes()).await?;
@@ -122,7 +172,7 @@ mod tests {
     use std::fmt;
 
     #[derive(Debug)]
-    struct TestError(Box<dyn std::error::Error>);
+    struct TestError(RpcError);
 
     impl fmt::Display for TestError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -132,15 +182,15 @@ mod tests {
 
     impl std::error::Error for TestError {}
 
-    impl From<Box<dyn std::error::Error>> for TestError {
-        fn from(err: Box<dyn std::error::Error>) -> Self {
+    impl From<RpcError> for TestError {
+        fn from(err: RpcError) -> Self {
             TestError(err)
         }
     }
 
     impl From<JoinError> for TestError {
         fn from(err: JoinError) -> Self {
-            TestError(Box::new(err))
+            TestError(RpcError::ConnectionError(err.to_string()))
         }
     }
 
@@ -174,8 +224,21 @@ mod tests {
 
         // Test find node
         let target = DhtKey::random();
+        let target_node = DhtNode::new_with_id(node.addr, target.clone());
+        let target_info = NodeInfo {
+            id: target_node.id.clone(),
+            addr: target_node.addr.clone(),
+        };
+
+        node.routing_table.lock().await.update(target_info.clone());
+
         let response = client.send_request(RpcRequest::FindNode(target.clone())).await?;
-        assert!(matches!(response, RpcResponse::Nodes(_)));
+        match response {
+            RpcResponse::Nodes(nodes) => {
+                assert!(nodes.iter().any(|n| n.id == target), "Target node not found in response");
+            }
+            _ => panic!("Expected Nodes response"),
+        }
 
         // Test store and find value
         let key = DhtKey::random();
@@ -244,6 +307,29 @@ mod tests {
         }
 
         // Cleanup
+        server_handle.abort();
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_node_id_exchange() -> Result<(), TestError> {
+        let node = create_test_node();
+        let server = RpcServer::new(node.clone());
+        
+        let server_handle = tokio::spawn(async move {
+            server.start().await.unwrap();
+        });
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        let client = RpcClient::new(node.addr);
+        let response = client.send_request(RpcRequest::GetNodeId).await?;
+        
+        match response {
+            RpcResponse::NodeId(id) => assert_eq!(id, node.id),
+            _ => panic!("Expected NodeId response"),
+        }
+
         server_handle.abort();
         Ok(())
     }

@@ -4,8 +4,8 @@ use crate::{DhtKey, NodeInfo, K, KEY_SIZE};
 
 #[derive(Clone, Debug)]
 pub struct Bucket {
-    nodes: Vec<NodeInfo>,
-    last_updated: Instant,
+    pub nodes: Vec<NodeInfo>,
+    pub last_updated: Instant,
 }
 
 impl Bucket {
@@ -38,7 +38,7 @@ impl Bucket {
 }
 
 pub struct RoutingTable {
-    buckets: Vec<Bucket>,
+    pub buckets: Vec<Bucket>,
     node_id: DhtKey,
 }
 

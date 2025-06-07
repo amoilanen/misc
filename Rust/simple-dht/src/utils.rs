@@ -18,6 +18,11 @@ pub fn random_port(min: u16, max: u16) -> u16 {
     rand::thread_rng().gen_range(min..max)
 }
 
+/// Create a DhtKey from a string by computing its SHA-256 hash
+pub fn key_from_str(s: &str) -> DhtKey {
+    DhtKey::from(s)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
