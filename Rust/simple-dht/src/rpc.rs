@@ -12,6 +12,7 @@ pub enum RpcError {
     IoError(std::io::Error),
     SerializationError(serde_json::Error),
     ConnectionError(String),
+    StorageError(String),
 }
 
 impl std::fmt::Display for RpcError {
@@ -20,6 +21,7 @@ impl std::fmt::Display for RpcError {
             RpcError::IoError(e) => write!(f, "IO error: {}", e),
             RpcError::SerializationError(e) => write!(f, "Serialization error: {}", e),
             RpcError::ConnectionError(e) => write!(f, "Connection error: {}", e),
+            RpcError::StorageError(e) => write!(f, "Storage error: {}", e),
         }
     }
 }

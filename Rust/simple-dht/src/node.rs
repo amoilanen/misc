@@ -3,15 +3,12 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use crate::{DhtKey, NodeInfo, DhtNode, routing::RoutingTable, storage::Storage, rpc::{RpcClient, RpcRequest, RpcResponse, RpcServer, RpcError}, ALPHA};
 
+pub const MIN_VALUE_REPLICATION_TO_NODES: usize = 3;
+
 impl DhtNode {
     pub fn new(addr: SocketAddr) -> Self {
         let id = DhtKey::random();
-        Self {
-            id: id.clone(),
-            addr,
-            routing_table: Arc::new(Mutex::new(RoutingTable::new(id))),
-            storage: Arc::new(Mutex::new(Storage::new())),
-        }
+        Self::new_with_id(addr, id)
     }
 
     pub fn new_with_id(addr: SocketAddr, id: DhtKey) -> Self {
@@ -37,7 +34,6 @@ impl DhtNode {
     }
 
     pub async fn find_node(&self, target: DhtKey) -> Result<Vec<NodeInfo>, RpcError> {
-        // First get the closest nodes from our routing table
         let closest = self.routing_table.lock().await.find_closest(&target, ALPHA);
         if closest.is_empty() {
             return Ok(Vec::new());
@@ -45,16 +41,17 @@ impl DhtNode {
 
         let mut queried = std::collections::HashSet::new();
         let mut found = std::collections::HashSet::new();
+        let mut all_found_nodes = Vec::new();
         let mut current_closest = closest.clone();
 
-        // Add initial nodes to found set
         for node in &current_closest {
             found.insert(node.id.clone());
+            all_found_nodes.push(node.clone());
         }
 
-        while !current_closest.is_empty() {
+        while !current_closest.is_empty() && all_found_nodes.len() < ALPHA {
             let mut new_closest = Vec::new();
-            
+
             for node in current_closest {
                 if queried.contains(&node.id) {
                     continue;
@@ -66,11 +63,11 @@ impl DhtNode {
                     for new_node in nodes {
                         if !found.contains(&new_node.id) {
                             found.insert(new_node.id.clone());
+                            all_found_nodes.push(new_node.clone());
                             new_closest.push(new_node.clone());
                             // Ping and add new nodes to routing table
                             if let Err(e) = self.ping_node(&new_node).await {
                                 eprintln!("Failed to ping new node {}: {}", new_node.addr, e);
-                                // Continue with other nodes even if one fails
                             }
                         }
                     }
@@ -90,52 +87,53 @@ impl DhtNode {
             current_closest.truncate(ALPHA);
         }
 
-        // Convert found node IDs back to NodeInfo
-        let mut result = Vec::new();
-        for node in closest {
-            if found.contains(&node.id) {
-                result.push(node);
-            }
-        }
-
-        // Sort by distance to target
-        result.sort_by(|a, b| {
+        // Sort all found nodes by distance to target
+        all_found_nodes.sort_by(|a, b| {
             let dist_a = target.distance(&a.id);
             let dist_b = target.distance(&b.id);
             dist_a.cmp(&dist_b)
         });
 
-        Ok(result)
+        // Truncate to ALPHA nodes
+        all_found_nodes.truncate(ALPHA);
+
+        Ok(all_found_nodes)
     }
 
     pub async fn store(&self, key: DhtKey, value: Vec<u8>) -> Result<(), RpcError> {
-        // First store locally
         self.storage.lock().await.store(key.clone(), value.clone(), None);
         
-        // Find the k closest nodes to the key
         let closest = self.find_node(key.clone()).await?;
+        if closest.is_empty() {
+            return Ok(());
+        }
+
+        let mut success_count = 0;
         
-        // Store on the k closest nodes
         for node in closest {
             let client = RpcClient::new(node.addr);
-            if let Err(e) = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await {
-                eprintln!("Failed to store value on node {}: {}", node.addr, e);
-                // Continue with other nodes even if one fails
+            if let Ok(_) = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await {
+                success_count += 1;
+                if success_count >= MIN_VALUE_REPLICATION_TO_NODES {
+                    return Ok(());
+                }
             }
         }
 
+        if success_count == 0 {
+            return Err(RpcError::StorageError("Failed to store value on any remote nodes".into()));
+        }
+        eprintln!("Warning: Only stored value on {}/{} nodes", success_count, MIN_VALUE_REPLICATION_TO_NODES);
         Ok(())
     }
 
     pub async fn find_value(&self, key: DhtKey) -> Result<Option<Vec<u8>>, RpcError> {
-        // First check local storage
         if let Some(value) = self.storage.lock().await.get(&key) {
             return Ok(Some(value.to_vec()));
         }
 
-        // If not found locally, search the network
         let closest = self.find_node(key.clone()).await?;
-        
+
         for node in closest {
             let client = RpcClient::new(node.addr);
             if let Ok(RpcResponse::Value(value)) = client.send_request(RpcRequest::FindValue(key.clone())).await {

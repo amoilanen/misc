@@ -112,10 +112,58 @@ The value should be found even though it was stored on a different node, demonst
 
 ## Testing
 
-Run the test suite:
+The project includes three types of tests:
 
+1. Unit Tests: Located in the source files with `#[cfg(test)]` modules
+2. Integration Tests: Located in `tests/integration_tests.rs`
+3. End-to-End Tests: Located in `tests/e2e_tests.rs`
+
+### Running Tests
+
+To run all tests:
 ```bash
 cargo test
+```
+
+To run only unit tests:
+```bash
+cargo test --lib
+```
+
+To run only integration tests:
+```bash
+cargo test --test integration_tests
+```
+
+To run only end-to-end tests:
+```bash
+cargo test --test e2e_tests
+```
+
+To run a specific test:
+```bash
+# Run a specific unit test
+cargo test test_name
+
+# Run a specific integration test
+cargo test --test integration_tests test_name
+
+# Run a specific end-to-end test
+cargo test --test e2e_tests test_name
+```
+
+To run tests with output (including println! statements):
+```bash
+cargo test -- --nocapture
+```
+
+To run tests in parallel (default) or sequentially:
+```bash
+# Run tests in parallel (default)
+cargo test
+
+# Run tests sequentially
+cargo test -- --test-threads=1
 ```
 
 ## Implementation Details

@@ -1,40 +1,43 @@
+use simple_dht::*;
+use simple_dht::rpc::{RpcServer, RpcClient, RpcRequest, RpcResponse};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::time::Duration;
+use tokio::runtime::Runtime;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+// Helper functions
+fn create_test_node(port: u16) -> DhtNode {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
+    DhtNode::new(addr)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-    use std::time::Duration;
-    use tokio::runtime::Runtime;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
-
-    // Helper functions
-    fn create_test_node(port: u16) -> DhtNode {
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
-        DhtNode::new(addr)
-    }
 
     // NodeId tests
     #[test]
     fn test_node_id_creation() {
-        let id1 = NodeId::random();
-        let id2 = NodeId::random();
+        let id1 = DhtKey::random();
+        let id2 = DhtKey::random();
         assert_ne!(id1, id2);
     }
 
     #[test]
     fn test_node_id_from_str() {
-        let id1 = NodeId::from("test");
-        let id2 = NodeId::from("test");
-        let id3 = NodeId::from("different");
+        let id1 = DhtKey::from("test");
+        let id2 = DhtKey::from("test");
+        let id3 = DhtKey::from("different");
         assert_eq!(id1, id2);
         assert_ne!(id1, id3);
     }
 
     #[test]
     fn test_node_id_distance() {
-        let id1 = NodeId::from("test1");
-        let id2 = NodeId::from("test2");
-        let id3 = NodeId::from("test1");
+        let id1 = DhtKey::from("test1");
+        let id2 = DhtKey::from("test2");
+        let id3 = DhtKey::from("test1");
         let dist1 = id1.distance(&id2);
         let dist2 = id1.distance(&id3);
         assert!(dist1 != [0u8; 32]);
@@ -53,7 +56,7 @@ mod tests {
     async fn test_routing_table_update() {
         let node = create_test_node(4000);
         let test_node = NodeInfo {
-            id: NodeId::random(),
+            id: DhtKey::random(),
             addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4001),
         };
 
@@ -74,7 +77,7 @@ mod tests {
     async fn test_routing_table_remove() {
         let node = create_test_node(4000);
         let test_node = NodeInfo {
-            id: NodeId::random(),
+            id: DhtKey::random(),
             addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4001),
         };
 
@@ -95,7 +98,7 @@ mod tests {
     #[tokio::test]
     async fn test_storage_basic() {
         let node = create_test_node(4000);
-        let key = NodeId::from("test_key");
+        let key = DhtKey::from("test_key");
         let value = b"test_value".to_vec();
 
         {
@@ -113,7 +116,7 @@ mod tests {
     #[tokio::test]
     async fn test_storage_ttl() {
         let node = create_test_node(4000);
-        let key = NodeId::from("test_key");
+        let key = DhtKey::from("test_key");
         let value = b"test_value".to_vec();
 
         {
@@ -140,8 +143,8 @@ mod tests {
     #[tokio::test]
     async fn test_storage_cleanup() {
         let node = create_test_node(4000);
-        let key1 = NodeId::from("test_key1");
-        let key2 = NodeId::from("test_key2");
+        let key1 = DhtKey::from("test_key1");
+        let key2 = DhtKey::from("test_key2");
         let value = b"test_value".to_vec();
 
         {
@@ -192,7 +195,7 @@ mod tests {
         assert!(matches!(response, RpcResponse::Pong));
 
         // Test store and find value
-        let key = NodeId::from("test_key");
+        let key = DhtKey::from("test_key");
         let value = b"test_value".to_vec();
 
         let client = RpcClient::new(node1.addr);
@@ -229,7 +232,7 @@ mod tests {
         node2.bootstrap(node1.addr).await.unwrap();
 
         // Test store and find value
-        let key = NodeId::from("test_key");
+        let key = DhtKey::from("test_key");
         let value = b"test_value".to_vec();
 
         node1.store(key.clone(), value.clone()).await.unwrap();
@@ -248,7 +251,7 @@ mod tests {
         assert!(node.bootstrap(invalid_addr).await.is_err());
 
         // Test find_value with non-existent key
-        let key = NodeId::random();
+        let key = DhtKey::random();
         let result = node.find_value(key).await.unwrap();
         assert!(result.is_none());
     }
