@@ -31,6 +31,15 @@ pub struct DhtNode {
     pub storage: Arc<Mutex<storage::Storage>>,
 }
 
+impl DhtNode {
+    pub fn as_info(&self) -> NodeInfo {
+        NodeInfo {
+            id: self.id.clone(),
+            addr: self.addr,
+        }
+    }
+}
+
 impl DhtKey {
     pub fn random() -> Self {
         let mut bytes = [0u8; 32];

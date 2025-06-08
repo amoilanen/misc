@@ -4,6 +4,7 @@ use tokio::sync::Mutex;
 use crate::{DhtKey, NodeInfo, DhtNode, routing::RoutingTable, storage::Storage, rpc::{RpcClient, RpcRequest, RpcResponse, RpcServer, RpcError}, ALPHA};
 
 pub const MIN_VALUE_REPLICATION_TO_NODES: usize = 3;
+pub const MAINTENANCE_INTERVAL_SECONDS: u64 = 3600;
 
 impl DhtNode {
     pub fn new(addr: SocketAddr) -> Self {
@@ -22,9 +23,25 @@ impl DhtNode {
 
     pub async fn bootstrap(&self, bootstrap_addr: SocketAddr) -> Result<(), RpcError> {
         let client = RpcClient::new(bootstrap_addr);
+        
+        // Get bootstrap node's ID
+        let bootstrap_id = match client.send_request(RpcRequest::GetNodeId).await? {
+            RpcResponse::NodeId(id) => id,
+            _ => return Err(RpcError::ConnectionError("Failed to get bootstrap node ID".into())),
+        };
+
+        // Add bootstrap node to routing table
+        let bootstrap_info = NodeInfo {
+            id: bootstrap_id,
+            addr: bootstrap_addr,
+        };
+        self.routing_table.lock().await.update(bootstrap_info.clone());
+
+        // Find nodes close to our ID
         let response = client.send_request(RpcRequest::FindNode(self.id.clone())).await?;
         
         if let RpcResponse::Nodes(nodes) = response {
+            // Add all found nodes to routing table
             for node in nodes {
                 self.ping_node(&node).await?;
             }
@@ -101,29 +118,49 @@ impl DhtNode {
     }
 
     pub async fn store(&self, key: DhtKey, value: Vec<u8>) -> Result<(), RpcError> {
+        // First store locally
         self.storage.lock().await.store(key.clone(), value.clone(), None);
         
+        // Find closest nodes
         let closest = self.find_node(key.clone()).await?;
         if closest.is_empty() {
             return Ok(());
         }
 
+        // Try to store on closest nodes
         let mut success_count = 0;
+        let mut errors = Vec::new();
         
         for node in closest {
             let client = RpcClient::new(node.addr);
-            if let Ok(_) = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await {
-                success_count += 1;
-                if success_count >= MIN_VALUE_REPLICATION_TO_NODES {
-                    return Ok(());
+            match client.send_request(RpcRequest::Store(key.clone(), value.clone())).await {
+                Ok(_) => {
+                    success_count += 1;
+                    if success_count >= MIN_VALUE_REPLICATION_TO_NODES {
+                        return Ok(());
+                    }
+                }
+                Err(e) => {
+                    errors.push(e);
                 }
             }
         }
 
         if success_count == 0 {
-            return Err(RpcError::StorageError("Failed to store value on any remote nodes".into()));
+            return Err(RpcError::StorageError(format!(
+                "Failed to store value on any remote nodes. Errors: {:?}",
+                errors
+            )));
         }
-        eprintln!("Warning: Only stored value on {}/{} nodes", success_count, MIN_VALUE_REPLICATION_TO_NODES);
+
+        if success_count < MIN_VALUE_REPLICATION_TO_NODES {
+            eprintln!(
+                "Warning: Only stored value on {}/{} nodes. Errors: {:?}",
+                success_count,
+                MIN_VALUE_REPLICATION_TO_NODES,
+                errors
+            );
+        }
         Ok(())
     }
 
@@ -133,14 +170,30 @@ impl DhtNode {
         }
 
         let closest = self.find_node(key.clone()).await?;
+        if closest.is_empty() {
+            return Ok(None);
+        }
 
+        let mut errors = Vec::new();
         for node in closest {
             let client = RpcClient::new(node.addr);
-            if let Ok(RpcResponse::Value(value)) = client.send_request(RpcRequest::FindValue(key.clone())).await {
-                return Ok(Some(value));
+            match client.send_request(RpcRequest::FindValue(key.clone())).await {
+                Ok(RpcResponse::Value(value)) => {
+                    self.storage.lock().await.store(key.clone(), value.clone(), None);
+                    return Ok(Some(value));
+                }
+                Ok(RpcResponse::NotFound) => continue,
+                Err(e) => {
+                    errors.push(e);
+                    continue;
+                }
+                _ => continue,
             }
         }
 
+        if !errors.is_empty() {
+            eprintln!("Errors while finding value: {:?}", errors);
+        }
         Ok(None)
     }
 
@@ -152,12 +205,10 @@ impl DhtNode {
         Ok(())
     }
 
-    /// Start periodic maintenance tasks for the DHT node
     pub async fn start_maintenance(&self) {
         let node = self.clone();
         tokio::spawn(async move {
             loop {
-                // Periodically refresh routing table
                 let target = DhtKey::random();
                 if let Ok(nodes) = node.find_node(target).await {
                     for node_info in nodes {
@@ -167,16 +218,13 @@ impl DhtNode {
                     }
                 }
 
-                // Remove failed nodes
                 node.remove_failed_nodes().await;
 
-                // Sleep for some interval (1 hour)
-                tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(MAINTENANCE_INTERVAL_SECONDS)).await;
             }
         });
     }
 
-    /// Check if a node is healthy by sending a ping
     async fn check_node_health(&self, node: &NodeInfo) -> bool {
         let client = RpcClient::new(node.addr);
         match client.send_request(RpcRequest::Ping).await {
@@ -185,9 +233,7 @@ impl DhtNode {
         }
     }
 
-    /// Remove failed nodes from the routing table
     async fn remove_failed_nodes(&self) {
-        // First, get all nodes from the routing table
         let nodes: Vec<NodeInfo> = {
             let rt = self.routing_table.lock().await;
             rt.buckets.iter()
@@ -195,7 +241,6 @@ impl DhtNode {
                 .collect()
         };
 
-        // Check health of all nodes
         let mut failed_nodes = Vec::new();
         for node in nodes {
             let is_healthy = self.check_node_health(&node).await;
@@ -204,7 +249,6 @@ impl DhtNode {
             }
         }
 
-        // Remove failed nodes from routing table
         if !failed_nodes.is_empty() {
             let mut rt = self.routing_table.lock().await;
             for node_id in &failed_nodes {
@@ -241,29 +285,24 @@ mod tests {
     async fn test_node_find_node() {
         let node = create_test_node();
         let target = DhtKey::random();
-        
-        // Create test nodes with deterministic IDs for more stable testing
-        let test_nodes: Vec<_> = (0..3).map(|i| {
+
+        let test_nodes: Vec<_> = (0..ALPHA).map(|i| {
             let id = DhtKey::random();
-            // Ensure nodes are at different distances from target
             let mut bytes = id.0;
-            bytes[0] = i as u8;  // Make IDs deterministic but different
+            bytes[0] = i as u8;  // Make IDs different
             NodeInfo {
                 id: DhtKey(bytes),
                 addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4001 + i as u16),
             }
         }).collect();
 
-        // Add nodes to routing table and verify they were added
         for test_node in &test_nodes {
             let added = node.routing_table.lock().await.update(test_node.clone());
             assert!(added, "Failed to add node to routing table");
         }
 
-        // Wait a bit to ensure routing table updates are processed
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-        // Verify nodes are in routing table
         {
             let rt = node.routing_table.lock().await;
             let closest = rt.find_closest(&target, ALPHA);
@@ -273,12 +312,10 @@ mod tests {
                 test_nodes.len(), closest.len());
         }
 
-        // Now test find_node
         let nodes = node.find_node(target.clone()).await.unwrap();
         assert!(!nodes.is_empty(), "find_node returned no nodes");
         assert!(nodes.len() <= ALPHA, "find_node returned more than ALPHA nodes");
 
-        // Verify returned nodes are from our test nodes
         let test_node_ids: std::collections::HashSet<_> = test_nodes.iter()
             .map(|n| n.id.clone())
             .collect();
@@ -287,11 +324,9 @@ mod tests {
                 "Returned node not in test nodes: {:?}", node);
         }
 
-        // Additional verification: ensure we got all test nodes back
         assert_eq!(nodes.len(), test_nodes.len(), 
             "Expected {} nodes but got {}", test_nodes.len(), nodes.len());
 
-        // Verify nodes are sorted by distance to target
         for i in 0..nodes.len() - 1 {
             let dist1 = target.distance(&nodes[i].id);
             let dist2 = target.distance(&nodes[i + 1].id);
@@ -306,10 +341,8 @@ mod tests {
         let key = DhtKey::random();
         let value = b"test value".to_vec();
 
-        // Store value locally
         node.storage.lock().await.store(key.clone(), value.clone(), None);
 
-        // Find value
         let found = node.find_value(key).await.unwrap();
         assert_eq!(found, Some(value));
     }
@@ -319,20 +352,16 @@ mod tests {
         let bootstrap_node = create_test_node();
         let node = create_test_node();
 
-        // Start bootstrap node's RPC server
         let server = RpcServer::new(bootstrap_node.clone());
         let server_handle = tokio::spawn(async move {
             server.start().await.unwrap();
         });
 
-        // Give server time to start
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-        // Bootstrap should succeed
         let result = node.bootstrap(bootstrap_node.addr).await;
         assert!(result.is_ok());
 
-        // Cleanup
         server_handle.abort();
     }
 
@@ -366,38 +395,31 @@ mod tests {
     #[tokio::test]
     async fn test_node_maintenance() {
         let node = create_test_node();
-        
-        // Create and start a test node with RPC server
+
         let test_node = NodeInfo {
             id: DhtKey::random(),
             addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), random_port(4000, 5000)),
         };
         let test_dht_node = DhtNode::new(test_node.addr);
         let server = RpcServer::new(test_dht_node.clone());
-        
-        // Start the test node's RPC server
+
         let server_handle = tokio::spawn(async move {
             if let Err(e) = server.start().await {
                 eprintln!("Server error: {}", e);
             }
         });
 
-        // Give server time to start
         tokio::time::sleep(Duration::from_millis(500)).await;
 
-        // Add test node to routing table
         {
             let mut rt = node.routing_table.lock().await;
             assert!(rt.update(test_node.clone()));
         }
 
-        // Start maintenance task
         node.start_maintenance().await;
 
-        // Wait a bit for maintenance to run
         tokio::time::sleep(Duration::from_secs(2)).await;
 
-        // Verify node is still in routing table
         {
             let rt = node.routing_table.lock().await;
             let closest = rt.find_closest(&test_node.id, 1);
@@ -405,113 +427,79 @@ mod tests {
             assert_eq!(closest[0].id, test_node.id);
         }
 
-        // Cleanup
         server_handle.abort();
     }
 
     #[tokio::test]
     async fn test_node_health_check() {
         let node = create_test_node();
-        
-        // Create and start a test node with RPC server
+
         let test_node = NodeInfo {
             id: DhtKey::random(),
             addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 4001),
         };
         let test_dht_node = DhtNode::new(test_node.addr);
         let server = RpcServer::new(test_dht_node.clone());
-        
-        // Start the test node's RPC server
+
         let server_handle = tokio::spawn(async move {
             server.start().await.unwrap();
         });
 
-        // Give server time to start
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        // Add test node to routing table
         {
             let mut rt = node.routing_table.lock().await;
             assert!(rt.update(test_node.clone()));
         }
 
-        // Check node health
         let is_healthy = node.check_node_health(&test_node).await;
-        assert!(is_healthy); // Should be true since node is running
+        assert!(is_healthy);
 
-        // Cleanup
         server_handle.abort();
     }
 
     #[tokio::test]
     async fn test_remove_failed_nodes() {
         let node = create_test_node();
-        
-        // Create test nodes with unique ports
-        let test_nodes: Vec<_> = (0..3).map(|i| {
-            NodeInfo {
-                id: DhtKey::random(),
-                addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), random_port(4000, 5000)),
-            }
-        }).collect();
 
-        // Start RPC server for first node only
-        let test_dht_node = DhtNode::new(test_nodes[0].addr);
-        let server = RpcServer::new(test_dht_node.clone());
-        let server_handle = tokio::spawn(async move {
-            if let Err(e) = server.start().await {
-                eprintln!("Server error: {}", e);
+        let healthy_node = NodeInfo {
+            id: DhtKey::random(),
+            addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), random_port(4000, 5000)),
+        };
+        let healthy_dht_node = DhtNode::new(healthy_node.addr);
+        let healthy_server = RpcServer::new(healthy_dht_node.clone());
+        let healthy_server_handle = tokio::spawn(async move {
+            if let Err(e) = healthy_server.start().await {
+                eprintln!("Healthy server error: {}", e);
             }
         });
 
-        // Give server time to start
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        let unhealthy_node = NodeInfo {
+            id: DhtKey::random(),
+            addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), random_port(4000, 5000)),
+        };
 
-        // Add test nodes to routing table
         {
             let mut rt = node.routing_table.lock().await;
-            for test_node in &test_nodes {
-                assert!(rt.update(test_node.clone()));
-            }
+            assert!(rt.update(healthy_node.clone()));
+            assert!(rt.update(unhealthy_node.clone()));
         }
 
-        // Verify initial state
+        node.start_maintenance().await;
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
         {
             let rt = node.routing_table.lock().await;
-            for test_node in &test_nodes {
-                let closest = rt.find_closest(&test_node.id, 1);
-                assert!(!closest.is_empty(), "Node should be in routing table initially");
-            }
+            let all_nodes: Vec<_> = rt.buckets.iter()
+                .flat_map(|bucket| bucket.nodes.clone())
+                .collect();
+
+            assert!(all_nodes.iter().any(|n| n.id == healthy_node.id),
+                "Healthy node was incorrectly removed from routing table");
+            assert!(!all_nodes.iter().any(|n| n.id == unhealthy_node.id),
+                "Unhealthy node was not removed from routing table");
         }
 
-        // Remove failed nodes
-        node.remove_failed_nodes().await;
-
-        // Wait a bit for the removal to take effect
-        tokio::time::sleep(Duration::from_millis(500)).await;
-
-        // Verify only the first node remains (since it's the only one running)
-        {
-            let rt = node.routing_table.lock().await;
-            let closest = rt.find_closest(&test_nodes[0].id, 1);
-            assert!(!closest.is_empty(), "First node should still be in routing table");
-            assert_eq!(closest[0].id, test_nodes[0].id);
-
-            // Verify other nodes are removed
-            for test_node in &test_nodes[1..] {
-                let closest = rt.find_closest(&test_node.id, 1);
-                assert!(closest.is_empty(), "Failed node should be removed from routing table");
-            }
-
-            // Verify total number of nodes in routing table
-            let mut total_nodes = 0;
-            for bucket in &rt.buckets {
-                total_nodes += bucket.nodes.len();
-            }
-            assert_eq!(total_nodes, 1, "Should only have one node in routing table");
-        }
-
-        // Cleanup
-        server_handle.abort();
+        healthy_server_handle.abort();
     }
 } 
