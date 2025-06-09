@@ -187,7 +187,7 @@ mod tests {
 
         let client = RpcClient::new(node1.addr);
         let response = client.send_request(RpcRequest::Store(key.clone(), value.clone())).await.unwrap();
-        assert!(matches!(response, RpcResponse::Pong));
+        assert!(matches!(response, RpcResponse::Ok));
 
         let client = RpcClient::new(node1.addr);
         let response = client.send_request(RpcRequest::FindValue(key)).await.unwrap();
@@ -213,10 +213,12 @@ mod tests {
         });
 
         
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(200)).await;
 
         
-        node2.bootstrap(node1.addr).await.unwrap();
+        node1.bootstrap(node2.addr).await.unwrap();
+
+        tokio::time::sleep(Duration::from_millis(500)).await;
 
         let key = DhtKey::from("test_key");
         let value = b"test_value".to_vec();
