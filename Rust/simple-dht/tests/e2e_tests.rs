@@ -1,22 +1,17 @@
 use simple_dht::*;
-use simple_dht::rpc::{RpcServer, RpcClient, RpcRequest, RpcResponse};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::process::Command;
-use std::thread;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::io::{AsyncWriteExt, AsyncBufReadExt, BufReader};
 use crate::{DhtNode, DhtKey};
 use crate::utils::random_port;
 
-// Helper function to create a test node with a random port
 fn create_test_node() -> DhtNode {
     let port = random_port(4000, 5000);
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
     DhtNode::new(addr)
 }
 
-// Helper function to wait for a server to be ready
 async fn wait_for_server(addr: SocketAddr, timeout: Duration) -> bool {
     let start = std::time::Instant::now();
     while start.elapsed() < timeout {
@@ -28,7 +23,6 @@ async fn wait_for_server(addr: SocketAddr, timeout: Duration) -> bool {
     false
 }
 
-// Helper function to ensure nodes are properly connected
 async fn ensure_nodes_connected(nodes: &[&DhtNode], timeout: Duration) -> bool {
     let start = std::time::Instant::now();
     while start.elapsed() < timeout {
@@ -49,55 +43,37 @@ async fn ensure_nodes_connected(nodes: &[&DhtNode], timeout: Duration) -> bool {
     false
 }
 
-// Helper function to start a node and wait for it to be ready
+const WAIT_FOR_SERVER_TIMEOUT: Duration = Duration::from_secs(2);
+
 async fn start_node(node: &DhtNode) -> tokio::task::JoinHandle<()> {
     let server = crate::rpc::RpcServer::new(node.clone());
     let handle = tokio::spawn(async move {
         server.start().await.unwrap();
     });
-    
-    // Wait for server to be ready
+
     assert!(
-        wait_for_server(node.addr, Duration::from_secs(2)).await,
+        wait_for_server(node.addr, WAIT_FOR_SERVER_TIMEOUT).await,
         "Server failed to start"
     );
-    
+
     handle
 }
 
-// Helper function to bootstrap a node and wait for connection
 async fn bootstrap_node_to(node: &DhtNode, bootstrap_addr: SocketAddr) {
     node.bootstrap(bootstrap_addr).await.unwrap();
-    // Give some time for the routing table to be populated
     tokio::time::sleep(Duration::from_millis(500)).await;
-}
-
-// Helper function to send a command to a node
-async fn send_command(port: u16, command: &str) -> String {
-    let addr = format!("127.0.0.1:{}", port);
-    let mut stream = TcpStream::connect(addr).await.unwrap();
-    stream.write_all(command.as_bytes()).await.unwrap();
-    stream.write_all(b"\n").await.unwrap();
-
-    let mut reader = BufReader::new(stream);
-    let mut response = String::new();
-    reader.read_line(&mut response).await.unwrap();
-    response.trim().to_string()
 }
 
 #[tokio::test]
 async fn test_basic_node_operations() {
-    // Start bootstrap node
     let bootstrap_node = create_test_node();
     let server = crate::rpc::RpcServer::new(bootstrap_node.clone());
     let server_handle = tokio::spawn(async move {
         server.start().await.unwrap();
     });
 
-    // Wait for bootstrap server to be ready
-    assert!(wait_for_server(bootstrap_node.addr, Duration::from_secs(1)).await, "Bootstrap server failed to start");
+    assert!(wait_for_server(bootstrap_node.addr, WAIT_FOR_SERVER_TIMEOUT).await, "Bootstrap server failed to start");
 
-    // Start nodes connecting to bootstrap
     let node1 = create_test_node();
     let node2 = create_test_node();
     let node3 = create_test_node();
@@ -116,17 +92,28 @@ async fn test_basic_node_operations() {
         server3.start().await.unwrap();
     });
 
-    // Wait for all servers to be ready
-    assert!(wait_for_server(node1.addr, Duration::from_secs(1)).await, "Node1 server failed to start");
-    assert!(wait_for_server(node2.addr, Duration::from_secs(1)).await, "Node2 server failed to start");
-    assert!(wait_for_server(node3.addr, Duration::from_secs(1)).await, "Node3 server failed to start");
+    assert!(wait_for_server(node1.addr, WAIT_FOR_SERVER_TIMEOUT).await, "Node1 server failed to start");
+    assert!(wait_for_server(node2.addr, WAIT_FOR_SERVER_TIMEOUT).await, "Node2 server failed to start");
+    assert!(wait_for_server(node3.addr, WAIT_FOR_SERVER_TIMEOUT).await, "Node3 server failed to start");
 
-    // Bootstrap nodes
-    node1.bootstrap(bootstrap_node.addr).await.unwrap();
-    node2.bootstrap(bootstrap_node.addr).await.unwrap();
-    node3.bootstrap(bootstrap_node.addr).await.unwrap();
+    node1.bootstrap(bootstrap_node.addr).await.expect("Node1 bootstrap failed");
+    node2.bootstrap(bootstrap_node.addr).await.expect("Node2 bootstrap failed");
+    node3.bootstrap(bootstrap_node.addr).await.expect("Node3 bootstrap failed");
 
-    // Cleanup
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let nodes: Vec<&DhtNode> = vec![&bootstrap_node, &node1, &node2, &node3];
+    for (i, node) in nodes.iter().enumerate() {
+        let rt = node.routing_table.lock().await;
+        let closest = rt.find_closest(&node.id, nodes.len());
+        println!("Node {} routing table size: {}", i, closest.len());
+    }
+
+    assert!(
+        ensure_nodes_connected(&nodes, Duration::from_secs(5)).await,
+        "Nodes failed to connect properly"
+    );
+
     server_handle.abort();
     handle1.abort();
     handle2.abort();

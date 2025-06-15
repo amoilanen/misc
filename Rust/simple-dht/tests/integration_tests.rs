@@ -218,12 +218,14 @@ mod tests {
         
         node1.bootstrap(node2.addr).await.unwrap();
 
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
 
         let key = DhtKey::from("test_key");
         let value = b"test_value".to_vec();
 
         node1.store(key.clone(), value.clone()).await.unwrap();
+
+        tokio::time::sleep(Duration::from_millis(200)).await;
 
         let found = node2.find_value(key).await.unwrap();
         assert_eq!(found, Some(value));
