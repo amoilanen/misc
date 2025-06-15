@@ -46,7 +46,7 @@ pub enum RpcRequest {
     FindNode(DhtKey),
     Store(DhtKey, Vec<u8>),
     FindValue(DhtKey),
-    GetNodeId(DhtKey),
+    GetNodeId(DhtKey, SocketAddr),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -125,10 +125,10 @@ impl RpcServer {
                 }
             }
 
-            RpcRequest::GetNodeId(sender_id) => {
+            RpcRequest::GetNodeId(sender_id, sender_listening_addr) => {
                 let sender_node = NodeInfo {
                     id: sender_id,
-                    addr: sender_addr,
+                    addr: sender_listening_addr,
                 };
                 node.routing_table.lock().await.update(sender_node);
                 Ok(RpcResponse::NodeId(node.id.clone()))
@@ -319,7 +319,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         let client = RpcClient::new(node.addr);
-        let response = client.send_request(RpcRequest::GetNodeId(DhtKey::random())).await?;
+        let response = client.send_request(RpcRequest::GetNodeId(DhtKey::random(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0))).await?;
         
         match response {
             RpcResponse::NodeId(id) => assert_eq!(id, node.id),

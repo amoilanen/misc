@@ -24,23 +24,24 @@ impl DhtNode {
     pub async fn bootstrap(&self, bootstrap_addr: SocketAddr) -> Result<(), RpcError> {
         let client = RpcClient::new(bootstrap_addr);
         
-        let bootstrap_id = match client.send_request(RpcRequest::GetNodeId(self.id.clone())).await? {
+        let bootstrap_id = match client.send_request(RpcRequest::GetNodeId(self.id.clone(), self.addr)).await? {
             RpcResponse::NodeId(id) => id,
             _ => return Err(RpcError::ConnectionError("Failed to get bootstrap node ID".into())),
         };
 
-        // Add bootstrap node to routing table
         let bootstrap_info = NodeInfo {
             id: bootstrap_id,
             addr: bootstrap_addr,
         };
         self.routing_table.lock().await.update(bootstrap_info.clone());
 
-        // Find nodes close to our ID
         let response = client.send_request(RpcRequest::FindNode(self.id.clone())).await?;
         
         if let RpcResponse::Nodes(nodes) = response {
-            // Add all found nodes to routing table
+            println!("Found {} nodes: [{}]", nodes.len(), nodes.iter()
+            .map(|n| n.to_string())
+            .collect::<Vec<_>>()
+            .join(", "));
             for node in nodes {
                 self.ping_node(&node).await?;
             }
@@ -200,6 +201,9 @@ impl DhtNode {
         let client = RpcClient::new(node.addr);
         if client.send_request(RpcRequest::Ping).await.is_ok() {
             self.routing_table.lock().await.update(node.clone());
+            println!("Pinged node successfully: {}", node);
+        } else {
+            println!("Failed to ping node: {}", node);
         }
         Ok(())
     }
