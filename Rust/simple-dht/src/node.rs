@@ -118,16 +118,13 @@ impl DhtNode {
     }
 
     pub async fn store(&self, key: DhtKey, value: Vec<u8>) -> Result<(), RpcError> {
-        // First store locally
         self.storage.lock().await.store(key.clone(), value.clone(), None);
-        
-        // Find closest nodes
+
         let closest = self.find_node(key.clone()).await?;
         if closest.is_empty() {
             return Ok(());
         }
 
-        // Try to store on closest nodes
         let mut success_count = 0;
         let mut errors = Vec::new();
         
