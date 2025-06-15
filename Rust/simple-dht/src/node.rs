@@ -24,8 +24,7 @@ impl DhtNode {
     pub async fn bootstrap(&self, bootstrap_addr: SocketAddr) -> Result<(), RpcError> {
         let client = RpcClient::new(bootstrap_addr);
         
-        // Get bootstrap node's ID
-        let bootstrap_id = match client.send_request(RpcRequest::GetNodeId).await? {
+        let bootstrap_id = match client.send_request(RpcRequest::GetNodeId(self.id.clone())).await? {
             RpcResponse::NodeId(id) => id,
             _ => return Err(RpcError::ConnectionError("Failed to get bootstrap node ID".into())),
         };

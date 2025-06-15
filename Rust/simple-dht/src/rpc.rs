@@ -46,7 +46,7 @@ pub enum RpcRequest {
     FindNode(DhtKey),
     Store(DhtKey, Vec<u8>),
     FindValue(DhtKey),
-    GetNodeId,
+    GetNodeId(DhtKey),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -90,20 +90,9 @@ impl RpcServer {
         let mut reader = BufReader::new(r);
         let mut line = String::new();
 
-        let mut sender = NodeInfo {
-            id: DhtKey::random(),
-            addr: peer_addr,
-        };
-
-        // Exchange node IDs
-        let client = RpcClient::new(peer_addr);
-        if let Ok(RpcResponse::NodeId(id)) = client.send_request(RpcRequest::GetNodeId).await {
-            sender.id = id;
-        }
-
         while reader.read_line(&mut line).await? > 0 {
             let request: RpcRequest = serde_json::from_str(&line)?;
-            let response = Self::handle_request(&node, request, sender.clone()).await?;
+            let response = Self::handle_request(&node, request, peer_addr.clone()).await?;
             w.write_all(serde_json::to_string(&response)?.as_bytes()).await?;
             w.write_all(b"\n").await?;
             line.clear();
@@ -112,9 +101,7 @@ impl RpcServer {
         Ok(())
     }
 
-    async fn handle_request(node: &DhtNode, request: RpcRequest, sender: NodeInfo) -> Result<RpcResponse, RpcError> {
-        node.routing_table.lock().await.update(sender.clone());
-
+    async fn handle_request(node: &DhtNode, request: RpcRequest, sender_addr: SocketAddr) -> Result<RpcResponse, RpcError> {
         match request {
             RpcRequest::Ping => Ok(RpcResponse::Pong),
             
@@ -138,7 +125,14 @@ impl RpcServer {
                 }
             }
 
-            RpcRequest::GetNodeId => Ok(RpcResponse::NodeId(node.id.clone())),
+            RpcRequest::GetNodeId(sender_id) => {
+                let sender_node = NodeInfo {
+                    id: sender_id,
+                    addr: sender_addr,
+                };
+                node.routing_table.lock().await.update(sender_node);
+                Ok(RpcResponse::NodeId(node.id.clone()))
+            },
         }
     }
 }
@@ -325,7 +319,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         let client = RpcClient::new(node.addr);
-        let response = client.send_request(RpcRequest::GetNodeId).await?;
+        let response = client.send_request(RpcRequest::GetNodeId(DhtKey::random())).await?;
         
         match response {
             RpcResponse::NodeId(id) => assert_eq!(id, node.id),

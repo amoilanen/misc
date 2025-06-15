@@ -3,6 +3,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use sha2::{Digest, Sha256};
 use serde::{Serialize, Deserialize};
+use std::fmt;
+use hex;
 
 pub mod node;
 pub mod routing;
@@ -17,10 +19,22 @@ pub const KEY_SIZE: usize = 256; // Size of keys in bits
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct DhtKey(pub [u8; 32]);
 
+impl fmt::Display for DhtKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(&self.0[..8]))  // Display first 8 bytes for brevity
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeInfo {
     pub id: DhtKey,
     pub addr: SocketAddr,
+}
+
+impl fmt::Display for NodeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Node[{}@{}]", self.id, self.addr)
+    }
 }
 
 #[derive(Clone)]

@@ -103,10 +103,17 @@ async fn test_basic_node_operations() {
     tokio::time::sleep(Duration::from_secs(2)).await;
 
     let nodes: Vec<&DhtNode> = vec![&bootstrap_node, &node1, &node2, &node3];
-    for (i, node) in nodes.iter().enumerate() {
+    for (_, node) in nodes.iter().enumerate() {
         let rt = node.routing_table.lock().await;
         let closest = rt.find_closest(&node.id, nodes.len());
-        println!("Node {} routing table size: {}", i, closest.len());
+        println!("Node {} routing table size: {}. Nodes: [{}]", 
+            node.as_info(), 
+            closest.len(), 
+            closest.iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
     }
 
     assert!(
