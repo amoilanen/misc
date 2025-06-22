@@ -1,9 +1,17 @@
+use std::string::FromUtf8Error;
+
 #[derive(PartialEq, Debug)]
 pub enum LogParseError {
     InvalidFormat(String),
     InvalidLevel(String),
     InvalidTimestamp(String),
     EmptyMessage
+}
+
+impl From<FromUtf8Error> for LogParseError {
+    fn from(err: FromUtf8Error) -> Self {
+        LogParseError::InvalidFormat(format!("Invalid UTF-8 sequence: {}", err))
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -33,7 +41,7 @@ fn read_string_while(line: &[u8], f: fn(u8) -> bool, position: usize) -> Result<
         chars.push(line[position]);
         position = position + 1;
     }
-    let result = String::from_utf8(chars.clone()).map_err(|_| LogParseError::InvalidFormat(format!("Could not read string at position {:?} in line {:?}", &chars, line)))?;
+    let result = String::from_utf8(chars.clone())?;
 
     Ok((result, position))
 }
@@ -42,7 +50,7 @@ fn read_symbol(line: &[u8], symbol: u8, position: usize) -> Result<usize, LogPar
     if position < line.len() && line[position] == symbol {
         Ok(position + 1)
     } else {
-        Err(LogParseError::InvalidFormat(format!("Expected symbol {} at position {} in {:?}", symbol, position, line)))
+        Err(LogParseError::InvalidFormat(format!("Expected symbol '{}' at position {} in {:?}", symbol as char, position, String::from_utf8(line.to_vec())?)))
     }
 }
 
@@ -56,15 +64,15 @@ fn read_level(line: &[u8], position: usize) -> Result<(LogLevel, usize), LogPars
         "warn" => Ok(LogLevel::Warn),
         "error" => Ok(LogLevel::Error),
         "debug" => Ok(LogLevel::Debug),
-        _ => Err(LogParseError::InvalidLevel(format!("Unknown log level {} in {:?}", level, line)))
+        _ => Err(LogParseError::InvalidLevel(format!("Unknown log level {} in {:?}", level, String::from_utf8(line.to_vec())?)))
     }?;
     Ok((log_level, position))
 }
 
 fn read_timestamp(line: &[u8], position: usize) -> Result<(u64, usize), LogParseError> {
     let mut position = position;
-    position = skip_symbols_while(line, |ch| ch < b'0' || ch > b'9', position)?;
-    let (timestamp_str, position_after_timestamp) = read_string_while(line, |ch| ch >= b'0' && ch <= b'9' , position)?;
+    position = skip_symbols_while(line, |ch| ch == b' ', position)?;
+    let (timestamp_str, position_after_timestamp) = read_string_while(line, |ch| ch != b' ' && ch != b'-' , position)?;
     let timestamp = timestamp_str.parse::<u64>().map_err(|err| LogParseError::InvalidTimestamp(format!("Could not parse timestamp {:?}. Error = {}", &timestamp_str, err)))?;
     Ok((timestamp, position_after_timestamp))
 }
@@ -75,7 +83,11 @@ fn read_message(line: &[u8], position: usize) -> Result<(String, usize), LogPars
     position = read_symbol(line, b'-', position)?;
     position = skip_symbols_while(line, |ch| ch == b' ', position)?;
     let (message, position_after_message) = read_string_while(line, |_| true, position)?;
-    Ok((message, position_after_message))
+    if message.len() == 0 {
+        Err(LogParseError::InvalidFormat(format!("Empty message part in '{}'", String::from_utf8(line.to_vec())?)))
+    } else {
+        Ok((message, position_after_message))
+    }
 }
 
 pub fn process_log_line(line: &str) -> Result<LogEntry, LogParseError> {
@@ -108,5 +120,50 @@ mod tests {
             timestamp: 1678886400,
             message: "User 'Alice' logged in.".into()
         }))
+    }
+
+    #[test]
+    fn test_parse_valid_error_line() {
+        let line = "[ERROR] 1678886405 - Database connection failed.";
+        assert_eq!(process_log_line(line), Ok(LogEntry {
+            level: LogLevel::Error,
+            timestamp: 1678886405,
+            message: "Database connection failed.".into()
+        }))
+    }
+
+    #[test]
+    fn test_invalid_input_missing_brackets_around_level() {
+        let line = "INFO 1678886400 - Missing brackets";
+        let result = process_log_line(line);
+        assert_eq!(result, Err(LogParseError::InvalidFormat("Expected symbol '[' at position 0 in \"INFO 1678886400 - Missing brackets\"".into())));
+    }
+
+    #[test]
+    fn test_invalid_level() {
+        let line = "[CRITICAL] 1678886400 - Unknown level" ;
+        let result = process_log_line(line);
+        assert_eq!(result, Err(LogParseError::InvalidLevel("Unknown log level CRITICAL in \"[CRITICAL] 1678886400 - Unknown level\"".into())));
+    }
+
+    #[test]
+    fn test_invalid_timestamp() {
+        let line = "[INFO] not_a_timestamp - Invalid timestamp"  ;
+        let result = process_log_line(line);
+        assert_eq!(result, Err(LogParseError::InvalidTimestamp("Could not parse timestamp \"not_a_timestamp\". Error = invalid digit found in string".into())));
+    }
+
+    #[test]
+    fn test_empty_message() {
+        let line = "[WARN] 1678886400 -";
+        let result = process_log_line(line);
+        assert_eq!(result, Err(LogParseError::InvalidFormat("Empty message part in '[WARN] 1678886400 -'".into())));
+    }
+
+    #[test]
+    fn test_wrong_format() {
+        let line = "Just a random string";
+        let result = process_log_line(line);
+        assert_eq!(result, Err(LogParseError::InvalidFormat("Expected symbol '[' at position 0 in \"Just a random string\"".into())));
     }
 }
