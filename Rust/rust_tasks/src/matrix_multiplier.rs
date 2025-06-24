@@ -1,7 +1,8 @@
 use std::thread::Thread;
 use std::sync::{Arc, Mutex};
+use std::thread;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Matrix {
     pub rows: Vec<Vec<f64>>
 }
@@ -30,52 +31,77 @@ pub enum MatrixError {
     InvalidDimensions(String)
 }
 
-pub fn multiply(x: Matrix, y: Matrix, num_threads: usize) -> Result<Matrix, MatrixError> {
+fn validate_dimensions(x: &Matrix, y: &Matrix) -> Result<(), MatrixError> {
     if x.column_count() != y.row_count() {
         return Err(MatrixError::InvalidDimensions(
-            format!("Cannot multiply matrix of dimensions {}x{} with matrix of dimensions {}x{}",
+            format!("Cannot multiply matrix of dimensions {}x{} with matrix of dimensions {}x{}", 
                 x.row_count(), x.column_count(), y.row_count(), y.column_count())
         ));
     }
+    Ok(())
+}
 
-    let result = Arc::new(Mutex::new(Matrix::new(x.row_count(), y.column_count())));
-    let mut tasks: Vec<Vec<(usize, usize)>> = vec![Vec::new(); num_threads];
+fn calculate_cell(row: &[f64], y: &Matrix, col_idx: usize) -> f64 {
+    row.iter()
+        .enumerate()
+        .map(|(i, &val)| val * y.rows[i][col_idx])
+        .sum()
+}
 
-    for i in 0..x.row_count() {
+fn process_row_range(start_row: usize, x: &[Vec<f64>], y: &Matrix, result: Arc<Mutex<Matrix>>) {
+    for (local_row_idx, row) in x.iter().enumerate() {
+        let global_row_idx = start_row + local_row_idx;
         for j in 0..y.column_count() {
-            let task_hash = (i * 31 + j) % num_threads;
-            tasks[task_hash].push((i, j));
+            let value = calculate_cell(row, &y, j);
+            let mut result = result.lock().unwrap();
+            result.rows[global_row_idx][j] = value;
         }
     }
+}
 
-    let x = Arc::new(x);
+pub fn multiply(x: Matrix, y: Matrix, num_threads: usize) -> Result<Matrix, MatrixError> {
+    validate_dimensions(&x, &y)?;
+
+    if x.row_count() == 0 || y.column_count() == 0 {
+        return Ok(Matrix::new(0, 0));
+    }
+
+    let mut result = Matrix::new(x.row_count(), y.column_count());
+    let result = Arc::new(Mutex::new(result));
     let y = Arc::new(y);
-    let mut threads = Vec::new();
+    let mut handles = vec![];
 
-    for thread_tasks in tasks {
-        let x = Arc::clone(&x);
-        let y = Arc::clone(&y);
+    let rows_per_thread = (x.row_count() + num_threads - 1) / num_threads;
+    
+    for thread_idx in 0..num_threads {
+        let start_row = thread_idx * rows_per_thread;
+        let end_row = (start_row + rows_per_thread).min(x.row_count());
+        
+        if start_row >= x.row_count() {
+            break;
+        }
+
         let result = Arc::clone(&result);
-
-        let thread = std::thread::spawn(move || {
-            for (i, j) in thread_tasks {
-                let mut sum = 0.0;
-                for k in 0..x.column_count() {
-                    sum += x.rows[i][k] * y.rows[k][j];
-                }
-                let mut result = result.lock().unwrap();
-                result.rows[i][j] = sum;
-            }
+        let x = x.rows[start_row..end_row].to_vec();
+        let y = Arc::clone(&y);
+        
+        let handle = thread::spawn(move || {
+            process_row_range(start_row, &x, &y, result);
         });
-        threads.push(thread);
+        
+        handles.push(handle);
     }
 
-    for thread in threads {
-        thread.join().unwrap();
+    for handle in handles {
+        handle.join().unwrap();
     }
 
-    let mutex = Arc::try_unwrap(result).unwrap();
-    Ok(mutex.into_inner().unwrap())
+    let result = Arc::try_unwrap(result)
+        .unwrap()
+        .into_inner()
+        .unwrap();
+
+    Ok(result)
 }
 
 #[cfg(test)]
