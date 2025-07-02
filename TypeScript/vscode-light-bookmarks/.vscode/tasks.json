@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "compile",
+      "type": "shell",
+      "command": "source ~/.bashrc && npm run compile",
+      "group": "build",
+      "presentation": {
+        "panel": "shared",
+        "reveal": "silent"
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "watch",
+      "type": "shell",
+      "command": "source ~/.bashrc && npm run watch",
+      "group": "build",
+      "presentation": {
+        "panel": "shared",
+        "reveal": "never"
+      },
+      "isBackground": true,
+      "problemMatcher": "$tsc-watch"
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "source ~/.bashrc && npm run test",
+      "group": "test",
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      }
+    }
+  ]
+} 
