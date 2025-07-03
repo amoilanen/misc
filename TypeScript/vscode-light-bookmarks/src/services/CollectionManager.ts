@@ -37,10 +37,6 @@ export class CollectionManager {
     return [...this.collections];
   }
 
-  public getVisibleCollections(): Collection[] {
-    return this.collections.filter(c => c.isVisible);
-  }
-
   public clearAllCollections(): void {
     this.collections = [];
   }

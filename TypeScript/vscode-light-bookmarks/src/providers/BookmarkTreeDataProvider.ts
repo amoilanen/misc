@@ -17,7 +17,8 @@ export class BookmarkTreeItem extends vscode.TreeItem {
       this.tooltip = `${bookmark.uri}:${bookmark.line}`;
       this.description = `Line ${bookmark.line}`;
       this.iconPath = new vscode.ThemeIcon('bookmark');
-      this.contextValue = 'bookmark';
+      // Set different context values based on whether bookmark is in a collection
+      this.contextValue = bookmark.collectionId ? 'bookmark-in-collection' : 'bookmark-ungrouped';
       this.command = {
         command: 'vscode.open',
         title: 'Open Bookmark',
@@ -28,11 +29,15 @@ export class BookmarkTreeItem extends vscode.TreeItem {
           },
         ],
       };
+      // Add command arguments for context menu actions
+      this.resourceUri = vscode.Uri.parse(`bookmark://${bookmark.uri}:${bookmark.line}`);
     } else if (collection) {
       this.tooltip = collection.name;
       this.iconPath = new vscode.ThemeIcon('folder');
-      this.contextValue = 'collection';
-      this.description = `${collection.isVisible ? 'Visible' : 'Hidden'}`;
+      // Set different context value for "Ungrouped" collection to prevent deletion
+      this.contextValue = collection.id === 'ungrouped-bookmarks' ? 'ungrouped-collection' : 'collection';
+      // Add command arguments for context menu actions
+      this.resourceUri = vscode.Uri.parse(`collection://${collection.id}`);
     }
   }
 }
@@ -69,7 +74,7 @@ export class BookmarkTreeDataProvider implements vscode.TreeDataProvider<Bookmar
 
   private async getRootItems(): Promise<BookmarkTreeItem[]> {
     const items: BookmarkTreeItem[] = [];
-    const collections = this.collectionManager.getVisibleCollections();
+    const collections = this.collectionManager.getAllCollections();
     const allBookmarks = this.bookmarkManager.getAllBookmarks();
     const ungroupedBookmarks = allBookmarks.filter(b => !b.collectionId);
 
@@ -95,7 +100,7 @@ export class BookmarkTreeDataProvider implements vscode.TreeDataProvider<Bookmar
           `Ungrouped (${ungroupedBookmarks.length})`,
           vscode.TreeItemCollapsibleState.Collapsed,
           undefined,
-          { id: 'ungrouped-bookmarks', name: 'Ungrouped', color: '#cccccc', isVisible: true, createdAt: new Date() } as Collection
+          { id: 'ungrouped-bookmarks', name: 'Ungrouped', color: '#cccccc', createdAt: new Date() } as Collection
         )
       );
     }

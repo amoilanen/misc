@@ -2,10 +2,11 @@ import * as vscode from 'vscode';
 import { BookmarkManager } from './services/BookmarkManager';
 import { CollectionManager } from './services/CollectionManager';
 import { StorageService } from './services/StorageService';
-import { BookmarkTreeDataProvider } from './providers/BookmarkTreeDataProvider';
+import { BookmarkTreeDataProvider, BookmarkTreeItem } from './providers/BookmarkTreeDataProvider';
 import { BookmarkDecorationProvider } from './providers/BookmarkDecorationProvider';
 import { ToggleBookmarkCommand } from './commands/ToggleBookmarkCommand';
 import { AddToCollectionCommand } from './commands/AddToCollectionCommand';
+import { RemoveFromCollectionCommand } from './commands/RemoveFromCollectionCommand';
 import { CreateCollectionCommand } from './commands/CreateCollectionCommand';
 import { DeleteCollectionCommand } from './commands/DeleteCollectionCommand';
 
@@ -50,10 +51,6 @@ export class ExtensionManager {
 
     collections.forEach(collection => {
       this.collectionManager.createCollection(collection.name, collection.color);
-      const restoredCollection = this.collectionManager.getCollection(collection.id);
-      if (restoredCollection) {
-        restoredCollection.isVisible = collection.isVisible;
-      }
     });
 
     // Register tree data provider
@@ -95,7 +92,7 @@ export class ExtensionManager {
     // Add to collection command
     const addToCollectionCommand = vscode.commands.registerCommand(
       'lightBookmarks.addToCollection',
-      () => {
+      (_treeItem?: BookmarkTreeItem) => {
         const command = new AddToCollectionCommand(
           this.bookmarkManager,
           this.collectionManager,
@@ -107,6 +104,30 @@ export class ExtensionManager {
       }
     );
     this.disposables.push(addToCollectionCommand);
+
+    // Remove from collection command
+    const removeFromCollectionCommand = vscode.commands.registerCommand(
+      'lightBookmarks.removeFromCollection',
+      (treeItem?: BookmarkTreeItem) => {
+        let bookmarkUri: string | undefined;
+        let bookmarkLine: number | undefined;
+
+        if (treeItem?.bookmark) {
+          bookmarkUri = treeItem.bookmark.uri;
+          bookmarkLine = treeItem.bookmark.line;
+        }
+
+        const command = new RemoveFromCollectionCommand(
+          this.bookmarkManager,
+          this.collectionManager,
+          this.storageService,
+          this.treeDataProvider,
+          this.decorationProvider
+        );
+        command.execute(bookmarkUri, bookmarkLine);
+      }
+    );
+    this.disposables.push(removeFromCollectionCommand);
 
     // Create collection command
     const createCollectionCommand = vscode.commands.registerCommand(
@@ -125,32 +146,26 @@ export class ExtensionManager {
     // Delete collection command
     const deleteCollectionCommand = vscode.commands.registerCommand(
       'lightBookmarks.deleteCollection',
-      (collectionId: string) => {
-        const command = new DeleteCollectionCommand(
-          this.collectionManager,
-          this.bookmarkManager,
-          this.storageService,
-          this.treeDataProvider,
-          this.decorationProvider
-        );
-        command.execute(collectionId);
-      }
-    );
-    this.disposables.push(deleteCollectionCommand);
+      (treeItem?: BookmarkTreeItem) => {
+        let collectionId: string | undefined;
 
-    // Toggle collection visibility command
-    const toggleVisibilityCommand = vscode.commands.registerCommand(
-      'lightBookmarks.toggleCollectionVisibility',
-      (collectionId: string) => {
-        const collection = this.collectionManager.getCollection(collectionId);
-        if (collection) {
-          collection.toggleVisibility();
-          this.storageService.saveCollections(this.collectionManager.getAllCollections());
-          this.treeDataProvider.refresh();
+        if (treeItem?.collection) {
+          collectionId = treeItem.collection.id;
+        }
+
+        if (collectionId) {
+          const command = new DeleteCollectionCommand(
+            this.collectionManager,
+            this.bookmarkManager,
+            this.storageService,
+            this.treeDataProvider,
+            this.decorationProvider
+          );
+          command.execute(collectionId);
         }
       }
     );
-    this.disposables.push(toggleVisibilityCommand);
+    this.disposables.push(deleteCollectionCommand);
   }
 
   private registerEventListeners(): void {

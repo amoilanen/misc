@@ -12,37 +12,12 @@ describe('Collection', () => {
       expect(collection.color).toBe(mockColor);
       expect(collection.id).toBeDefined();
       expect(collection.createdAt).toBeInstanceOf(Date);
-      expect(collection.isVisible).toBe(true);
-    });
-
-    it('should create a collection with custom visibility', () => {
-      const collection = new Collection(mockName, mockColor, false);
-
-      expect(collection.isVisible).toBe(false);
-    });
-  });
-
-  describe('toggleVisibility', () => {
-    it('should toggle visibility from true to false', () => {
-      const collection = new Collection(mockName, mockColor, true);
-      
-      collection.toggleVisibility();
-      
-      expect(collection.isVisible).toBe(false);
-    });
-
-    it('should toggle visibility from false to true', () => {
-      const collection = new Collection(mockName, mockColor, false);
-      
-      collection.toggleVisibility();
-      
-      expect(collection.isVisible).toBe(true);
     });
   });
 
   describe('toJSON', () => {
     it('should serialize collection to JSON', () => {
-      const collection = new Collection(mockName, mockColor, false);
+      const collection = new Collection(mockName, mockColor);
 
       const json = collection.toJSON();
 
@@ -50,7 +25,6 @@ describe('Collection', () => {
         id: collection.id,
         name: mockName,
         color: mockColor,
-        isVisible: false,
         createdAt: collection.createdAt.toISOString(),
       });
     });
@@ -63,7 +37,6 @@ describe('Collection', () => {
         id: 'test-id',
         name: mockName,
         color: mockColor,
-        isVisible: false,
         createdAt: createdAt.toISOString(),
       };
 
@@ -72,7 +45,6 @@ describe('Collection', () => {
       expect(collection.id).toBe(json.id);
       expect(collection.name).toBe(mockName);
       expect(collection.color).toBe(mockColor);
-      expect(collection.isVisible).toBe(false);
       expect(collection.createdAt).toEqual(createdAt);
     });
   });

@@ -14,4 +14,9 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleNameMapper: {
+    '^vscode$': '<rootDir>/src/__tests__/__mocks__/vscode.ts'
+  },
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/__mocks__/', '/setup.ts']
 }; 

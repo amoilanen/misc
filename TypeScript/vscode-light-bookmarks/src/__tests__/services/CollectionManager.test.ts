@@ -1,5 +1,4 @@
 import { CollectionManager } from '../../services/CollectionManager';
-import { Collection } from '../../models/Collection';
 
 describe('CollectionManager', () => {
   let collectionManager: CollectionManager;
@@ -9,43 +8,38 @@ describe('CollectionManager', () => {
   });
 
   describe('createCollection', () => {
-    it('should create a collection successfully', () => {
+    it('should create a new collection', () => {
       const collection = collectionManager.createCollection('Test Collection', '#ff0000');
 
-      expect(collection).toBeInstanceOf(Collection);
       expect(collection).not.toBeNull();
-      if (collection) {
-        expect(collection.name).toBe('Test Collection');
-        expect(collection.color).toBe('#ff0000');
-      }
-      expect(collectionManager.getAllCollections()).toHaveLength(1);
+      expect(collection?.name).toBe('Test Collection');
+      expect(collection?.color).toBe('#ff0000');
     });
 
-    it('should not create collection with duplicate name', () => {
+    it('should return null if collection with same name already exists', () => {
       collectionManager.createCollection('Test Collection', '#ff0000');
-      const result = collectionManager.createCollection('Test Collection', '#00ff00');
+      const duplicate = collectionManager.createCollection('Test Collection', '#00ff00');
 
-      expect(result).toBeNull();
-      expect(collectionManager.getAllCollections()).toHaveLength(1);
+      expect(duplicate).toBeNull();
     });
   });
 
   describe('deleteCollection', () => {
-    it('should delete existing collection', () => {
+    it('should delete collection by id', () => {
       const collection = collectionManager.createCollection('Test Collection', '#ff0000');
       expect(collection).not.toBeNull();
       if (!collection) return;
-      
-      const result = collectionManager.deleteCollection(collection.id);
 
-      expect(result).toBe(true);
-      expect(collectionManager.getAllCollections()).toHaveLength(0);
+      const deleted = collectionManager.deleteCollection(collection.id);
+
+      expect(deleted).toBe(true);
+      expect(collectionManager.getCollection(collection.id)).toBeUndefined();
     });
 
     it('should return false for non-existent collection', () => {
-      const result = collectionManager.deleteCollection('non-existent-id');
+      const deleted = collectionManager.deleteCollection('non-existent-id');
 
-      expect(result).toBe(false);
+      expect(deleted).toBe(false);
     });
   });
 
@@ -85,31 +79,70 @@ describe('CollectionManager', () => {
     });
   });
 
-  describe('getVisibleCollections', () => {
-    it('should return only visible collections', () => {
-      const visibleCollection = collectionManager.createCollection('Visible', '#ff0000');
-      const hiddenCollection = collectionManager.createCollection('Hidden', '#00ff00');
-      expect(visibleCollection).not.toBeNull();
-      expect(hiddenCollection).not.toBeNull();
-      if (!visibleCollection || !hiddenCollection) return;
-      
-      hiddenCollection.toggleVisibility();
+  describe('getAllCollections', () => {
+    it('should return all collections', () => {
+      const collection1 = collectionManager.createCollection('Collection 1', '#ff0000');
+      const collection2 = collectionManager.createCollection('Collection 2', '#00ff00');
+      expect(collection1).not.toBeNull();
+      expect(collection2).not.toBeNull();
+      if (!collection1 || !collection2) return;
 
-      const visibleCollections = collectionManager.getVisibleCollections();
+      const allCollections = collectionManager.getAllCollections();
 
-      expect(visibleCollections).toHaveLength(1);
-      expect(visibleCollections[0]).toBe(visibleCollection);
+      expect(allCollections).toHaveLength(2);
+      expect(allCollections).toContain(collection1);
+      expect(allCollections).toContain(collection2);
+    });
+
+    it('should return empty array when no collections exist', () => {
+      const allCollections = collectionManager.getAllCollections();
+
+      expect(allCollections).toHaveLength(0);
     });
   });
 
   describe('clearAllCollections', () => {
     it('should remove all collections', () => {
-      collectionManager.createCollection('Test 1', '#ff0000');
-      collectionManager.createCollection('Test 2', '#00ff00');
+      collectionManager.createCollection('Collection 1', '#ff0000');
+      collectionManager.createCollection('Collection 2', '#00ff00');
 
       collectionManager.clearAllCollections();
 
       expect(collectionManager.getAllCollections()).toHaveLength(0);
+    });
+  });
+
+  describe('hasCollection', () => {
+    it('should return true for existing collection', () => {
+      const collection = collectionManager.createCollection('Test Collection', '#ff0000');
+      expect(collection).not.toBeNull();
+      if (!collection) return;
+
+      const hasCollection = collectionManager.hasCollection(collection.id);
+
+      expect(hasCollection).toBe(true);
+    });
+
+    it('should return false for non-existent collection', () => {
+      const hasCollection = collectionManager.hasCollection('non-existent-id');
+
+      expect(hasCollection).toBe(false);
+    });
+  });
+
+  describe('hasCollectionByName', () => {
+    it('should return true for existing collection name', () => {
+      collectionManager.createCollection('Test Collection', '#ff0000');
+
+      const hasCollection = collectionManager.hasCollectionByName('Test Collection');
+
+      expect(hasCollection).toBe(true);
+    });
+
+    it('should return false for non-existent collection name', () => {
+      const hasCollection = collectionManager.hasCollectionByName('Non-existent Collection');
+
+      expect(hasCollection).toBe(false);
     });
   });
 }); 
