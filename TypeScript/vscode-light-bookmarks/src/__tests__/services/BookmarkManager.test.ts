@@ -33,7 +33,7 @@ describe('BookmarkManager', () => {
     });
 
     it('should add bookmark with collection', () => {
-      const collection = new Collection('Test', '#ff0000');
+      const collection = new Collection('Test');
       const bookmark = bookmarkManager.addBookmark(mockUri, mockLine, collection.id);
 
       expect(bookmark).not.toBeNull();

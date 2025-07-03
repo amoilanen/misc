@@ -55,7 +55,7 @@ describe('DeleteCollectionCommand', () => {
 
     it('should delete a regular collection successfully', async () => {
       // Arrange
-      const collection = collectionManager.createCollection('Test Collection', '#ff0000');
+      const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
       if (!collection) return;
 
@@ -85,7 +85,7 @@ describe('DeleteCollectionCommand', () => {
 
     it('should handle collection with bookmarks - delete option', async () => {
       // Arrange
-      const collection = collectionManager.createCollection('Test Collection', '#ff0000');
+      const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
       if (!collection) return;
 
@@ -111,7 +111,7 @@ describe('DeleteCollectionCommand', () => {
 
     it('should handle collection with bookmarks - ungroup option', async () => {
       // Arrange
-      const collection = collectionManager.createCollection('Test Collection', '#ff0000');
+      const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
       if (!collection) return;
 
@@ -132,7 +132,7 @@ describe('DeleteCollectionCommand', () => {
 
     it('should cancel deletion when user cancels', async () => {
       // Arrange
-      const collection = collectionManager.createCollection('Test Collection', '#ff0000');
+      const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
       if (!collection) return;
 

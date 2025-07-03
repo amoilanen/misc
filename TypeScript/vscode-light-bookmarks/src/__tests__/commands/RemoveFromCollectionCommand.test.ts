@@ -44,7 +44,7 @@ describe('RemoveFromCollectionCommand', () => {
   describe('execute', () => {
     it('should remove bookmark from collection when called with parameters', async () => {
       // Arrange
-      const collection = collectionManager.createCollection('Test Collection', '#ff0000');
+      const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
       if (!collection) return;
       bookmarkManager.addBookmark('file:///test.ts', 10, collection.id);
@@ -89,7 +89,6 @@ describe('RemoveFromCollectionCommand', () => {
       const ungroupedCollection = {
         id: 'ungrouped-bookmarks',
         name: 'Ungrouped',
-        color: '#cccccc',
         createdAt: new Date()
       };
       

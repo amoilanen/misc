@@ -6,9 +6,13 @@ import { BookmarkTreeDataProvider, BookmarkTreeItem } from './providers/Bookmark
 import { BookmarkDecorationProvider } from './providers/BookmarkDecorationProvider';
 import { ToggleBookmarkCommand } from './commands/ToggleBookmarkCommand';
 import { AddToCollectionCommand } from './commands/AddToCollectionCommand';
+import { AddBookmarkToCollectionCommand } from './commands/AddBookmarkToCollectionCommand';
 import { RemoveFromCollectionCommand } from './commands/RemoveFromCollectionCommand';
-import { CreateCollectionCommand } from './commands/CreateCollectionCommand';
 import { DeleteCollectionCommand } from './commands/DeleteCollectionCommand';
+import { Collection } from './models/Collection';
+
+
+
 
 export class ExtensionManager {
   private bookmarkManager: BookmarkManager;
@@ -16,9 +20,11 @@ export class ExtensionManager {
   private storageService: StorageService;
   private treeDataProvider: BookmarkTreeDataProvider;
   private decorationProvider: BookmarkDecorationProvider;
-  private disposables: vscode.Disposable[] = [];
+    private disposables: vscode.Disposable[] = [];
+  private context: vscode.ExtensionContext;
 
   constructor(context: vscode.ExtensionContext) {
+    this.context = context;
     this.bookmarkManager = new BookmarkManager();
     this.collectionManager = new CollectionManager();
     this.storageService = new StorageService(context.globalState);
@@ -32,9 +38,11 @@ export class ExtensionManager {
     );
     
     // Set up bookmark change notification
-    this.bookmarkManager.setOnBookmarksChanged(() => {
+        this.bookmarkManager.setOnBookmarksChanged(() => {
       this.decorationProvider.updateDecorations();
     });
+
+
   }
 
   public async initialize(): Promise<void> {
@@ -50,7 +58,12 @@ export class ExtensionManager {
     });
 
     collections.forEach(collection => {
-      this.collectionManager.createCollection(collection.name, collection.color);
+      // Restore the collection with its original workspace ID
+      const restoredCollection = new Collection(collection.name, collection.workspaceId);
+      // Override the generated id and createdAt with the stored values
+      Object.defineProperty(restoredCollection, 'id', { value: collection.id, writable: false });
+      Object.defineProperty(restoredCollection, 'createdAt', { value: collection.createdAt, writable: false });
+      this.collectionManager.addCollection(restoredCollection);
     });
 
     // Register tree data provider
@@ -68,9 +81,11 @@ export class ExtensionManager {
     // Register event listeners
     this.registerEventListeners();
 
-    // Refresh tree view and decorations
+        // Refresh tree view and decorations
     this.treeDataProvider.refresh();
     this.decorationProvider.updateDecorations();
+
+
   }
 
   private registerCommands(): void {
@@ -105,6 +120,22 @@ export class ExtensionManager {
     );
     this.disposables.push(addToCollectionCommand);
 
+    // Add bookmark to collection command (for tree view items)
+    const addBookmarkToCollectionCommand = vscode.commands.registerCommand(
+      'lightBookmarks.addBookmarkToCollection',
+      (treeItem?: BookmarkTreeItem) => {
+        const command = new AddBookmarkToCollectionCommand(
+          this.bookmarkManager,
+          this.collectionManager,
+          this.storageService,
+          this.treeDataProvider,
+          this.decorationProvider
+        );
+        command.execute(treeItem);
+      }
+    );
+    this.disposables.push(addBookmarkToCollectionCommand);
+
     // Remove from collection command
     const removeFromCollectionCommand = vscode.commands.registerCommand(
       'lightBookmarks.removeFromCollection',
@@ -132,13 +163,40 @@ export class ExtensionManager {
     // Create collection command
     const createCollectionCommand = vscode.commands.registerCommand(
       'lightBookmarks.createCollection',
-      () => {
-        const command = new CreateCollectionCommand(
-          this.collectionManager,
-          this.storageService,
-          this.treeDataProvider
-        );
-        command.execute();
+      async () => {
+        const collectionName = await vscode.window.showInputBox({
+          title: 'Create New Collection',
+          placeHolder: 'Enter collection name',
+          prompt: 'Please enter a name for the new collection',
+          validateInput: (value) => {
+            if (!value || value.trim().length === 0) {
+              return 'Collection name cannot be empty';
+            }
+            const workspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.toString();
+            const existingCollection = this.collectionManager.getCollectionsForWorkspace(workspaceId)
+              .find(c => c.name === value.trim());
+            if (existingCollection) {
+              return 'A collection with this name already exists in this workspace';
+            }
+            return null;
+          }
+        });
+
+        if (!collectionName) {
+          return; // User cancelled
+        }
+
+        const trimmedName = collectionName.trim();
+        const workspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.toString();
+        const collection = this.collectionManager.createCollection(trimmedName, workspaceId);
+        
+        if (collection) {
+          await this.storageService.saveCollections(this.collectionManager.getAllCollections());
+          this.treeDataProvider.refresh();
+          vscode.window.showInformationMessage(`Collection "${trimmedName}" created successfully`);
+        } else {
+          vscode.window.showErrorMessage('Failed to create collection');
+        }
       }
     );
     this.disposables.push(createCollectionCommand);
@@ -165,7 +223,9 @@ export class ExtensionManager {
         }
       }
     );
-    this.disposables.push(deleteCollectionCommand);
+        this.disposables.push(deleteCollectionCommand);
+
+
   }
 
   private registerEventListeners(): void {
@@ -185,6 +245,13 @@ export class ExtensionManager {
       }
     });
     this.disposables.push(onDidChangeTextDocument);
+
+    // Refresh tree view and decorations when workspace folders change
+    const onDidChangeWorkspaceFolders = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      this.treeDataProvider.refresh();
+      this.decorationProvider.updateDecorations();
+    });
+    this.disposables.push(onDidChangeWorkspaceFolders);
   }
 
   public dispose(): void {

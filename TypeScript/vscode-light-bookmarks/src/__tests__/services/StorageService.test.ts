@@ -81,8 +81,8 @@ describe('StorageService', () => {
   describe('saveCollections', () => {
     it('should save collections to storage', async () => {
       const collections = [
-        new Collection('Test 1', '#ff0000'),
-        new Collection('Test 2', '#00ff00'),
+        new Collection('Test 1'),
+        new Collection('Test 2'),
       ];
 
       await storageService.saveCollections(collections);
@@ -100,13 +100,11 @@ describe('StorageService', () => {
         {
           id: 'collection-1',
           name: 'Test 1',
-          color: '#ff0000',
           createdAt: new Date().toISOString(),
         },
         {
           id: 'collection-2',
           name: 'Test 2',
-          color: '#00ff00',
           createdAt: new Date().toISOString(),
         },
       ];

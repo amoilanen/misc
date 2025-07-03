@@ -57,7 +57,7 @@ npm run package
 ### Collections Management
 1. **Create Collection**:
    - Use command palette: `Light Bookmarks: Create Collection`
-   - Enter collection name and select color
+   - Enter collection name
 
 2. **Add Bookmark to Collection**:
    - Right-click on a bookmarked line

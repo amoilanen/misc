@@ -40,6 +40,11 @@
         "command": "lightBookmarks.deleteCollection",
         "title": "Delete Collection",
         "category": "Light Bookmarks"
+      },
+      {
+        "command": "lightBookmarks.addBookmarkToCollection",
+        "title": "Add Bookmark to Collection",
+        "category": "Light Bookmarks"
       }
     ],
     "keybindings": [
@@ -106,6 +111,16 @@
           "command": "lightBookmarks.deleteCollection",
           "group": "inline",
           "when": "view == lightBookmarks.bookmarksView && viewItem == collection"
+        },
+        {
+          "command": "lightBookmarks.addBookmarkToCollection",
+          "group": "inline",
+          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-ungrouped"
+        },
+        {
+          "command": "lightBookmarks.addBookmarkToCollection",
+          "group": "inline",
+          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
         }
       ],
       "commandPalette": [
@@ -120,28 +135,11 @@
         },
         {
           "command": "lightBookmarks.removeFromCollection"
+        },
+        {
+          "command": "lightBookmarks.addBookmarkToCollection"
         }
       ]
-    },
-    "configuration": {
-      "title": "Light Bookmarks",
-      "properties": {
-        "lightBookmarks.maxBookmarks": {
-          "type": "number",
-          "default": 1000,
-          "description": "Maximum number of bookmarks allowed"
-        },
-        "lightBookmarks.showLineNumbers": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show line numbers in bookmark list"
-        },
-        "lightBookmarks.autoSave": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically save bookmarks"
-        }
-      }
     }
   },
   "scripts": {

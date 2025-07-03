@@ -78,6 +78,11 @@ class BookmarkFileDecorationProvider implements vscode.FileDecorationProvider {
   constructor(private bookmarkManager: BookmarkManager) {}
 
   provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
+    // Only show decorations for files within the current workspace
+    if (!this.isUriInCurrentWorkspace(uri)) {
+      return undefined;
+    }
+
     const bookmarks = this.bookmarkManager.getBookmarksByUri(uri.toString());
     
     if (bookmarks.length > 0) {
@@ -89,5 +94,21 @@ class BookmarkFileDecorationProvider implements vscode.FileDecorationProvider {
     }
     
     return undefined;
+  }
+
+  private isUriInCurrentWorkspace(uri: vscode.Uri): boolean {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      // If no workspace is open, show all decorations
+      return true;
+    }
+
+    // Check if the URI is within any of the current workspace folders
+    return workspaceFolders.some(folder => {
+      const folderUri = folder.uri;
+      return uri.scheme === folderUri.scheme && 
+             uri.authority === folderUri.authority &&
+             uri.path.startsWith(folderUri.path);
+    });
   }
 } 

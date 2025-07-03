@@ -11,54 +11,15 @@ export class CreateCollectionCommand {
   ) {}
 
   public async execute(): Promise<void> {
-    // Get collection name from user
-    const collectionName = await vscode.window.showInputBox({
-      prompt: 'Enter collection name',
-      placeHolder: 'My Collection',
-      validateInput: (value) => {
-        if (!value || value.trim().length === 0) {
-          return 'Collection name cannot be empty';
-        }
-        if (this.collectionManager.hasCollectionByName(value.trim())) {
-          return 'A collection with this name already exists';
-        }
-        return null;
-      }
-    });
-
+    // Get collection name from user using QuickPick for better view integration
+    const collectionName = await this.getCollectionNameFromUser();
     if (!collectionName) {
-      return; // User cancelled
-    }
-
-    // Get collection color from user
-    const colors = [
-      '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff',
-      '#ff8800', '#8800ff', '#00ff88', '#ff0088', '#880000', '#008800'
-    ];
-
-    const colorNames = [
-      'Red', 'Green', 'Blue', 'Yellow', 'Magenta', 'Cyan',
-      'Orange', 'Purple', 'Teal', 'Pink', 'Dark Red', 'Dark Green'
-    ];
-
-    const colorOptions = colors.map((color, index) => ({
-      label: `$(circle-filled) ${colorNames[index]}`,
-      description: color,
-      color: color
-    }));
-
-    const selectedColorOption = await vscode.window.showQuickPick(colorOptions, {
-      placeHolder: 'Select a color for the collection'
-    });
-
-    if (!selectedColorOption) {
       return; // User cancelled
     }
 
     // Create the collection
     const collection = this.collectionManager.createCollection(
-      collectionName.trim(),
-      selectedColorOption.color
+      collectionName.trim()
     );
 
     if (collection) {
@@ -72,5 +33,36 @@ export class CreateCollectionCommand {
     } else {
       vscode.window.showErrorMessage('Failed to create collection');
     }
+  }
+
+  private async getCollectionNameFromUser(): Promise<string | undefined> {
+    // Use QuickPick with custom input for better view integration
+    const quickPick = vscode.window.createQuickPick();
+    quickPick.title = 'Create Collection';
+    quickPick.placeholder = 'Enter collection name';
+    quickPick.canSelectMany = false;
+    quickPick.ignoreFocusOut = true;
+
+    return new Promise((resolve) => {
+      quickPick.onDidAccept(() => {
+        const value = quickPick.value.trim();
+        if (!value || value.length === 0) {
+          vscode.window.showErrorMessage('Collection name cannot be empty');
+          return;
+        }
+        if (this.collectionManager.hasCollectionByName(value)) {
+          vscode.window.showErrorMessage('A collection with this name already exists');
+          return;
+        }
+        quickPick.hide();
+        resolve(value);
+      });
+
+      quickPick.onDidHide(() => {
+        resolve(undefined);
+      });
+
+      quickPick.show();
+    });
   }
 } 

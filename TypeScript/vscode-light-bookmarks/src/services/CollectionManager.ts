@@ -3,14 +3,14 @@ import { Collection } from '../models/Collection';
 export class CollectionManager {
   private collections: Collection[] = [];
 
-  public createCollection(name: string, color: string): Collection | null {
-    // Check if collection with same name already exists
-    const existingCollection = this.collections.find(c => c.name === name);
+  public createCollection(name: string, workspaceId?: string): Collection | null {
+    // Check if collection with same name already exists in the same workspace
+    const existingCollection = this.collections.find(c => c.name === name && c.workspaceId === workspaceId);
     if (existingCollection) {
       return null;
     }
 
-    const collection = new Collection(name, color);
+    const collection = new Collection(name, workspaceId);
     this.collections.push(collection);
     return collection;
   }
@@ -35,6 +35,14 @@ export class CollectionManager {
 
   public getAllCollections(): Collection[] {
     return [...this.collections];
+  }
+
+  public getCollectionsForWorkspace(workspaceId?: string): Collection[] {
+    return this.collections.filter(c => c.workspaceId === workspaceId);
+  }
+
+  public addCollection(collection: Collection): void {
+    this.collections.push(collection);
   }
 
   public clearAllCollections(): void {
