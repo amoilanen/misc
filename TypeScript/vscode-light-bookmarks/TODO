@@ -1,3 +1,6 @@
+- There should be no separate "Remove from collection" button for a Bookmark in a collection
+- Add to collection dialog should also allow to add to the "Ungrouped" collection
+
 - Clicking on the bookmark in the file editor should remove it
 
 - Deleting a collection should delete also all the bookmarks in the collection
