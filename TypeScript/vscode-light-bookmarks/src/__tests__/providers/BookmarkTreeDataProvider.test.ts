@@ -51,7 +51,7 @@ jest.mock('vscode', () => ({
 }));
 
 // Patch the TreeItem mock to set collapsibleState
-(jest.requireMock('vscode').TreeItem as any).mockImplementation(function(this: any, label: string, collapsibleState?: number) {
+(jest.requireMock('vscode').TreeItem as jest.Mock).mockImplementation(function(this: vscode.TreeItem, label: string, collapsibleState?: number) {
   this.label = label;
   this.collapsibleState = collapsibleState;
 });
@@ -66,8 +66,12 @@ describe('BookmarkTreeDataProvider', () => {
     collectionManager = new CollectionManager();
     treeDataProvider = new BookmarkTreeDataProvider(bookmarkManager, collectionManager);
     // Patch workspaceFolders to match the test URI
-    (vscode.workspace as any).workspaceFolders = [
-      { uri: { scheme: 'file', authority: '', path: '/workspace' } },
+    (vscode.workspace as unknown as { workspaceFolders: vscode.WorkspaceFolder[] }).workspaceFolders = [
+      { 
+        uri: vscode.Uri.parse('file:///workspace'),
+        name: 'workspace',
+        index: 0
+      },
     ];
   });
 

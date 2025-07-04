@@ -30,46 +30,32 @@ export class DeleteCollectionCommand {
     // Get bookmarks in this collection
     const bookmarksInCollection = this.bookmarkManager.getBookmarksByCollection(collectionId);
     
-    // Ask user what to do with bookmarks in the collection
-    let action: 'delete' | 'ungroup' | 'cancel' = 'delete'; // Default to delete when no bookmarks
-    
-    if (bookmarksInCollection.length > 0) {
-      const result = await vscode.window.showWarningMessage(
-        `Collection "${collection.name}" contains ${bookmarksInCollection.length} bookmark(s). What would you like to do?`,
-        { modal: true },
-        'Delete Bookmarks',
-        'Ungroup Bookmarks',
-        'Cancel'
-      );
-
-      if (result === 'Delete Bookmarks') {
-        action = 'delete';
-      } else if (result === 'Ungroup Bookmarks') {
-        action = 'ungroup';
-      } else {
-        action = 'cancel';
-      }
-    }
-
-    if (action === 'cancel') {
+    // If collection is empty, delete immediately
+    if (bookmarksInCollection.length === 0) {
+      await this.deleteCollection(collectionId, collection);
       return;
     }
 
-    // Handle bookmarks based on user choice
-    if (action === 'delete') {
+    // If collection has bookmarks, ask for confirmation
+    const result = await vscode.window.showWarningMessage(
+      'Deleting collection will also delete bookmarks contained in it, proceed?',
+      { modal: true },
+      'Delete'
+    );
+
+    if (result === 'Delete') {
       // Remove all bookmarks in the collection
       bookmarksInCollection.forEach(bookmark => {
         this.bookmarkManager.removeBookmark(bookmark.uri, bookmark.line);
       });
-    } else if (action === 'ungroup') {
-      // Remove collection ID from bookmarks (make them ungrouped)
-      bookmarksInCollection.forEach(bookmark => {
-        this.bookmarkManager.removeBookmark(bookmark.uri, bookmark.line);
-        this.bookmarkManager.addBookmark(bookmark.uri, bookmark.line); // Add back without collection
-      });
+      
+      // Delete the collection
+      await this.deleteCollection(collectionId, collection);
     }
+    // If user cancels, do nothing - collection remains unchanged
+  }
 
-    // Delete the collection
+  private async deleteCollection(collectionId: string, collection: { id: string; name: string }): Promise<void> {
     const deleted = this.collectionManager.deleteCollection(collectionId);
     if (deleted) {
       vscode.window.showInformationMessage(`Collection "${collection.name}" deleted successfully`);

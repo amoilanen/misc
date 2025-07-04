@@ -26,11 +26,7 @@
         "title": "Add to Collection",
         "category": "Light Bookmarks"
       },
-      {
-        "command": "lightBookmarks.removeFromCollection",
-        "title": "Remove from Collection",
-        "category": "Light Bookmarks"
-      },
+
       {
         "command": "lightBookmarks.createCollection",
         "title": "Create Collection",
@@ -39,12 +35,20 @@
       {
         "command": "lightBookmarks.deleteCollection",
         "title": "Delete Collection",
-        "category": "Light Bookmarks"
+        "category": "Light Bookmarks",
+        "icon": "$(trash)"
       },
       {
         "command": "lightBookmarks.addBookmarkToCollection",
-        "title": "Add Bookmark to Collection",
-        "category": "Light Bookmarks"
+        "title": "Add to collection",
+        "category": "Light Bookmarks",
+        "icon": "$(add)"
+      },
+      {
+        "command": "lightBookmarks.deleteBookmark",
+        "title": "Delete Bookmark",
+        "category": "Light Bookmarks",
+        "icon": "$(trash)"
       }
     ],
     "keybindings": [
@@ -82,11 +86,6 @@
           "command": "lightBookmarks.addToCollection",
           "group": "navigation",
           "when": "editorTextFocus"
-        },
-        {
-          "command": "lightBookmarks.removeFromCollection",
-          "group": "navigation",
-          "when": "editorTextFocus"
         }
       ],
       "view/title": [
@@ -103,11 +102,6 @@
           "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark"
         },
         {
-          "command": "lightBookmarks.removeFromCollection",
-          "group": "inline",
-          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
-        },
-        {
           "command": "lightBookmarks.deleteCollection",
           "group": "inline",
           "when": "view == lightBookmarks.bookmarksView && viewItem == collection"
@@ -121,6 +115,16 @@
           "command": "lightBookmarks.addBookmarkToCollection",
           "group": "inline",
           "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
+        },
+        {
+          "command": "lightBookmarks.deleteBookmark",
+          "group": "inline",
+          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-ungrouped"
+        },
+        {
+          "command": "lightBookmarks.deleteBookmark",
+          "group": "inline",
+          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
         }
       ],
       "commandPalette": [
@@ -132,9 +136,6 @@
         },
         {
           "command": "lightBookmarks.addToCollection"
-        },
-        {
-          "command": "lightBookmarks.removeFromCollection"
         },
         {
           "command": "lightBookmarks.addBookmarkToCollection"

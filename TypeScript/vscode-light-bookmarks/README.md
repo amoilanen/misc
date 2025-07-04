@@ -28,7 +28,12 @@ A lightweight bookmark manager for VSCode with collections support, built with T
 1. Clone this repository
 2. Install dependencies:
    ```bash
-   npm install
+   npm install<form action="https://www.paypal.com/donate" method="post" target="_top">
+<input type="hidden" name="hosted_button_id" value="KE797MH5P5ECJ" />
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+<img alt="" border="0" src="https://www.paypal.com/en_FI/i/scr/pixel.gif" width="1" height="1" />
+</form>
+
    ```
 3. Compile the extension:
    ```bash
@@ -167,3 +172,13 @@ MIT License - see LICENSE file for details.
 - Collections support
 - Persistence across sessions
 - Tree view integration 
+
+## Supporting development
+
+If you like the extension you might make a donation
+
+<form action="https://www.paypal.com/donate" method="post" target="_top">
+<input type="hidden" name="hosted_button_id" value="KE797MH5P5ECJ" />
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+<img alt="" border="0" src="https://www.paypal.com/en_FI/i/scr/pixel.gif" width="1" height="1" />
+</form>

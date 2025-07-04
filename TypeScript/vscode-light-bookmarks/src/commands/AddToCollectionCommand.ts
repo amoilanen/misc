@@ -31,35 +31,45 @@ export class AddToCollectionCommand {
       return;
     }
 
-    // Get available collections
-    const collections = this.collectionManager.getAllCollections();
-    if (collections.length === 0) {
+    // Get available collections for current workspace
+    const currentWorkspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.toString();
+    const collections = this.collectionManager.getCollectionsForWorkspace(currentWorkspaceId);
+    
+    // Add "Ungrouped" option to the list
+    const collectionOptions = [
+      { label: 'Ungrouped', id: 'ungrouped' },
+      ...collections.map(c => ({ label: c.name, id: c.id }))
+    ];
+
+    if (collectionOptions.length === 1) {
       vscode.window.showInformationMessage('No collections available. Please create a collection first.');
       return;
     }
 
     // Show collection picker
-    const collectionNames = collections.map(c => c.name);
-    const selectedCollectionName = await vscode.window.showQuickPick(collectionNames, {
+    const selectedOption = await vscode.window.showQuickPick(collectionOptions, {
       placeHolder: 'Select a collection to add the bookmark to'
     });
 
-    if (!selectedCollectionName) {
+    if (!selectedOption) {
       return; // User cancelled
     }
 
-    const selectedCollection = this.collectionManager.getCollectionByName(selectedCollectionName);
-    if (!selectedCollection) {
-      vscode.window.showErrorMessage('Selected collection not found');
-      return;
+    // Remove the existing bookmark and add it to the collection or ungroup it
+    this.bookmarkManager.removeBookmark(uri, line);
+    let newBookmark;
+    
+    if (selectedOption.id === 'ungrouped') {
+      newBookmark = this.bookmarkManager.addBookmark(uri, line);
+    } else {
+      newBookmark = this.bookmarkManager.addBookmark(uri, line, selectedOption.id);
     }
 
-    // Remove the existing bookmark and add it to the collection
-    this.bookmarkManager.removeBookmark(uri, line);
-    const newBookmark = this.bookmarkManager.addBookmark(uri, line, selectedCollection.id);
-
     if (newBookmark) {
-      vscode.window.showInformationMessage(`Bookmark added to collection "${selectedCollectionName}"`);
+      const message = selectedOption.id === 'ungrouped' 
+        ? 'Bookmark moved to ungrouped'
+        : `Bookmark added to collection "${selectedOption.label}"`;
+      vscode.window.showInformationMessage(message);
       
       // Save to storage
       await this.storageService.saveBookmarks(this.bookmarkManager.getAllBookmarks());

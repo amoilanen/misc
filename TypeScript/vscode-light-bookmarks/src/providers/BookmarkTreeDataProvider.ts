@@ -55,7 +55,7 @@ export class BookmarkTreeItem extends vscode.TreeItem {
       this.resourceUri = vscode.Uri.parse(`bookmark://${bookmark.uri}:${bookmark.line}`);
       
       // Add hover actions for bookmark items
-      this.tooltip = new vscode.MarkdownString(`${bookmark.uri}:${bookmark.line}\n\n**Click to open** | **Hover for more actions**`);
+      this.tooltip = new vscode.MarkdownString(`${bookmark.uri}:${bookmark.line}\n\n**Click to open**`);
       this.tooltip.isTrusted = true;
     } else if (collection) {
       this.tooltip = collection.name;
@@ -64,6 +64,12 @@ export class BookmarkTreeItem extends vscode.TreeItem {
       this.contextValue = collection.id === 'ungrouped-bookmarks' ? 'ungrouped-collection' : 'collection';
       // Add command arguments for context menu actions
       this.resourceUri = vscode.Uri.parse(`collection://${collection.id}`);
+      
+      // Add hover actions for collection items (only for non-ungrouped collections)
+      if (collection.id !== 'ungrouped-bookmarks') {
+        this.tooltip = new vscode.MarkdownString(`${collection.name}\n\n**Click to expand**`);
+        this.tooltip.isTrusted = true;
+      }
     }
   }
 }

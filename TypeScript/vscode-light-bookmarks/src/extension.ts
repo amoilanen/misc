@@ -7,8 +7,8 @@ import { BookmarkDecorationProvider } from './providers/BookmarkDecorationProvid
 import { ToggleBookmarkCommand } from './commands/ToggleBookmarkCommand';
 import { AddToCollectionCommand } from './commands/AddToCollectionCommand';
 import { AddBookmarkToCollectionCommand } from './commands/AddBookmarkToCollectionCommand';
-import { RemoveFromCollectionCommand } from './commands/RemoveFromCollectionCommand';
 import { DeleteCollectionCommand } from './commands/DeleteCollectionCommand';
+import { DeleteBookmarkCommand } from './commands/DeleteBookmarkCommand';
 import { Collection } from './models/Collection';
 
 
@@ -136,29 +136,7 @@ export class ExtensionManager {
     );
     this.disposables.push(addBookmarkToCollectionCommand);
 
-    // Remove from collection command
-    const removeFromCollectionCommand = vscode.commands.registerCommand(
-      'lightBookmarks.removeFromCollection',
-      (treeItem?: BookmarkTreeItem) => {
-        let bookmarkUri: string | undefined;
-        let bookmarkLine: number | undefined;
 
-        if (treeItem?.bookmark) {
-          bookmarkUri = treeItem.bookmark.uri;
-          bookmarkLine = treeItem.bookmark.line;
-        }
-
-        const command = new RemoveFromCollectionCommand(
-          this.bookmarkManager,
-          this.collectionManager,
-          this.storageService,
-          this.treeDataProvider,
-          this.decorationProvider
-        );
-        command.execute(bookmarkUri, bookmarkLine);
-      }
-    );
-    this.disposables.push(removeFromCollectionCommand);
 
     // Create collection command
     const createCollectionCommand = vscode.commands.registerCommand(
@@ -224,6 +202,31 @@ export class ExtensionManager {
       }
     );
         this.disposables.push(deleteCollectionCommand);
+
+    // Delete bookmark command
+    const deleteBookmarkCommand = vscode.commands.registerCommand(
+      'lightBookmarks.deleteBookmark',
+      (treeItem?: BookmarkTreeItem) => {
+        let bookmarkUri: string | undefined;
+        let bookmarkLine: number | undefined;
+
+        if (treeItem?.bookmark) {
+          bookmarkUri = treeItem.bookmark.uri;
+          bookmarkLine = treeItem.bookmark.line;
+        }
+
+        if (bookmarkUri && bookmarkLine !== undefined) {
+          const command = new DeleteBookmarkCommand(
+            this.bookmarkManager,
+            this.storageService,
+            this.treeDataProvider,
+            this.decorationProvider
+          );
+          command.execute(bookmarkUri, bookmarkLine);
+        }
+      }
+    );
+    this.disposables.push(deleteBookmarkCommand);
 
 
   }

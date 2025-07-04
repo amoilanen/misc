@@ -53,19 +53,17 @@ describe('DeleteCollectionCommand', () => {
       expect(collectionManager.getAllCollections()).toHaveLength(0);
     });
 
-    it('should delete a regular collection successfully', async () => {
+    it('should delete an empty collection immediately without confirmation', async () => {
       // Arrange
       const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
       if (!collection) return;
 
-      // Mock user choice to delete bookmarks
-      (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Delete Bookmarks');
-
       // Act
       await command.execute(collection.id);
 
       // Assert
+      expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
       expect(collectionManager.getCollection(collection.id)).toBeUndefined();
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
         'Collection "Test Collection" deleted successfully'
@@ -83,7 +81,7 @@ describe('DeleteCollectionCommand', () => {
       expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Collection not found');
     });
 
-    it('should handle collection with bookmarks - delete option', async () => {
+    it('should handle collection with bookmarks - user confirms deletion', async () => {
       // Arrange
       const collection = collectionManager.createCollection('Test Collection');
       expect(collection).not.toBeNull();
@@ -91,43 +89,27 @@ describe('DeleteCollectionCommand', () => {
 
       bookmarkManager.addBookmark('file:///test.ts', 10, collection.id);
       
-      // Mock user choice to delete bookmarks
-      (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Delete Bookmarks');
+      // Mock user confirmation
+      (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Delete');
 
       // Act
       await command.execute(collection.id);
 
       // Assert
       expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
-        'Collection "Test Collection" contains 1 bookmark(s). What would you like to do?',
+        'Deleting collection will also delete bookmarks contained in it, proceed?',
         { modal: true },
-        'Delete Bookmarks',
-        'Ungroup Bookmarks',
-        'Cancel'
+        'Delete'
       );
       expect(collectionManager.getCollection(collection.id)).toBeUndefined();
       expect(bookmarkManager.getBookmark('file:///test.ts', 10)).toBeUndefined();
-    });
-
-    it('should handle collection with bookmarks - ungroup option', async () => {
-      // Arrange
-      const collection = collectionManager.createCollection('Test Collection');
-      expect(collection).not.toBeNull();
-      if (!collection) return;
-
-      bookmarkManager.addBookmark('file:///test.ts', 10, collection.id);
-      
-      // Mock user choice to ungroup bookmarks
-      (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Ungroup Bookmarks');
-
-      // Act
-      await command.execute(collection.id);
-
-      // Assert
-      expect(collectionManager.getCollection(collection.id)).toBeUndefined();
-      const bookmark = bookmarkManager.getBookmark('file:///test.ts', 10);
-      expect(bookmark).toBeDefined();
-      expect(bookmark?.collectionId).toBeUndefined();
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Collection "Test Collection" deleted successfully'
+      );
+      expect(storageService.saveBookmarks).toHaveBeenCalled();
+      expect(storageService.saveCollections).toHaveBeenCalled();
+      expect(treeDataProvider.refresh).toHaveBeenCalled();
+      expect(decorationProvider.updateDecorations).toHaveBeenCalled();
     });
 
     it('should cancel deletion when user cancels', async () => {
@@ -138,15 +120,23 @@ describe('DeleteCollectionCommand', () => {
 
       bookmarkManager.addBookmark('file:///test.ts', 10, collection.id);
       
-      // Mock user choice to cancel
+      // Mock user cancellation
       (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Cancel');
 
       // Act
       await command.execute(collection.id);
 
       // Assert
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+        'Deleting collection will also delete bookmarks contained in it, proceed?',
+        { modal: true },
+        'Delete'
+      );
       expect(collectionManager.getCollection(collection.id)).toBeDefined();
+      expect(bookmarkManager.getBookmark('file:///test.ts', 10)).toBeDefined();
       expect(storageService.saveCollections).not.toHaveBeenCalled();
+      expect(treeDataProvider.refresh).not.toHaveBeenCalled();
+      expect(decorationProvider.updateDecorations).not.toHaveBeenCalled();
     });
   });
 }); 

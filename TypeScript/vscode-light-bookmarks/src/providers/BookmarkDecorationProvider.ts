@@ -3,7 +3,6 @@ import { BookmarkManager } from '../services/BookmarkManager';
 import { CollectionManager } from '../services/CollectionManager';
 
 export class BookmarkDecorationProvider {
-  private bookmarkDecorationType!: vscode.FileDecorationProvider;
   private gutterDecorationType!: vscode.TextEditorDecorationType;
   private disposables: vscode.Disposable[] = [];
 
@@ -15,23 +14,17 @@ export class BookmarkDecorationProvider {
   }
 
   private initializeDecorations(): void {
-    // Get extension path for the bookmark icon
+    // Get extension path for the bookmark icons
     const extension = vscode.extensions.getExtension('light-bookmarks.vscode-light-bookmarks');
-    const iconPath = extension ? vscode.Uri.joinPath(extension.extensionUri, 'resources', 'bookmark-icon.svg') : undefined;
+    const filledIconPath = extension ? vscode.Uri.joinPath(extension.extensionUri, 'resources', 'bookmark-icon-filled.svg') : undefined;
     
-    // Create gutter decoration type for bookmark icons
+    // Create gutter decoration type for bookmark icons (use filled icon for editor)
     this.gutterDecorationType = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: iconPath,
+      gutterIconPath: filledIconPath,
       gutterIconSize: 'contain'
     });
 
-    // Create file decoration provider for tree view
-    this.bookmarkDecorationType = new BookmarkFileDecorationProvider(this.bookmarkManager);
-    
-    this.disposables.push(
-      vscode.window.registerFileDecorationProvider(this.bookmarkDecorationType),
-      this.gutterDecorationType
-    );
+    this.disposables.push(this.gutterDecorationType);
   }
 
   public updateDecorations(editor?: vscode.TextEditor): void {
@@ -72,43 +65,4 @@ export class BookmarkDecorationProvider {
   }
 }
 
-class BookmarkFileDecorationProvider implements vscode.FileDecorationProvider {
-  readonly onDidChangeFileDecorations?: vscode.Event<vscode.Uri | vscode.Uri[] | undefined>;
-
-  constructor(private bookmarkManager: BookmarkManager) {}
-
-  provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
-    // Only show decorations for files within the current workspace
-    if (!this.isUriInCurrentWorkspace(uri)) {
-      return undefined;
-    }
-
-    const bookmarks = this.bookmarkManager.getBookmarksByUri(uri.toString());
-    
-    if (bookmarks.length > 0) {
-      return {
-        badge: bookmarks.length.toString(),
-        tooltip: `${bookmarks.length} bookmark${bookmarks.length > 1 ? 's' : ''}`,
-        color: new vscode.ThemeColor('editorGutter.foreground')
-      };
-    }
-    
-    return undefined;
-  }
-
-  private isUriInCurrentWorkspace(uri: vscode.Uri): boolean {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-      // If no workspace is open, show all decorations
-      return true;
-    }
-
-    // Check if the URI is within any of the current workspace folders
-    return workspaceFolders.some(folder => {
-      const folderUri = folder.uri;
-      return uri.scheme === folderUri.scheme && 
-             uri.authority === folderUri.authority &&
-             uri.path.startsWith(folderUri.path);
-    });
-  }
-} 
+ 
