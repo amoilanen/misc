@@ -28,8 +28,8 @@ export class CreateCollectionCommand {
       // Save to storage
       await this.storageService.saveCollections(this.collectionManager.getAllCollections());
       
-      // Refresh the tree view
-      this.treeDataProvider.refresh();
+      // Refresh only the root level to show the new collection
+      this.treeDataProvider.refreshRoot();
     } else {
       vscode.window.showErrorMessage('Failed to create collection');
     }

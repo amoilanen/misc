@@ -1,16 +1,11 @@
-- There should be no separate "Remove from collection" button for a Bookmark in a collection
-- For every bookmark in the Bookmarks view there should be a delete icon on hover to delete the bookmark immediately from this view
-
-- Deleting a collection should delete also all the bookmarks in the collection
-  -- Collection deletion if it contains more than one bookmark should require a confirmation
+- Adding a bookmark to a collection should keep the expanded state of the Collections and Bookmarks (i.e. expanded or collapsed) in the Bookmarks view
 
 - Add to collection dialog should also allow to add to the "Ungrouped" collection
 
 - Clicking on the bookmark in the file editor should remove it
 
-- Use icons instead of the bulky text "Create collection", "Delete collection", "Add Bookmark to Collection" etc. The text might still be in the tooltips
-
-- Adding a bookmark to a collection should keep the expanded state of the Collections and Bookmarks (i.e. expanded or collapsed) in the Bookmarks view
-
 - Collapse/expand button for the whole tree of bookmarks
 - Settings should open the extension settings
+
+- Do not show the notification "Bookmark added at line", it is already obvious from the visual appearance
+- It should be possible to add a description to every bookmark either in the editor on the Bookmark view, this description is shown when hovering over the bookmark

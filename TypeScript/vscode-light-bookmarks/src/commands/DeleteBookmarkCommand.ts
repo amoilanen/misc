@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { BookmarkManager } from '../services/BookmarkManager';
+import { CollectionManager } from '../services/CollectionManager';
 import { StorageService } from '../services/StorageService';
 import { BookmarkTreeDataProvider } from '../providers/BookmarkTreeDataProvider';
 import { BookmarkDecorationProvider } from '../providers/BookmarkDecorationProvider';
@@ -7,6 +8,7 @@ import { BookmarkDecorationProvider } from '../providers/BookmarkDecorationProvi
 export class DeleteBookmarkCommand {
   constructor(
     private bookmarkManager: BookmarkManager,
+    private collectionManager: CollectionManager,
     private storageService: StorageService,
     private treeDataProvider: BookmarkTreeDataProvider,
     private decorationProvider: BookmarkDecorationProvider
@@ -38,18 +40,6 @@ export class DeleteBookmarkCommand {
       return;
     }
 
-    const bookmarkFileName = uri.split('/').pop();
-    // Show confirmation dialog
-    const result = await vscode.window.showWarningMessage(
-      `Are you sure you want to delete the bookmark at ${bookmarkFileName}:${line}?`,
-      { modal: true },
-      'Delete'
-    );
-
-    if (result !== 'Delete') {
-      return; // User cancelled
-    }
-
     // Remove the bookmark
     const removed = this.bookmarkManager.removeBookmark(uri, line);
     if (removed) {
@@ -58,8 +48,21 @@ export class DeleteBookmarkCommand {
       // Save to storage
       await this.storageService.saveBookmarks(this.bookmarkManager.getAllBookmarks());
       
-      // Refresh the tree view and decorations
-      this.treeDataProvider.refresh();
+      // Refresh only the relevant parts of the tree
+      if (existingBookmark.collectionId) {
+        // Bookmark was removed from a collection, refresh that collection
+        const collection = this.collectionManager.getCollection(existingBookmark.collectionId);
+        if (collection) {
+          this.treeDataProvider.refreshCollection(collection);
+        }
+      } else {
+        // Bookmark was removed from ungrouped, refresh ungrouped section
+        this.treeDataProvider.refreshUngrouped();
+      }
+      
+      // Also refresh root to update counts
+      this.treeDataProvider.refreshRoot();
+      
       this.decorationProvider.updateDecorations();
     } else {
       vscode.window.showErrorMessage('Failed to delete bookmark');

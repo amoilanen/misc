@@ -74,8 +74,21 @@ export class AddToCollectionCommand {
       // Save to storage
       await this.storageService.saveBookmarks(this.bookmarkManager.getAllBookmarks());
       
-      // Refresh the tree view and decorations
-      this.treeDataProvider.refresh();
+      // Refresh only the relevant parts of the tree
+      if (newBookmark.collectionId) {
+        // Bookmark was added to a collection, refresh that collection
+        const collection = this.collectionManager.getCollection(newBookmark.collectionId);
+        if (collection) {
+          this.treeDataProvider.refreshCollection(collection);
+        }
+      } else {
+        // Bookmark was moved to ungrouped, refresh ungrouped section
+        this.treeDataProvider.refreshUngrouped();
+      }
+      
+      // Also refresh root to update counts
+      this.treeDataProvider.refreshRoot();
+      
       this.decorationProvider.updateDecorations(editor);
     }
   }

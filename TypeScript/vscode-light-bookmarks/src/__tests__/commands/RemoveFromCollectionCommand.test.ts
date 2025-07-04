@@ -22,7 +22,18 @@ describe('RemoveFromCollectionCommand', () => {
       saveBookmarks: jest.fn().mockResolvedValue(undefined)
     } as unknown as StorageService;
     treeDataProvider = {
-      refresh: jest.fn()
+      refresh: jest.fn(),
+      refreshRoot: jest.fn(),
+      refreshCollection: jest.fn(),
+      refreshUngrouped: jest.fn(),
+      markCollectionExpanded: jest.fn(),
+      markCollectionCollapsed: jest.fn(),
+      markBookmarkExpanded: jest.fn(),
+      markBookmarkCollapsed: jest.fn(),
+      getExpandedCollections: jest.fn(),
+      getExpandedBookmarks: jest.fn(),
+      isCollectionExpanded: jest.fn(),
+      isBookmarkExpanded: jest.fn(),
     } as unknown as BookmarkTreeDataProvider;
     decorationProvider = {
       updateDecorations: jest.fn()
@@ -56,7 +67,9 @@ describe('RemoveFromCollectionCommand', () => {
       expect(bookmarkManager.getBookmark('file:///test.ts', 10)).toBeDefined();
       expect(bookmarkManager.getBookmark('file:///test.ts', 10)?.collectionId).toBeUndefined();
       expect(storageService.saveBookmarks).toHaveBeenCalled();
-      expect(treeDataProvider.refresh).toHaveBeenCalled();
+      expect(treeDataProvider.refreshCollection).toHaveBeenCalled();
+      expect(treeDataProvider.refreshUngrouped).toHaveBeenCalled();
+      expect(treeDataProvider.refreshRoot).toHaveBeenCalled();
       expect(decorationProvider.updateDecorations).toHaveBeenCalled();
     });
 
@@ -106,7 +119,9 @@ describe('RemoveFromCollectionCommand', () => {
         'Bookmarks cannot be removed from the "Ungrouped" collection. Use "Add to Collection" to move them to another collection.'
       );
       expect(storageService.saveBookmarks).not.toHaveBeenCalled();
-      expect(treeDataProvider.refresh).not.toHaveBeenCalled();
+      expect(treeDataProvider.refreshCollection).not.toHaveBeenCalled();
+      expect(treeDataProvider.refreshUngrouped).not.toHaveBeenCalled();
+      expect(treeDataProvider.refreshRoot).not.toHaveBeenCalled();
       expect(decorationProvider.updateDecorations).not.toHaveBeenCalled();
     });
   });

@@ -68,8 +68,16 @@ export class RemoveFromCollectionCommand {
       // Save to storage
       await this.storageService.saveBookmarks(this.bookmarkManager.getAllBookmarks());
       
-      // Refresh the tree view and decorations
-      this.treeDataProvider.refresh();
+      // Refresh only the relevant parts of the tree
+      // Refresh the collection that the bookmark was removed from
+      this.treeDataProvider.refreshCollection(collection);
+      
+      // Refresh ungrouped section since bookmark was moved there
+      this.treeDataProvider.refreshUngrouped();
+      
+      // Also refresh root to update counts
+      this.treeDataProvider.refreshRoot();
+      
       this.decorationProvider.updateDecorations();
     }
   }

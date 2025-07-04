@@ -22,7 +22,18 @@ describe('DeleteCollectionCommand', () => {
       saveCollections: jest.fn().mockResolvedValue(undefined)
     } as unknown as StorageService;
     treeDataProvider = {
-      refresh: jest.fn()
+      refresh: jest.fn(),
+      refreshRoot: jest.fn(),
+      refreshCollection: jest.fn(),
+      refreshUngrouped: jest.fn(),
+      markCollectionExpanded: jest.fn(),
+      markCollectionCollapsed: jest.fn(),
+      markBookmarkExpanded: jest.fn(),
+      markBookmarkCollapsed: jest.fn(),
+      getExpandedCollections: jest.fn(),
+      getExpandedBookmarks: jest.fn(),
+      isCollectionExpanded: jest.fn(),
+      isBookmarkExpanded: jest.fn(),
     } as unknown as BookmarkTreeDataProvider;
     decorationProvider = {
       updateDecorations: jest.fn()
@@ -69,7 +80,7 @@ describe('DeleteCollectionCommand', () => {
         'Collection "Test Collection" deleted successfully'
       );
       expect(storageService.saveCollections).toHaveBeenCalled();
-      expect(treeDataProvider.refresh).toHaveBeenCalled();
+      expect(treeDataProvider.refreshRoot).toHaveBeenCalled();
       expect(decorationProvider.updateDecorations).toHaveBeenCalled();
     });
 
@@ -108,7 +119,7 @@ describe('DeleteCollectionCommand', () => {
       );
       expect(storageService.saveBookmarks).toHaveBeenCalled();
       expect(storageService.saveCollections).toHaveBeenCalled();
-      expect(treeDataProvider.refresh).toHaveBeenCalled();
+      expect(treeDataProvider.refreshRoot).toHaveBeenCalled();
       expect(decorationProvider.updateDecorations).toHaveBeenCalled();
     });
 
@@ -135,7 +146,7 @@ describe('DeleteCollectionCommand', () => {
       expect(collectionManager.getCollection(collection.id)).toBeDefined();
       expect(bookmarkManager.getBookmark('file:///test.ts', 10)).toBeDefined();
       expect(storageService.saveCollections).not.toHaveBeenCalled();
-      expect(treeDataProvider.refresh).not.toHaveBeenCalled();
+      expect(treeDataProvider.refreshRoot).not.toHaveBeenCalled();
       expect(decorationProvider.updateDecorations).not.toHaveBeenCalled();
     });
   });

@@ -74,6 +74,34 @@ export class ExtensionManager {
       }
     );
     this.disposables.push(treeView);
+    
+    // Set the tree view reference in the provider for selective refresh
+    this.treeDataProvider.setTreeView(treeView);
+
+    // Track expanded/collapsed state for collections and bookmarks
+    treeView.onDidExpandElement(e => {
+      const item = e.element;
+      if (item instanceof BookmarkTreeItem) {
+        if (item.collection) {
+          this.treeDataProvider.markCollectionExpanded(item.collection.id);
+        } else if (item.bookmark) {
+          const bookmarkKey = `${item.bookmark.uri}:${item.bookmark.line}`;
+          this.treeDataProvider.markBookmarkExpanded(bookmarkKey);
+        }
+      }
+    });
+    
+    treeView.onDidCollapseElement(e => {
+      const item = e.element;
+      if (item instanceof BookmarkTreeItem) {
+        if (item.collection) {
+          this.treeDataProvider.markCollectionCollapsed(item.collection.id);
+        } else if (item.bookmark) {
+          const bookmarkKey = `${item.bookmark.uri}:${item.bookmark.line}`;
+          this.treeDataProvider.markBookmarkCollapsed(bookmarkKey);
+        }
+      }
+    });
 
     // Register commands
     this.registerCommands();
@@ -95,6 +123,7 @@ export class ExtensionManager {
       () => {
         const command = new ToggleBookmarkCommand(
           this.bookmarkManager,
+          this.collectionManager,
           this.storageService,
           this.treeDataProvider,
           this.decorationProvider
@@ -170,7 +199,7 @@ export class ExtensionManager {
         
         if (collection) {
           await this.storageService.saveCollections(this.collectionManager.getAllCollections());
-          this.treeDataProvider.refresh();
+          this.treeDataProvider.refreshRoot();
           vscode.window.showInformationMessage(`Collection "${trimmedName}" created successfully`);
         } else {
           vscode.window.showErrorMessage('Failed to create collection');
@@ -218,6 +247,7 @@ export class ExtensionManager {
         if (bookmarkUri && bookmarkLine !== undefined) {
           const command = new DeleteBookmarkCommand(
             this.bookmarkManager,
+            this.collectionManager,
             this.storageService,
             this.treeDataProvider,
             this.decorationProvider

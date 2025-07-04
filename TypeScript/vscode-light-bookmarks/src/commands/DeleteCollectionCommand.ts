@@ -66,8 +66,10 @@ export class DeleteCollectionCommand {
         this.storageService.saveCollections(this.collectionManager.getAllCollections())
       ]);
       
-      // Refresh the tree view and decorations
-      this.treeDataProvider.refresh();
+      // Refresh only the root level to update the tree structure
+      // Since the collection was deleted, we only need to refresh the root
+      this.treeDataProvider.refreshRoot();
+      
       this.decorationProvider.updateDecorations();
     } else {
       vscode.window.showErrorMessage('Failed to delete collection');

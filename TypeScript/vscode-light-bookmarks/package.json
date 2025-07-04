@@ -29,12 +29,13 @@
 
       {
         "command": "lightBookmarks.createCollection",
-        "title": "Create Collection",
-        "category": "Light Bookmarks"
+        "title": "Create collection",
+        "category": "Light Bookmarks",
+        "icon": "$(add)"
       },
       {
         "command": "lightBookmarks.deleteCollection",
-        "title": "Delete Collection",
+        "title": "Delete collection",
         "category": "Light Bookmarks",
         "icon": "$(trash)"
       },
@@ -46,7 +47,7 @@
       },
       {
         "command": "lightBookmarks.deleteBookmark",
-        "title": "Delete Bookmark",
+        "title": "Delete bookmark",
         "category": "Light Bookmarks",
         "icon": "$(trash)"
       }
@@ -92,7 +93,8 @@
         {
           "command": "lightBookmarks.createCollection",
           "group": "navigation",
-          "when": "view == lightBookmarks.bookmarksView"
+          "when": "view == lightBookmarks.bookmarksView",
+          "icon": "$(add)"
         }
       ],
       "view/item/context": [
