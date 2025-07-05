@@ -1,5 +1,6 @@
-- Collapse/expand button for the whole tree of bookmarks
 - Settings should open the extension settings
+
+- If there are no bookmarks yet, show the corresponding message in the tree view
 
 - Do not show the notification "Bookmark added at line", it is already obvious from the visual appearance
 - It should be possible to add a description to every bookmark either in the editor on the Bookmark view, this description is shown when hovering over the bookmark

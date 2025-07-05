@@ -260,6 +260,15 @@ export class ExtensionManager {
       }
     );
     this.disposables.push(deleteBookmarkCommand);
+
+    // Collapse all command
+    const collapseAllCommand = vscode.commands.registerCommand(
+      'lightBookmarks.collapseAll',
+      () => {
+        vscode.commands.executeCommand('workbench.actions.treeView.lightBookmarks.bookmarksView.collapseAll');
+      }
+    );
+    this.disposables.push(collapseAllCommand);
   }
 
   private registerEventListeners(): void {

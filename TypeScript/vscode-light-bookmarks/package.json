@@ -50,6 +50,12 @@
         "title": "Delete bookmark",
         "category": "Light Bookmarks",
         "icon": "$(trash)"
+      },
+      {
+        "command": "lightBookmarks.collapseAll",
+        "title": "Collapse all",
+        "category": "Light Bookmarks",
+        "icon": "$(collapse-all)"
       }
     ],
     "keybindings": [
@@ -90,6 +96,12 @@
           "group": "navigation",
           "when": "view == lightBookmarks.bookmarksView",
           "icon": "$(add)"
+        },
+        {
+          "command": "lightBookmarks.collapseAll",
+          "group": "navigation",
+          "when": "view == lightBookmarks.bookmarksView",
+          "icon": "$(collapse-all)"
         }
       ],
       "view/item/context": [
@@ -137,6 +149,9 @@
 
         {
           "command": "lightBookmarks.addBookmarkToCollection"
+        },
+        {
+          "command": "lightBookmarks.collapseAll"
         }
       ]
     }
