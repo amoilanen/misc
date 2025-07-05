@@ -1,7 +1,7 @@
-- Clicking on the bookmark in the file editor should remove it
-
 - Collapse/expand button for the whole tree of bookmarks
 - Settings should open the extension settings
 
 - Do not show the notification "Bookmark added at line", it is already obvious from the visual appearance
 - It should be possible to add a description to every bookmark either in the editor on the Bookmark view, this description is shown when hovering over the bookmark
+
+- Localization for ES, FR, DE, NL, IT, DK, NO, SE, FI, PL, CH

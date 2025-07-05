@@ -5,7 +5,7 @@ import { StorageService } from './services/StorageService';
 import { BookmarkTreeDataProvider, BookmarkTreeItem } from './providers/BookmarkTreeDataProvider';
 import { BookmarkDecorationProvider } from './providers/BookmarkDecorationProvider';
 import { ToggleBookmarkCommand } from './commands/ToggleBookmarkCommand';
-import { AddToCollectionCommand } from './commands/AddToCollectionCommand';
+
 import { AddBookmarkToCollectionCommand } from './commands/AddBookmarkToCollectionCommand';
 import { DeleteCollectionCommand } from './commands/DeleteCollectionCommand';
 import { DeleteBookmarkCommand } from './commands/DeleteBookmarkCommand';
@@ -134,21 +134,7 @@ export class ExtensionManager {
     );
     this.disposables.push(toggleCommand);
 
-    // Add to collection command
-    const addToCollectionCommand = vscode.commands.registerCommand(
-      'lightBookmarks.addToCollection',
-      (_treeItem?: BookmarkTreeItem) => {
-        const command = new AddToCollectionCommand(
-          this.bookmarkManager,
-          this.collectionManager,
-          this.storageService,
-          this.treeDataProvider,
-          this.decorationProvider
-        );
-        command.execute();
-      }
-    );
-    this.disposables.push(addToCollectionCommand);
+
 
     // Add bookmark to collection command (for tree view items)
     const addBookmarkToCollectionCommand = vscode.commands.registerCommand(

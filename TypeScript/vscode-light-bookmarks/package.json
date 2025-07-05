@@ -22,12 +22,6 @@
         "category": "Light Bookmarks"
       },
       {
-        "command": "lightBookmarks.addToCollection",
-        "title": "Add to Collection",
-        "category": "Light Bookmarks"
-      },
-
-      {
         "command": "lightBookmarks.createCollection",
         "title": "Create collection",
         "category": "Light Bookmarks",
@@ -88,11 +82,6 @@
           "command": "lightBookmarks.toggleBookmark",
           "group": "navigation",
           "when": "editorTextFocus"
-        },
-        {
-          "command": "lightBookmarks.addToCollection",
-          "group": "navigation",
-          "when": "editorTextFocus"
         }
       ],
       "view/title": [
@@ -145,9 +134,7 @@
         {
           "command": "lightBookmarks.createCollection"
         },
-        {
-          "command": "lightBookmarks.addToCollection"
-        },
+
         {
           "command": "lightBookmarks.addBookmarkToCollection"
         }
