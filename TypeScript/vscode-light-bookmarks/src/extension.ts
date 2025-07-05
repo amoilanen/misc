@@ -9,6 +9,7 @@ import { AddToCollectionCommand } from './commands/AddToCollectionCommand';
 import { AddBookmarkToCollectionCommand } from './commands/AddBookmarkToCollectionCommand';
 import { DeleteCollectionCommand } from './commands/DeleteCollectionCommand';
 import { DeleteBookmarkCommand } from './commands/DeleteBookmarkCommand';
+import { EditBookmarkDescriptionCommand } from './commands/EditBookmarkDescriptionCommand';
 import { Collection } from './models/Collection';
 
 
@@ -208,6 +209,22 @@ export class ExtensionManager {
     );
     this.disposables.push(createCollectionCommand);
 
+    // Edit bookmark description command
+    const editBookmarkDescriptionCommand = vscode.commands.registerCommand(
+      'lightBookmarks.editBookmarkDescription',
+      (treeItem?: BookmarkTreeItem) => {
+        const command = new EditBookmarkDescriptionCommand(
+          this.bookmarkManager,
+          this.collectionManager,
+          this.storageService,
+          this.treeDataProvider,
+          this.decorationProvider
+        );
+        command.execute(treeItem);
+      }
+    );
+    this.disposables.push(editBookmarkDescriptionCommand);
+
     // Delete collection command
     const deleteCollectionCommand = vscode.commands.registerCommand(
       'lightBookmarks.deleteCollection',
@@ -230,7 +247,7 @@ export class ExtensionManager {
         }
       }
     );
-        this.disposables.push(deleteCollectionCommand);
+    this.disposables.push(deleteCollectionCommand);
 
     // Delete bookmark command
     const deleteBookmarkCommand = vscode.commands.registerCommand(
@@ -257,8 +274,6 @@ export class ExtensionManager {
       }
     );
     this.disposables.push(deleteBookmarkCommand);
-
-
   }
 
   private registerEventListeners(): void {

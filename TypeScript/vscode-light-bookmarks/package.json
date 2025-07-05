@@ -40,6 +40,12 @@
         "icon": "$(trash)"
       },
       {
+        "command": "lightBookmarks.editBookmarkDescription",
+        "title": "Edit description",
+        "category": "Light Bookmarks",
+        "icon": "$(edit)"
+      },
+      {
         "command": "lightBookmarks.addBookmarkToCollection",
         "title": "Add to collection",
         "category": "Light Bookmarks",
@@ -99,37 +105,40 @@
       ],
       "view/item/context": [
         {
-          "command": "lightBookmarks.addToCollection",
-          "group": "inline",
-          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark"
+          "command": "lightBookmarks.editBookmarkDescription",
+          "group": "inline@1",
+          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-ungrouped"
         },
         {
-          "command": "lightBookmarks.deleteCollection",
-          "group": "inline",
-          "when": "view == lightBookmarks.bookmarksView && viewItem == collection"
+          "command": "lightBookmarks.editBookmarkDescription",
+          "group": "inline@1",
+          "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
         },
         {
           "command": "lightBookmarks.addBookmarkToCollection",
-          "group": "inline",
+          "group": "inline@2",
           "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-ungrouped"
         },
         {
           "command": "lightBookmarks.addBookmarkToCollection",
-          "group": "inline",
+          "group": "inline@2",
           "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
         },
         {
           "command": "lightBookmarks.deleteBookmark",
-          "group": "inline",
+          "group": "inline@3",
           "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-ungrouped"
         },
         {
           "command": "lightBookmarks.deleteBookmark",
-          "group": "inline",
+          "group": "inline@3",
           "when": "view == lightBookmarks.bookmarksView && viewItem == bookmark-in-collection"
         }
       ],
       "commandPalette": [
+        {
+          "command": "lightBookmarks.editBookmarkDescription"
+        },
         {
           "command": "lightBookmarks.toggleBookmark"
         },

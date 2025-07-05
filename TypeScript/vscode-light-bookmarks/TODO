@@ -1,7 +1,3 @@
-- Adding a bookmark to a collection should keep the expanded state of the Collections and Bookmarks (i.e. expanded or collapsed) in the Bookmarks view
-
-- Add to collection dialog should also allow to add to the "Ungrouped" collection
-
 - Clicking on the bookmark in the file editor should remove it
 
 - Collapse/expand button for the whole tree of bookmarks

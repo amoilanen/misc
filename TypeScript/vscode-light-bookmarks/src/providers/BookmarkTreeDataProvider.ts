@@ -54,8 +54,9 @@ export class BookmarkTreeItem extends vscode.TreeItem {
       // Add command arguments for context menu actions
       this.resourceUri = vscode.Uri.parse(`bookmark://${bookmark.uri}:${bookmark.line}`);
       
-      // Add hover actions for bookmark items
-      this.tooltip = new vscode.MarkdownString(`${bookmark.uri}:${bookmark.line}\n\n**Click to open**`);
+      // Add hover actions for bookmark items with description
+      const description = bookmark.description ? `\n\n**Description:** ${bookmark.description}` : '';
+      this.tooltip = new vscode.MarkdownString(`${bookmark.uri}:${bookmark.line}${description}\n\n**Click to open**`);
       this.tooltip.isTrusted = true;
     } else if (collection) {
       this.tooltip = collection.name;

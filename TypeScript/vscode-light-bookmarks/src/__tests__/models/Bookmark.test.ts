@@ -13,6 +13,7 @@ describe('Bookmark', () => {
       expect(bookmark.id).toBeDefined();
       expect(bookmark.createdAt).toBeInstanceOf(Date);
       expect(bookmark.collectionId).toBeUndefined();
+      expect(bookmark.description).toBe('');
     });
 
     it('should create a bookmark with optional collection', () => {
@@ -20,6 +21,22 @@ describe('Bookmark', () => {
       const bookmark = new Bookmark(mockUri, mockLine, collectionId);
 
       expect(bookmark.collectionId).toBe(collectionId);
+    });
+
+    it('should create a bookmark with optional description', () => {
+      const description = 'Test description';
+      const bookmark = new Bookmark(mockUri, mockLine, undefined, description);
+
+      expect(bookmark.description).toBe(description);
+    });
+
+    it('should create a bookmark with collection and description', () => {
+      const collectionId = 'test-collection';
+      const description = 'Test description';
+      const bookmark = new Bookmark(mockUri, mockLine, collectionId, description);
+
+      expect(bookmark.collectionId).toBe(collectionId);
+      expect(bookmark.description).toBe(description);
     });
   });
 
@@ -58,6 +75,24 @@ describe('Bookmark', () => {
         uri: mockUri,
         line: mockLine,
         collectionId,
+        description: '',
+        createdAt: bookmark.createdAt.toISOString(),
+      });
+    });
+
+    it('should serialize bookmark with description to JSON', () => {
+      const collectionId = 'test-collection';
+      const description = 'Test description';
+      const bookmark = new Bookmark(mockUri, mockLine, collectionId, description);
+
+      const json = bookmark.toJSON();
+
+      expect(json).toEqual({
+        id: bookmark.id,
+        uri: mockUri,
+        line: mockLine,
+        collectionId,
+        description,
         createdAt: bookmark.createdAt.toISOString(),
       });
     });
@@ -72,6 +107,7 @@ describe('Bookmark', () => {
         uri: mockUri,
         line: mockLine,
         collectionId,
+        description: 'Test description',
         createdAt: createdAt.toISOString(),
       };
 
@@ -81,10 +117,26 @@ describe('Bookmark', () => {
       expect(bookmark.uri).toBe(mockUri);
       expect(bookmark.line).toBe(mockLine);
       expect(bookmark.collectionId).toBe(collectionId);
+      expect(bookmark.description).toBe('Test description');
       expect(bookmark.createdAt).toEqual(createdAt);
     });
 
     it('should handle bookmark without collection', () => {
+      const json = {
+        id: 'test-id',
+        uri: mockUri,
+        line: mockLine,
+        description: 'Test description',
+        createdAt: new Date().toISOString(),
+      };
+
+      const bookmark = Bookmark.fromJSON(json);
+
+      expect(bookmark.collectionId).toBeUndefined();
+      expect(bookmark.description).toBe('Test description');
+    });
+
+    it('should handle bookmark without description', () => {
       const json = {
         id: 'test-id',
         uri: mockUri,
@@ -94,7 +146,7 @@ describe('Bookmark', () => {
 
       const bookmark = Bookmark.fromJSON(json);
 
-      expect(bookmark.collectionId).toBeUndefined();
+      expect(bookmark.description).toBe('');
     });
   });
 }); 

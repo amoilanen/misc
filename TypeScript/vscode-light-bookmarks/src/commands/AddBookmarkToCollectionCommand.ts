@@ -68,13 +68,14 @@ export class AddBookmarkToCollectionCommand {
     }
 
     // Remove the existing bookmark and add it to the new collection or ungroup it
+    const description = existingBookmark.description;
     this.bookmarkManager.removeBookmark(bookmarkUri, bookmarkLine);
     let newBookmark;
     
     if (selectedOption.id === 'ungrouped') {
-      newBookmark = this.bookmarkManager.addBookmark(bookmarkUri, bookmarkLine);
+      newBookmark = this.bookmarkManager.addBookmark(bookmarkUri, bookmarkLine, undefined, description);
     } else {
-      newBookmark = this.bookmarkManager.addBookmark(bookmarkUri, bookmarkLine, selectedOption.id);
+      newBookmark = this.bookmarkManager.addBookmark(bookmarkUri, bookmarkLine, selectedOption.id, description);
     }
 
     if (newBookmark) {

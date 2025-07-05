@@ -4,17 +4,33 @@ export class BookmarkManager {
   private bookmarks: Bookmark[] = [];
   private onBookmarksChanged: (() => void) | null = null;
 
-  public addBookmark(uri: string, line: number, collectionId?: string): Bookmark | null {
+  public addBookmark(uri: string, line: number, collectionId?: string, description?: string): Bookmark | null {
     // Check if bookmark already exists
     const existingBookmark = this.bookmarks.find(b => b.uri === uri && b.line === line);
     if (existingBookmark) {
       return null;
     }
 
-    const bookmark = new Bookmark(uri, line, collectionId);
+    const bookmark = new Bookmark(uri, line, collectionId, description);
     this.bookmarks.push(bookmark);
     this.notifyBookmarksChanged();
     return bookmark;
+  }
+
+  public updateBookmarkDescription(uri: string, line: number, description: string): boolean {
+    const bookmark = this.bookmarks.find(b => b.uri === uri && b.line === line);
+    if (!bookmark) {
+      return false;
+    }
+
+    bookmark.description = description;
+    this.notifyBookmarksChanged();
+    return true;
+  }
+
+  public getBookmarkDescription(uri: string, line: number): string | undefined {
+    const bookmark = this.bookmarks.find(b => b.uri === uri && b.line === line);
+    return bookmark?.description;
   }
 
   public removeBookmark(uri: string, line: number): boolean {
