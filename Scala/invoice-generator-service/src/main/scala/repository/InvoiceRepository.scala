@@ -5,22 +5,22 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 import zio.*
+import zio.interop.catz.*
 import java.time.LocalDateTime
-import java.util.UUID
 
 trait InvoiceRepository:
   def saveInvoice(invoice: Invoice): Task[Unit]
-  def findById(id: UUID): Task[Option[Invoice]]
+  def findById(id: InvoiceId): Task[Option[Invoice]]
   def findByCompanyId(companyId: String, pagination: PaginationParams): Task[PaginatedInvoices]
   def findByDateRange(fromDate: LocalDateTime, toDate: LocalDateTime, pagination: PaginationParams): Task[PaginatedInvoices]
-  def updatePdfUrl(id: UUID, pdfUrl: String): Task[Unit]
-  def updateStatus(id: UUID, status: InvoiceStatus): Task[Unit]
+  def updatePdfUrl(id: InvoiceId, pdfUrl: String): Task[Unit]
+  def updateStatus(id: InvoiceId, status: InvoiceStatus): Task[Unit]
 
 object InvoiceRepository:
   def saveInvoice(invoice: Invoice): ZIO[InvoiceRepository, Throwable, Unit] =
     ZIO.serviceWithZIO[InvoiceRepository](_.saveInvoice(invoice))
     
-  def findById(id: UUID): ZIO[InvoiceRepository, Throwable, Option[Invoice]] =
+  def findById(id: InvoiceId): ZIO[InvoiceRepository, Throwable, Option[Invoice]] =
     ZIO.serviceWithZIO[InvoiceRepository](_.findById(id))
     
   def findByCompanyId(companyId: String, pagination: PaginationParams): ZIO[InvoiceRepository, Throwable, PaginatedInvoices] =
@@ -29,10 +29,10 @@ object InvoiceRepository:
   def findByDateRange(fromDate: LocalDateTime, toDate: LocalDateTime, pagination: PaginationParams): ZIO[InvoiceRepository, Throwable, PaginatedInvoices] =
     ZIO.serviceWithZIO[InvoiceRepository](_.findByDateRange(fromDate, toDate, pagination))
     
-  def updatePdfUrl(id: UUID, pdfUrl: String): ZIO[InvoiceRepository, Throwable, Unit] =
+  def updatePdfUrl(id: InvoiceId, pdfUrl: String): ZIO[InvoiceRepository, Throwable, Unit] =
     ZIO.serviceWithZIO[InvoiceRepository](_.updatePdfUrl(id, pdfUrl))
     
-  def updateStatus(id: UUID, status: InvoiceStatus): ZIO[InvoiceRepository, Throwable, Unit] =
+  def updateStatus(id: InvoiceId, status: InvoiceStatus): ZIO[InvoiceRepository, Throwable, Unit] =
     ZIO.serviceWithZIO[InvoiceRepository](_.updateStatus(id, status))
 
 class DoobieInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepository:
@@ -41,7 +41,7 @@ class DoobieInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepository:
   def saveInvoice(invoice: Invoice): Task[Unit] =
     insertInvoice(invoice).run.transact(xa).unit
 
-  def findById(id: UUID): Task[Option[Invoice]] =
+  def findById(id: InvoiceId): Task[Option[Invoice]] =
     selectById(id).option.transact(xa)
 
   def findByCompanyId(companyId: String, pagination: PaginationParams): Task[PaginatedInvoices] =
@@ -68,22 +68,23 @@ class DoobieInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepository:
       totalPages = (totalCount + pagination.pageSize - 1) / pagination.pageSize
     )
 
-  def updatePdfUrl(id: UUID, pdfUrl: String): Task[Unit] =
+  def updatePdfUrl(id: InvoiceId, pdfUrl: String): Task[Unit] =
     updatePdfUrlQuery(id, pdfUrl).run.transact(xa).unit
 
-  def updateStatus(id: UUID, status: InvoiceStatus): Task[Unit] =
+  def updateStatus(id: InvoiceId, status: InvoiceStatus): Task[Unit] =
     updateStatusQuery(id, status).run.transact(xa).unit
 
 object DoobieInvoiceRepository:
   import Meta.*
 
   // Meta instances for custom types
-  given Meta[UUID] = Meta[String].imap(UUID.fromString)(_.toString)
+  given Meta[InvoiceId] = Meta[String].imap(InvoiceId.apply)(_.value)
+  given Meta[EventId] = Meta[String].imap(EventId.apply)(_.value)
   given Meta[InvoiceType] = Meta[String].imap(InvoiceType.valueOf)(_.toString)
   given Meta[InvoiceStatus] = Meta[String].imap(InvoiceStatus.valueOf)(_.toString)
   given Meta[Address] = Meta[String].imap(Address.fromJson)(_.toJson)
   given Meta[List[InvoiceItem]] = Meta[String].imap(InvoiceItem.fromJsonList)(_.toJsonList)
-  given Meta[Map[String, String]] = Meta[String].imap(Map.fromJson)(_.toJson)
+  given Meta[Map[String, String]] = Meta[String].imap(MetadataMap.fromJson)(_.toJson)
 
   def insertInvoice(invoice: Invoice): Update0 =
     sql"""
@@ -100,7 +101,7 @@ object DoobieInvoiceRepository:
       )
     """.update
 
-  def selectById(id: UUID): Query0[Invoice] =
+  def selectById(id: InvoiceId): Query0[Invoice] =
     sql"SELECT * FROM invoices WHERE id = $id".query[Invoice]
 
   def selectByCompanyId(companyId: String, pagination: PaginationParams): Query0[Invoice] =
@@ -125,10 +126,10 @@ object DoobieInvoiceRepository:
   def countByDateRange(fromDate: LocalDateTime, toDate: LocalDateTime): Query0[Long] =
     sql"SELECT COUNT(*) FROM invoices WHERE issued_at BETWEEN $fromDate AND $toDate".query[Long]
 
-  def updatePdfUrlQuery(id: UUID, pdfUrl: String): Update0 =
+  def updatePdfUrlQuery(id: InvoiceId, pdfUrl: String): Update0 =
     sql"UPDATE invoices SET pdf_url = $pdfUrl, updated_at = ${LocalDateTime.now} WHERE id = $id".update
 
-  def updateStatusQuery(id: UUID, status: InvoiceStatus): Update0 =
+  def updateStatusQuery(id: InvoiceId, status: InvoiceStatus): Update0 =
     sql"UPDATE invoices SET status = $status, updated_at = ${LocalDateTime.now} WHERE id = $id".update
 
 // Extension methods for JSON serialization (simplified)
@@ -147,5 +148,5 @@ object Address:
 object InvoiceItem:
   def fromJsonList(json: String): List[InvoiceItem] = List.empty // Simplified
 
-object Map:
+object MetadataMap:
   def fromJson(json: String): Map[String, String] = Map.empty // Simplified 

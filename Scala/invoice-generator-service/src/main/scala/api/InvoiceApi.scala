@@ -9,8 +9,8 @@ import sttp.tapir.server.ziohttp.*
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import zio.*
 import zio.http.*
+import io.circe.{JsonCodec, DeriveJsonCodec}
 import java.time.LocalDateTime
-import java.util.UUID
 
 trait InvoiceApi:
   def routes: HttpApp[Any]
@@ -21,11 +21,11 @@ object InvoiceApi:
 
 class InvoiceApiImpl(invoiceRepository: InvoiceRepository) extends InvoiceApi:
   
-  private val baseEndpoint = endpoint.in("api" / "v1" / "invoices")
+  private val baseEndpoint = sttp.tapir.endpoint.in("api" / "v1" / "invoices")
   
   private val getInvoiceEndpoint = baseEndpoint
     .get
-    .in(path[UUID]("id"))
+    .in(path[InvoiceId]("id"))
     .out(jsonBody[Invoice])
     .errorOut(jsonBody[ApiError])
     .description("Get invoice by ID")
@@ -53,7 +53,7 @@ class InvoiceApiImpl(invoiceRepository: InvoiceRepository) extends InvoiceApi:
     .description("List invoices by date range with pagination")
     .tag("Invoices")
   
-  private val healthEndpoint = endpoint
+  private val healthEndpoint = sttp.tapir.endpoint
     .get
     .in("api" / "v1" / "health")
     .out(jsonBody[HealthStatus])
@@ -120,4 +120,6 @@ given JsonCodec[InvoiceStatus] = DeriveJsonCodec.gen[InvoiceStatus]
 given JsonCodec[InvoiceType] = DeriveJsonCodec.gen[InvoiceType]
 given JsonCodec[Address] = DeriveJsonCodec.gen[Address]
 given JsonCodec[InvoiceItem] = DeriveJsonCodec.gen[InvoiceItem]
-given JsonCodec[PaginationParams] = DeriveJsonCodec.gen[PaginationParams] 
+given JsonCodec[PaginationParams] = DeriveJsonCodec.gen[PaginationParams]
+given JsonCodec[InvoiceId] = DeriveJsonCodec.gen[InvoiceId]
+given JsonCodec[EventId] = DeriveJsonCodec.gen[EventId] 

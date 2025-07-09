@@ -1,6 +1,6 @@
 package config
 
-import zio.config.*
+import zio.Config
 import zio.config.magnolia.*
 import zio.config.typesafe.*
 

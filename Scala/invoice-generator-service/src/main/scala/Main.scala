@@ -6,7 +6,7 @@ import service.*
 import zio.*
 import zio.http.*
 import zio.logging.*
-import zio.logging.slf4j.*
+import zio.logging.slf4j.Slf4jLogger
 
 object Main extends ZIOAppDefault:
   

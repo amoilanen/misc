@@ -4,7 +4,6 @@ import config.GcpConfig
 import zio.*
 import com.google.cloud.storage.*
 import com.google.cloud.storage.BlobInfo
-import java.util.UUID
 
 trait StorageService:
   def uploadPdf(pdfBytes: Array[Byte], fileName: String): Task[String]

@@ -10,10 +10,14 @@ import zio.interop.catz.*
 
 trait DatabaseLayer:
   def transactor: Transactor[Task]
+  def migrate: Task[Unit]
 
 object DatabaseLayer:
   def transactor: ZIO[DatabaseLayer, Nothing, Transactor[Task]] =
     ZIO.serviceWith[DatabaseLayer](_.transactor)
+  
+  def migrate: ZIO[DatabaseLayer, Throwable, Unit] =
+    ZIO.serviceWithZIO[DatabaseLayer](_.migrate)
 
 class DatabaseLayerImpl(config: DatabaseConfig) extends DatabaseLayer:
   
@@ -41,8 +45,4 @@ class DatabaseLayerImpl(config: DatabaseConfig) extends DatabaseLayer:
         .dataSource(hikariDataSource)
         .locations("classpath:db/migration")
         .load()
-      flyway.migrate()
-
-object DatabaseLayer:
-  def migrate: ZIO[DatabaseLayer, Throwable, Unit] =
-    ZIO.serviceWithZIO[DatabaseLayer](_.migrate) 
+      flyway.migrate() 

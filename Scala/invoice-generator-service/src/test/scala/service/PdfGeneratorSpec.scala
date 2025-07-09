@@ -5,7 +5,6 @@ import zio.*
 import zio.test.*
 import zio.test.Assertion.*
 import java.time.LocalDateTime
-import java.util.UUID
 
 object PdfGeneratorSpec extends ZIOSpecDefault:
   
@@ -53,8 +52,8 @@ object PdfGeneratorSpec extends ZIOSpecDefault:
   
   private def createTestInvoice(): Invoice =
     Invoice(
-      id = UUID.randomUUID,
-      eventId = UUID.randomUUID,
+      id = InvoiceId.generate,
+      eventId = EventId.generate,
       companyId = "test-company",
       customerId = "test-customer",
       customerName = "John Doe",

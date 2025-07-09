@@ -1,10 +1,38 @@
 package domain
 
 import java.time.LocalDateTime
-import java.util.UUID
+
+// Well-defined types for identifiers using opaque types
+opaque type InvoiceId = String
+
+object InvoiceId:
+  def apply(value: String): InvoiceId = value
+  def generate: InvoiceId = java.util.UUID.randomUUID.toString
+  def fromString(value: String): Option[InvoiceId] = 
+    try Some(InvoiceId(value)) catch case _: Exception => None
+  extension (id: InvoiceId) 
+    def value: String = id
+    override def toString: String = id
+    def isValid: Boolean = id.nonEmpty && id.length > 0
+
+opaque type EventId = String
+
+object EventId:
+  def apply(value: String): EventId = value
+  def generate: EventId = java.util.UUID.randomUUID.toString
+  def fromString(value: String): Option[EventId] = 
+    try Some(EventId(value)) catch case _: Exception => None
+  extension (id: EventId) 
+    def value: String = id
+    override def toString: String = id
+    def isValid: Boolean = id.nonEmpty && id.length > 0
+
+// Type class instances for better integration
+given Ordering[InvoiceId] = Ordering.by((id: InvoiceId) => id.value)
+given Ordering[EventId] = Ordering.by((id: EventId) => id.value)
 
 case class InvoiceEvent(
-  id: UUID,
+  id: EventId,
   companyId: String,
   customerId: String,
   customerName: String,
@@ -20,8 +48,8 @@ case class InvoiceEvent(
 )
 
 case class Invoice(
-  id: UUID,
-  eventId: UUID,
+  id: InvoiceId,
+  eventId: EventId,
   companyId: String,
   customerId: String,
   customerName: String,

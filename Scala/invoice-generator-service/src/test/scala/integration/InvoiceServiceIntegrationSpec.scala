@@ -14,7 +14,6 @@ import com.dimafeng.testcontainers.scalatest.TestContainerForAll
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 import java.time.LocalDateTime
-import java.util.UUID
 
 object InvoiceServiceIntegrationSpec extends ZIOSpecDefault:
   
@@ -164,7 +163,7 @@ object InvoiceServiceIntegrationSpec extends ZIOSpecDefault:
   
   private def createTestInvoiceEvent(): InvoiceEvent =
     InvoiceEvent(
-      id = UUID.randomUUID,
+      id = EventId.generate,
       companyId = "test-company",
       customerId = "test-customer",
       customerName = "John Doe",
@@ -195,8 +194,8 @@ object InvoiceServiceIntegrationSpec extends ZIOSpecDefault:
   private def createTestInvoice(companyId: String, customerId: String): Invoice =
     val now = LocalDateTime.now
     Invoice(
-      id = UUID.randomUUID,
-      eventId = UUID.randomUUID,
+      id = InvoiceId.generate,
+      eventId = EventId.generate,
       companyId = companyId,
       customerId = customerId,
       customerName = s"Customer $customerId",
@@ -231,7 +230,7 @@ object InvoiceServiceIntegrationSpec extends ZIOSpecDefault:
   private def createInvoiceFromEvent(event: InvoiceEvent): Invoice =
     val now = LocalDateTime.now
     Invoice(
-      id = UUID.randomUUID,
+      id = InvoiceId.generate,
       eventId = event.id,
       companyId = event.companyId,
       customerId = event.customerId,

@@ -5,12 +5,11 @@ import zio.*
 import com.itextpdf.kernel.pdf.*
 import com.itextpdf.layout.*
 import com.itextpdf.layout.element.*
-import com.itextpdf.layout.property.*
+import com.itextpdf.layout.properties.*
 import com.itextpdf.kernel.colors.ColorConstants
 import com.itextpdf.kernel.font.PdfFontFactory
 import java.io.ByteArrayOutputStream
 import java.time.format.DateTimeFormatter
-import java.util.UUID
 
 trait PdfGenerator:
   def generateInvoicePdf(invoice: Invoice): Task[Array[Byte]]
