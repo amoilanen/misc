@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: invoice-generator-service
+  labels:
+    app: invoice-generator-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: invoice-generator-service
+  template:
+    metadata:
+      labels:
+        app: invoice-generator-service
+    spec:
+      containers:
+      - name: invoice-generator-service
+        image: gcr.io/YOUR_PROJECT_ID/invoice-generator-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: invoice-generator-secrets
+              key: database-url
+        - name: APP_DATABASE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: invoice-generator-secrets
+              key: database-username
+        - name: APP_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: invoice-generator-secrets
+              key: database-password
+        - name: APP_KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: invoice-generator-config
+              key: kafka-bootstrap-servers
+        - name: APP_KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: invoice-generator-config
+              key: kafka-topic
+        - name: APP_GCP_PROJECT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: invoice-generator-config
+              key: gcp-project-id
+        - name: APP_GCP_BUCKET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: invoice-generator-config
+              key: gcp-bucket-name
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: "/var/secrets/google/key.json"
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: invoice-generator-service
+  labels:
+    app: invoice-generator-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: invoice-generator-service
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: invoice-generator-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "invoice-generator-ip"
+spec:
+  rules:
+  - host: invoice-generator.your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: invoice-generator-service
+            port:
+              number: 8080 
