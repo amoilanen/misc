@@ -7,6 +7,8 @@ import doobie.util.transactor.Transactor
 import org.flywaydb.core.Flyway
 import zio.*
 import zio.interop.catz.*
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 
 trait DatabaseLayer:
   def transactor: Transactor[Task]

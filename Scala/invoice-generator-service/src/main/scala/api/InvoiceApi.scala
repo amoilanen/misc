@@ -2,15 +2,20 @@ package api
 
 import domain.*
 import repository.*
-import sttp.tapir.*
+import sttp.tapir.{Codec, CodecFormat}
 import sttp.tapir.generic.auto.*
-import sttp.tapir.json.circe.*
+import sttp.tapir.json.zio.*
+import sttp.tapir.ztapir.*
 import sttp.tapir.server.ziohttp.*
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import zio.*
 import zio.http.*
-import io.circe.{JsonCodec, DeriveJsonCodec}
+import zio.json.*
+
 import java.time.LocalDateTime
+
+// Codec for InvoiceId
+given Codec[String, InvoiceId, CodecFormat.TextPlain] = Codec.string.map(InvoiceId.apply)(_.toString)
 
 trait InvoiceApi:
   def routes: HttpApp[Any]
@@ -67,29 +72,29 @@ class InvoiceApiImpl(invoiceRepository: InvoiceRepository) extends InvoiceApi:
       "1.0.0"
     )
   
-  private val getInvoiceServerEndpoint = getInvoiceEndpoint.serverLogic: id =>
+  private val getInvoiceServerEndpoint = getInvoiceEndpoint.zServerLogic: id =>
     InvoiceRepository.findById(id)
       .map(_.toRight(ApiError.NotFound(s"Invoice with id $id not found")))
-      .catchAll(error => ZIO.succeed(Left(ApiError.InternalServerError(error.getMessage))))
+      .catchAll(error => ZIO.succeed(Left(ApiError.InternalServerError(error.getMessage)))).absolve
   
-  private val listInvoicesByCompanyServerEndpoint = listInvoicesByCompanyEndpoint.serverLogic: 
+  private val listInvoicesByCompanyServerEndpoint: ZServerEndpoint[InvoiceRepository, Any] = listInvoicesByCompanyEndpoint.zServerLogic:
     case (companyId, page, pageSize) =>
       val pagination = PaginationParams(page.getOrElse(1), pageSize.getOrElse(20))
       InvoiceRepository.findByCompanyId(companyId, pagination)
         .map(Right(_))
-        .catchAll(error => ZIO.succeed(Left(ApiError.InternalServerError(error.getMessage))))
+        .catchAll(error => ZIO.succeed(Left(ApiError.InternalServerError(error.getMessage)))).absolve
   
-  private val listInvoicesByDateRangeServerEndpoint = listInvoicesByDateRangeEndpoint.serverLogic:
+  private val listInvoicesByDateRangeServerEndpoint = listInvoicesByDateRangeEndpoint.zServerLogic:
     case (fromDate, toDate, page, pageSize) =>
       val pagination = PaginationParams(page.getOrElse(1), pageSize.getOrElse(20))
       InvoiceRepository.findByDateRange(fromDate, toDate, pagination)
         .map(Right(_))
-        .catchAll(error => ZIO.succeed(Left(ApiError.InternalServerError(error.getMessage))))
+        .catchAll(error => ZIO.succeed(Left(ApiError.InternalServerError(error.getMessage)))).absolve
   
   private val healthServerEndpoint = healthEndpoint.serverLogic: _ =>
     ZIO.succeed(Right(HealthStatus("UP", "Invoice Generator Service is running")))
   
-  private val swaggerServerEndpoints = swaggerEndpoints.map(_.serverLogic[Task](_ => ZIO.unit))
+  private val swaggerServerEndpoints = swaggerEndpoints
   
   def routes: HttpApp[Any] =
     ZioHttpInterpreter()
@@ -103,23 +108,14 @@ class InvoiceApiImpl(invoiceRepository: InvoiceRepository) extends InvoiceApi:
       )
 
 case class ApiError(message: String, code: String)
-
-object ApiError:
+object ApiError {
   def NotFound(message: String): ApiError = ApiError(message, "NOT_FOUND")
   def InternalServerError(message: String): ApiError = ApiError(message, "INTERNAL_SERVER_ERROR")
   def BadRequest(message: String): ApiError = ApiError(message, "BAD_REQUEST")
+  given JsonCodec[ApiError] = DeriveJsonCodec.gen[ApiError]
+}
 
 case class HealthStatus(status: String, message: String)
-
-// JSON codecs for API responses
-given JsonCodec[ApiError] = DeriveJsonCodec.gen[ApiError]
-given JsonCodec[HealthStatus] = DeriveJsonCodec.gen[HealthStatus]
-given JsonCodec[Invoice] = DeriveJsonCodec.gen[Invoice]
-given JsonCodec[PaginatedInvoices] = DeriveJsonCodec.gen[PaginatedInvoices]
-given JsonCodec[InvoiceStatus] = DeriveJsonCodec.gen[InvoiceStatus]
-given JsonCodec[InvoiceType] = DeriveJsonCodec.gen[InvoiceType]
-given JsonCodec[Address] = DeriveJsonCodec.gen[Address]
-given JsonCodec[InvoiceItem] = DeriveJsonCodec.gen[InvoiceItem]
-given JsonCodec[PaginationParams] = DeriveJsonCodec.gen[PaginationParams]
-given JsonCodec[InvoiceId] = DeriveJsonCodec.gen[InvoiceId]
-given JsonCodec[EventId] = DeriveJsonCodec.gen[EventId] 
+object HealthStatus {
+  given JsonCodec[HealthStatus] = DeriveJsonCodec.gen[HealthStatus]
+} 

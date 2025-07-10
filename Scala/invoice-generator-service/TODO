@@ -1,6 +1,8 @@
 - Fix compilation errors
 - Add https://github.com/fsouza/fake-gcs-server for GCP emulation to docker-compose.yaml, update the development instructions correspondingly
 - Review the code
+  -- Introduce InvoiceService, avoid calling repositories directly
+  -- Split InvoiceApi into InvoiceEndpoints, InvoiceServer
 - Run the service locally, feed some events, observe their handling
 - Run tests locally
 - The API should also have endpoints to fetch the invoice's PDF when given the invoice id

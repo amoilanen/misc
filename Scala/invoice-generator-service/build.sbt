@@ -25,16 +25,18 @@ lazy val root = project
       "dev.zio" %% "zio" % zioVersion,
       "dev.zio" %% "zio-streams" % zioVersion,
       "dev.zio" %% "zio-kafka" % "2.7.0",
-      "dev.zio" %% "zio-logging" % "2.2.2",
-      "dev.zio" %% "zio-logging-slf4j" % "2.2.2",
+      "dev.zio" %% "zio-logging" % "2.1.12",
+      "dev.zio" %% "zio-logging-slf4j" % "2.5.0",
       "dev.zio" %% "zio-config" % "4.0.0",
+      "dev.zio" %% "zio-config-magnolia" % "4.0.0",
       "dev.zio" %% "zio-config-typesafe" % "4.0.0",
-      "dev.zio" %% "zio-interop-cats" % "22.0.0",
+      "dev.zio" %% "zio-interop-cats" % "23.1.0.5",
       
       // HTTP
       "dev.zio" %% "zio-http" % zioHttpVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-zio" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-json-zio" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
       
       // Database
@@ -44,9 +46,7 @@ lazy val root = project
       "org.flywaydb" % "flyway-core" % flywayVersion,
       
       // JSON
-      "io.circe" %% "circe-core" % "0.14.6",
-      "io.circe" %% "circe-generic" % "0.14.6",
-      "io.circe" %% "circe-parser" % "0.14.6",
+      "dev.zio" %% "zio-json" % "0.6.2",
       
       // PDF Generation
       "com.itextpdf" % "itext7-core" % "8.0.4",

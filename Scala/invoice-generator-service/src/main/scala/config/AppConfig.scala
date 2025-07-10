@@ -40,7 +40,4 @@ case class ServerConfig(
 object AppConfig:
   val live: Config[AppConfig] = deriveConfig[AppConfig].nested("app")
   
-  def load: Config[AppConfig] = 
-    TypesafeConfigProvider
-      .fromResourcePath()
-      .load(live) 
+  def load: Config[AppConfig] = live 

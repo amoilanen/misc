@@ -6,7 +6,7 @@ import service.*
 import zio.*
 import zio.http.*
 import zio.logging.*
-import zio.logging.slf4j.Slf4jLogger
+import zio.logging.backend.SLF4J
 
 object Main extends ZIOAppDefault:
   
@@ -20,21 +20,16 @@ object Main extends ZIOAppDefault:
       // Run database migrations
       _ <- DatabaseLayer.migrate
       
-      // Start HTTP server
-      server <- startHttpServer(config.server)
-      
-      // Start Kafka consumer
-      consumer <- startKafkaConsumer(config.kafka)
-      
       _ <- ZIO.logInfo("Invoice Generator Service started successfully")
       
-      // Keep the application running
-      _ <- server.merge(consumer)
+      // Start both HTTP server and Kafka consumer concurrently
+      _ <- startHttpServer(config.server) <&> startKafkaConsumer(config.kafka)
     yield ()
-    
+
+    val logger = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
     app.provide(
       // Configuration layer
-      ZLayer(AppConfig.load),
+      logger,
       
       // Database layer
       ZLayer {
@@ -79,10 +74,7 @@ object Main extends ZIOAppDefault:
           repo <- ZIO.service[InvoiceRepository]
           api = InvoiceApiImpl(repo)
         yield api
-      },
-      
-      // Logging layer
-      Slf4jLogger.make((context, message) => message)
+      }
     )
 
   private def startHttpServer(config: ServerConfig): ZIO[Any, Throwable, Unit] =

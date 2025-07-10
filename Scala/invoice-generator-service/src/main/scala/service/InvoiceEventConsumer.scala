@@ -59,7 +59,7 @@ class KafkaInvoiceEventConsumer(
       .make(consumerSettings)
       .flatMap: consumer =>
         val eventStream = consumer
-          .subscribe(Subscription.topics(config.topic))
+          .subscribeAnd(Subscription.topics(config.topic))
           .plainStream(Serde.string, Serde.string)
           .map(_.value)
           .mapZIO(parseEvent)
@@ -72,14 +72,14 @@ class KafkaInvoiceEventConsumer(
       .provide(ZLayer.succeed(consumerSettings))
 
   private def consumerSettings: ConsumerSettings =
-    ConsumerSettings(config.bootstrapServers)
+    ConsumerSettings(List(config.bootstrapServers))
       .withGroupId(config.groupId)
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
       .withEnableAutoCommit(true)
 
   // Parse JSON events with error handling
   private def parseEvent(eventJson: String): Task[InvoiceEvent] =
-    ZIO.fromEither(InvoiceEvent.fromJson(eventJson))
+    ZIO.fromEither(eventJson.fromJson[InvoiceEvent])
       .mapError: error =>
         new RuntimeException(s"Failed to parse invoice event: $error")
 
@@ -87,10 +87,10 @@ class KafkaInvoiceEventConsumer(
   private def processEventWithRetry(event: InvoiceEvent): Task[ProcessingResult] =
     processInvoiceEvent(event)
       .retry(Schedule.exponential(1.second) && Schedule.recurs(3))
-      .map(_ => ProcessingResult.Success(event.id.value))
+      .map(_ => ProcessingResult.Success(event.id.toString))
       .catchAll: error =>
         ZIO.logError(s"Failed to process invoice event ${event.id} after retries: ${error.getMessage}")
-          .as(ProcessingResult.Failure(event.id.value, error.getMessage))
+          .as(ProcessingResult.Failure(event.id.toString, error.getMessage))
 
   // Log processing results
   private def logProcessingResult(result: ProcessingResult): Task[ProcessingResult] =
@@ -119,7 +119,7 @@ class KafkaInvoiceEventConsumer(
       .make(consumerSettings)
       .flatMap: consumer =>
         val eventStream = consumer
-          .subscribe(Subscription.topics(config.topic))
+          .subscribeAnd(Subscription.topics(config.topic))
           .plainStream(Serde.string, Serde.string)
           .map(_.value)
           .mapZIO(parseEvent)
@@ -136,10 +136,10 @@ class KafkaInvoiceEventConsumer(
     ZIO.foreachPar(events): event =>
       processInvoiceEvent(event)
         .retry(Schedule.exponential(1.second) && Schedule.recurs(3))
-        .map(_ => ProcessingResult.Success(event.id.value))
+        .map(_ => ProcessingResult.Success(event.id.toString))
         .catchAll: error =>
           ZIO.logError(s"Failed to process invoice event ${event.id} after retries: ${error.getMessage}")
-            .as(ProcessingResult.Failure(event.id.value, error.getMessage))
+            .as(ProcessingResult.Failure(event.id.toString, error.getMessage))
     .map(results => BatchResult(results.toList))
 
   // Log batch processing results
@@ -204,16 +204,4 @@ object ProcessingResult:
   case class Failure(eventId: String, error: String) extends ProcessingResult
 
 // Batch processing result
-case class BatchResult(results: List[ProcessingResult])
-
-// JSON codec for InvoiceEvent
-given JsonCodec[InvoiceEvent] = DeriveJsonCodec.gen[InvoiceEvent]
-given JsonCodec[Address] = DeriveJsonCodec.gen[Address]
-given JsonCodec[InvoiceItem] = DeriveJsonCodec.gen[InvoiceItem]
-given JsonCodec[InvoiceType] = DeriveJsonCodec.gen[InvoiceType]
-
-extension (event: InvoiceEvent)
-  def toJson: String = event.toJson
-
-object InvoiceEvent:
-  def fromJson(json: String): Either[String, InvoiceEvent] = json.fromJson[InvoiceEvent] 
+case class BatchResult(results: List[ProcessingResult]) 

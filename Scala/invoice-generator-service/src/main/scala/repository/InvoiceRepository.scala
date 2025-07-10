@@ -53,7 +53,7 @@ class DoobieInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepository:
       totalCount = totalCount,
       page = pagination.page,
       pageSize = pagination.pageSize,
-      totalPages = (totalCount + pagination.pageSize - 1) / pagination.pageSize
+      totalPages = ((totalCount + pagination.pageSize - 1) / pagination.pageSize).toInt
     )
 
   def findByDateRange(fromDate: LocalDateTime, toDate: LocalDateTime, pagination: PaginationParams): Task[PaginatedInvoices] =
@@ -65,7 +65,7 @@ class DoobieInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepository:
       totalCount = totalCount,
       page = pagination.page,
       pageSize = pagination.pageSize,
-      totalPages = (totalCount + pagination.pageSize - 1) / pagination.pageSize
+      totalPages = ((totalCount + pagination.pageSize - 1) / pagination.pageSize).toInt
     )
 
   def updatePdfUrl(id: InvoiceId, pdfUrl: String): Task[Unit] =
@@ -78,8 +78,8 @@ object DoobieInvoiceRepository:
   import Meta.*
 
   // Meta instances for custom types
-  given Meta[InvoiceId] = Meta[String].imap(InvoiceId.apply)(_.value)
-  given Meta[EventId] = Meta[String].imap(EventId.apply)(_.value)
+  given Meta[InvoiceId] = Meta[String].imap(InvoiceId.apply)(_.toString)
+  given Meta[EventId] = Meta[String].imap(EventId.apply)(_.toString)
   given Meta[InvoiceType] = Meta[String].imap(InvoiceType.valueOf)(_.toString)
   given Meta[InvoiceStatus] = Meta[String].imap(InvoiceStatus.valueOf)(_.toString)
   given Meta[Address] = Meta[String].imap(Address.fromJson)(_.toJson)
@@ -143,7 +143,7 @@ extension (metadata: Map[String, String])
   def toJson: String = metadata.map { case (k, v) => s""""$k":"$v"""" }.mkString("{", ",", "}")
 
 object Address:
-  def fromJson(json: String): Address = Address("", "", "", "", "") // Simplified
+  def fromJson(json: String): Address = domain.Address("", "", "", "", "") // Simplified
 
 object InvoiceItem:
   def fromJsonList(json: String): List[InvoiceItem] = List.empty // Simplified
