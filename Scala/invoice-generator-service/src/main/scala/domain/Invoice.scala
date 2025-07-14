@@ -13,7 +13,7 @@ object InvoiceId:
     try Some(InvoiceId(value)) catch case _: Exception => None
   extension (id: InvoiceId) 
     def value: String = id
-    override def toString: String = id
+    def toString: String = id
     def isValid: Boolean = id.nonEmpty && id.length > 0
 
 opaque type EventId = String
@@ -25,7 +25,7 @@ object EventId:
     try Some(EventId(value)) catch case _: Exception => None
   extension (id: EventId) 
     def value: String = id
-    override def toString: String = id
+    def toString: String = id
     def isValid: Boolean = id.nonEmpty && id.length > 0
 
 // Type class instances for better integration

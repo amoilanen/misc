@@ -59,23 +59,19 @@ class KafkaInvoiceEventConsumer(
       .make(consumerSettings)
       .flatMap: consumer =>
         val eventStream = consumer
-          .subscribeAnd(Subscription.topics(config.topic))
-          .plainStream(Serde.string, Serde.string)
+          .plainStream(Subscription.topics(config.topic), Serde.string, Serde.string)
           .map(_.value)
           .mapZIO(parseEvent)
           .mapZIO(processEventWithRetry)
           .mapZIO(logProcessingResult)
           .mapZIO(handleFailure)
-          .supervised(Supervisor.retry(Schedule.exponential(1.second) && Schedule.recurs(5)))
         
         eventStream.runDrain
-      .provide(ZLayer.succeed(consumerSettings))
+      .provide(ZLayer.succeed(consumerSettings), Scope.default)
 
   private def consumerSettings: ConsumerSettings =
     ConsumerSettings(List(config.bootstrapServers))
       .withGroupId(config.groupId)
-      .withAutoOffsetReset(AutoOffsetReset.Earliest)
-      .withEnableAutoCommit(true)
 
   // Parse JSON events with error handling
   private def parseEvent(eventJson: String): Task[InvoiceEvent] =
@@ -119,17 +115,15 @@ class KafkaInvoiceEventConsumer(
       .make(consumerSettings)
       .flatMap: consumer =>
         val eventStream = consumer
-          .subscribeAnd(Subscription.topics(config.topic))
-          .plainStream(Serde.string, Serde.string)
+          .plainStream(Subscription.topics(config.topic), Serde.string, Serde.string)
           .map(_.value)
           .mapZIO(parseEvent)
           .groupedWithin(10, 5.seconds) // Process in batches of 10 or every 5 seconds
           .mapZIO(processBatch)
           .mapZIO(logBatchResult)
-          .supervised(Supervisor.retry(Schedule.exponential(1.second) && Schedule.recurs(5)))
         
         eventStream.runDrain
-      .provide(ZLayer.succeed(consumerSettings))
+      .provide(ZLayer.succeed(consumerSettings), Scope.default)
 
   // Process events in batches for better performance
   private def processBatch(events: Chunk[InvoiceEvent]): Task[BatchResult] =

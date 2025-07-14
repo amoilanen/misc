@@ -30,6 +30,7 @@ object Main extends ZIOAppDefault:
     app.provide(
       // Configuration layer
       logger,
+      ZLayer.fromZIO(ZIO.config(AppConfig.load)),
       
       // Database layer
       ZLayer {
@@ -77,7 +78,7 @@ object Main extends ZIOAppDefault:
       }
     )
 
-  private def startHttpServer(config: ServerConfig): ZIO[Any, Throwable, Unit] =
+  private def startHttpServer(config: ServerConfig): ZIO[InvoiceApi, Throwable, Unit] =
     for
       api <- ZIO.service[InvoiceApi]
       routes <- InvoiceApi.routes
@@ -86,7 +87,7 @@ object Main extends ZIOAppDefault:
       _ <- server.provide(Server.defaultWithPort(config.port))
     yield ()
 
-  private def startKafkaConsumer(config: KafkaConfig): ZIO[Any, Throwable, Unit] =
+  private def startKafkaConsumer(config: KafkaConfig): ZIO[InvoiceEventConsumer, Throwable, Unit] =
     for
       consumer <- ZIO.service[InvoiceEventConsumer]
       _ <- ZIO.logInfo(s"Starting Kafka consumer for topic: ${config.topic}")
