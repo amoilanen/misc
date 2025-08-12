@@ -67,7 +67,7 @@ class KafkaInvoiceEventConsumer(
           .mapZIO(handleFailure)
         
         eventStream.runDrain
-      .provide(ZLayer.succeed(consumerSettings), Scope.default)
+      .provide(Scope.default)
 
   private def consumerSettings: ConsumerSettings =
     ConsumerSettings(List(config.bootstrapServers))
@@ -123,7 +123,7 @@ class KafkaInvoiceEventConsumer(
           .mapZIO(logBatchResult)
         
         eventStream.runDrain
-      .provide(ZLayer.succeed(consumerSettings), Scope.default)
+      .provide(Scope.default)
 
   // Process events in batches for better performance
   private def processBatch(events: Chunk[InvoiceEvent]): Task[BatchResult] =

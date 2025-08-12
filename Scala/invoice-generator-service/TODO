@@ -1,4 +1,4 @@
-- Fix compilation errors
+- Fix compilation errors - DONE
 - Add https://github.com/fsouza/fake-gcs-server for GCP emulation to docker-compose.yaml, update the development instructions correspondingly
 - Review the code
   -- Introduce InvoiceService, avoid calling repositories directly

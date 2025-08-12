@@ -20,6 +20,11 @@ lazy val root = project
     version := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
 
+    // Compiler options to fix inline issues
+    scalacOptions ++= Seq(
+      "-Xmax-inlines:64"
+    ),
+
     libraryDependencies ++= Seq(
       // ZIO
       "dev.zio" %% "zio" % zioVersion,

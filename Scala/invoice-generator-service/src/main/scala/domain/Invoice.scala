@@ -13,7 +13,6 @@ object InvoiceId:
     try Some(InvoiceId(value)) catch case _: Exception => None
   extension (id: InvoiceId) 
     def value: String = id
-    def toString: String = id
     def isValid: Boolean = id.nonEmpty && id.length > 0
 
 opaque type EventId = String
@@ -25,16 +24,15 @@ object EventId:
     try Some(EventId(value)) catch case _: Exception => None
   extension (id: EventId) 
     def value: String = id
-    def toString: String = id
     def isValid: Boolean = id.nonEmpty && id.length > 0
 
 // Type class instances for better integration
-given Ordering[InvoiceId] = Ordering.by((id: InvoiceId) => id.toString)
-given Ordering[EventId] = Ordering.by((id: EventId) => id.toString)
+given Ordering[InvoiceId] = Ordering.by((id: InvoiceId) => InvoiceId.value(id))
+given Ordering[EventId] = Ordering.by((id: EventId) => EventId.value(id))
 
 // JSON codecs for opaque types
-given JsonCodec[InvoiceId] = JsonCodec.string.transform(InvoiceId.apply, _.toString)
-given JsonCodec[EventId] = JsonCodec.string.transform(EventId.apply, _.toString)
+given JsonCodec[InvoiceId] = JsonCodec.string.transform(InvoiceId.apply, InvoiceId.value)
+given JsonCodec[EventId] = JsonCodec.string.transform(EventId.apply, EventId.value)
 
 // Remove all @json annotations from case classes and enums
 // Add companion objects with given JsonCodec for each type
