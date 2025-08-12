@@ -4,6 +4,7 @@ import config.GcpConfig
 import zio.*
 import com.google.cloud.storage.*
 import com.google.cloud.storage.BlobInfo
+import com.google.cloud.http.HttpTransportOptions
 
 trait StorageService:
   def uploadPdf(pdfBytes: Array[Byte], fileName: String): Task[String]
@@ -21,10 +22,26 @@ object StorageService:
     ZIO.serviceWithZIO[StorageService](_.deletePdf(fileName))
 
 class GcpStorageService(config: GcpConfig) extends StorageService:
-  private val storage = StorageOptions.newBuilder()
-    .setProjectId(config.projectId)
-    .build()
-    .getService
+  private val storage = {
+    val builder = StorageOptions.newBuilder()
+      .setProjectId(config.projectId)
+    
+    // Configure endpoint for fake-gcs-server if specified
+    config.endpoint.foreach { endpoint =>
+      builder.setHost(endpoint)
+    }
+    
+    // Configure credentials if specified
+    config.credentialsPath.foreach { credentialsPath =>
+      builder.setCredentials(
+        com.google.auth.oauth2.GoogleCredentials.fromStream(
+          new java.io.FileInputStream(credentialsPath)
+        )
+      )
+    }
+    
+    builder.build().getService
+  }
 
   def uploadPdf(pdfBytes: Array[Byte], fileName: String): Task[String] =
     ZIO.attempt:

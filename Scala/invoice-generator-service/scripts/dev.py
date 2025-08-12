@@ -92,12 +92,44 @@ def start_dependencies() -> None:
         print_error("docker-compose.yml not found in current directory")
         sys.exit(1)
     
-    # Start services
-    run_command(["docker-compose", "up", "-d", "postgres", "kafka", "zookeeper"])
+    # Start services including fake-gcs-server
+    run_command(["docker-compose", "up", "-d", "postgres", "kafka", "zookeeper", "fake-gcs-server"])
     
     print_status("Waiting for services to be ready...")
     time.sleep(30)
     print_status("Dependencies are ready")
+
+def init_fake_gcs() -> None:
+    """Initialize fake-gcs-server bucket."""
+    print_status("Initializing fake-gcs-server bucket...")
+    
+    # Check if init_fake_gcs.py exists
+    init_script = Path("scripts/init_fake_gcs.py")
+    if not init_script.exists():
+        print_error("scripts/init_fake_gcs.py not found")
+        sys.exit(1)
+    
+    # Run the initialization script
+    run_command([sys.executable, str(init_script)])
+    print_status("Fake GCS bucket initialized")
+
+def test_fake_gcs() -> None:
+    """Test fake-gcs-server integration."""
+    print_status("Testing fake-gcs-server integration...")
+    
+    # Check if test_fake_gcs.py exists
+    test_script = Path("scripts/test_fake_gcs.py")
+    if not test_script.exists():
+        print_error("scripts/test_fake_gcs.py not found")
+        sys.exit(1)
+    
+    # Run the test script
+    result = run_command([sys.executable, str(test_script)], check=False)
+    if result.returncode == 0:
+        print_status("Fake GCS integration test passed")
+    else:
+        print_error("Fake GCS integration test failed")
+        sys.exit(1)
 
 def stop_dependencies() -> None:
     """Stop dependencies using Docker Compose."""
@@ -144,6 +176,7 @@ def dev() -> None:
     """Start dependencies and run application."""
     check_prerequisites()
     start_dependencies()
+    init_fake_gcs()
     run_app()
 
 def show_help() -> None:
@@ -153,21 +186,25 @@ Usage: python scripts/dev.py [COMMAND]
 
 Commands:
   check       Check prerequisites
-  start       Start dependencies (PostgreSQL, Kafka)
+  start       Start dependencies (PostgreSQL, Kafka, fake-gcs-server)
   stop        Stop dependencies
+  init-gcs    Initialize fake-gcs-server bucket
+  test-gcs    Test fake-gcs-server integration
   test        Run unit tests
   itest       Run integration tests
   build       Build the application
   jar         Create fat JAR
   run         Run the application
-  dev         Start dependencies and run application
+  dev         Start dependencies, init GCS, and run application
   clean       Stop dependencies and clean build
   help        Show this help message
 
 Examples:
-  python scripts/dev.py dev      # Start dependencies and run application
+  python scripts/dev.py dev      # Start dependencies, init GCS, and run application
   python scripts/dev.py test     # Run tests only
   python scripts/dev.py jar      # Create deployable JAR
+  python scripts/dev.py init-gcs # Initialize fake-gcs-server bucket only
+  python scripts/dev.py test-gcs # Test fake-gcs-server integration
 """
     print(help_text)
 
@@ -183,6 +220,8 @@ def main() -> None:
         "check": check_prerequisites,
         "start": start_dependencies,
         "stop": stop_dependencies,
+        "init-gcs": init_fake_gcs,
+        "test-gcs": test_fake_gcs,
         "test": run_tests,
         "itest": run_integration_tests,
         "build": build_app,

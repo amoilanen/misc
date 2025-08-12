@@ -68,72 +68,71 @@ A production-ready microservice built with Scala 3 and ZIO 2 for processing invo
    ```bash
    python scripts/dev.py start
    ```
+   This starts PostgreSQL, Kafka, Zookeeper, and **fake-gcs-server** for local GCP emulation.
 
-3. **Configure the application**
+3. **Initialize fake-gcs-server bucket (optional)**
    ```bash
-   # Edit the configuration file with your settings
+   python scripts/dev.py init-gcs
+   ```
+   This creates the required bucket in the fake GCS server.
+
+4. **Configure the application**
+   ```bash
+   # The application is pre-configured for local development
+   # Edit src/main/resources/application.conf if needed
    vim src/main/resources/application.conf
    ```
 
-4. **Run the application**
+5. **Run the application**
    ```bash
    python scripts/dev.py run
    ```
 
-5. **Send test events**
+6. **Send test events**
    ```bash
    # In a new terminal
    python scripts/send_events_docker.py
    ```
 
-6. **Test the API**
+7. **Test the API**
    ```bash
    # In another terminal
    python scripts/test_api.py all
    ```
 
-7. **Run tests**
+8. **Run tests**
    ```bash
    sbt test
    ```
 
+**Quick Start (All-in-one):**
+```bash
+python scripts/dev.py dev
+```
+This command starts all dependencies, initializes the fake GCS bucket, and runs the application.
+
 ### Docker Compose Setup
 
-Create a `docker-compose.yml` file for local development:
+The project includes a complete `docker-compose.yml` for local development with:
 
-```yaml
-version: '3.8'
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: invoice_generator
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+- **PostgreSQL** - Database
+- **Kafka & Zookeeper** - Event streaming
+- **fake-gcs-server** - GCP Storage emulation
+- **Kafka UI** - Web interface for Kafka management
+- **Adminer** - Database administration interface
 
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    ports:
-      - "9092:9092"
+The fake-gcs-server provides a local emulation of Google Cloud Storage, allowing you to develop and test without needing real GCP credentials or internet access.
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+**Services and Ports:**
+- PostgreSQL: `localhost:5432`
+- Kafka: `localhost:9092`
+- fake-gcs-server: `localhost:4443`
+- Kafka UI: `http://localhost:8080`
+- Adminer: `http://localhost:8081`
 
-volumes:
-  postgres_data:
+**Initialize fake-gcs-server:**
+```bash
+python scripts/init_fake_gcs.py
 ```
 
 ## API Documentation
@@ -191,9 +190,13 @@ python scripts/test_api.py all
 
 For comprehensive testing instructions, see [TESTING.md](TESTING.md).
 
+For detailed fake-gcs-server setup and usage, see [FAKE_GCS_SETUP.md](FAKE_GCS_SETUP.md).
+
 ## Configuration
 
-The application uses TypeSafe Config for configuration management:
+The application uses TypeSafe Config for configuration management. The default configuration is set up for local development with fake-gcs-server.
+
+### Local Development Configuration
 
 ```hocon
 app {
@@ -213,15 +216,29 @@ app {
   }
   
   gcp {
-    projectId = "your-gcp-project-id"
+    projectId = "fake-project-id"
     bucketName = "invoice-pdfs"
-    credentialsPath = "/path/to/service-account-key.json"
+    credentialsPath = null
+    endpoint = "http://localhost:4443"  # fake-gcs-server endpoint
   }
   
   server {
     host = "0.0.0.0"
     port = 8080
   }
+}
+```
+
+### Production Configuration
+
+For production deployment, update the GCP configuration:
+
+```hocon
+app.gcp {
+  projectId = "your-gcp-project-id"
+  bucketName = "invoice-pdfs"
+  credentialsPath = "/path/to/service-account-key.json"
+  endpoint = null  # Use default GCP endpoints
 }
 ```
 
@@ -313,6 +330,52 @@ sbt it:test
 ```bash
 sbt coverage test coverageReport
 ```
+
+## Local GCP Emulation with fake-gcs-server
+
+The project uses [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) to provide a local emulation of Google Cloud Storage. This allows you to develop and test the application without needing real GCP credentials or internet access.
+
+### Features
+- **Local Storage**: All files are stored in memory during development
+- **GCS API Compatibility**: Implements the Google Cloud Storage API
+- **No Credentials Required**: Works without GCP service account keys
+- **Easy Setup**: Automatically configured in docker-compose.yml
+
+### Usage
+
+1. **Start the fake-gcs-server:**
+   ```bash
+   python scripts/dev.py start
+   ```
+
+2. **Initialize the bucket:**
+   ```bash
+   python scripts/dev.py init-gcs
+   ```
+
+3. **Access the fake GCS API:**
+   ```bash
+   # List buckets
+   curl http://localhost:4443/storage/v1/b
+   
+   # List objects in bucket
+   curl http://localhost:4443/storage/v1/b/invoice-pdfs/o
+   ```
+
+### Configuration
+
+The application is pre-configured to use fake-gcs-server for local development:
+
+```hocon
+app.gcp {
+  endpoint = "http://localhost:4443"  # fake-gcs-server endpoint
+  projectId = "fake-project-id"
+  bucketName = "invoice-pdfs"
+  credentialsPath = null
+}
+```
+
+For production, set `endpoint = null` to use real GCP endpoints.
 
 ## Monitoring & Observability
 

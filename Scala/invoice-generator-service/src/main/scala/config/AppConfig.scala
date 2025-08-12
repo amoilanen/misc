@@ -29,7 +29,8 @@ case class KafkaConfig(
 case class GcpConfig(
   projectId: String,
   bucketName: String,
-  credentialsPath: Option[String] = None
+  credentialsPath: Option[String] = None,
+  endpoint: Option[String] = None
 )
 
 case class ServerConfig(

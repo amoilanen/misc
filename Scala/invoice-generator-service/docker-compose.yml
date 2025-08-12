@@ -69,6 +69,18 @@ services:
     ports:
       - "8080:8080"
 
+  fake-gcs-server:
+    image: fsouza/fake-gcs-server:latest
+    container_name: invoice-generator-fake-gcs
+    command: ["-scheme", "http", "-port", "4443", "-backend", "memory", "-public-host", "fake-gcs-server:4443"]
+    ports:
+      - "4443:4443"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4443/storage/v1/b || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   adminer:
     image: adminer:latest
     container_name: invoice-generator-adminer
