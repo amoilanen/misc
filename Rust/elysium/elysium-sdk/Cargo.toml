@@ -1,0 +1,14 @@
+[package]
+name = "elysium-sdk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elysium-core = { path = "../elysium-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1.0", features = ["full"] }
+
