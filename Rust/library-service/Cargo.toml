@@ -1,0 +1,66 @@
+[package]
+name = "library-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+axum = { version = "0.7", features = ["macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "request-id", "metrics"] }
+tokio = { version = "1", features = ["full"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres", "chrono", "uuid"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Kafka (optional feature)
+rdkafka = { version = "0.36", features = ["cmake-build", "ssl-vendored"], optional = true }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Configuration
+config = "0.14"
+
+# Logging and Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "chrono"] }
+tracing-opentelemetry = "0.23"
+opentelemetry = "0.23"
+opentelemetry_sdk = "0.23"
+
+# Authentication
+jsonwebtoken = "9.3"
+argon2 = "0.5"
+axum-extra = { version = "0.9", features = ["typed-header"] }
+
+# Caching
+redis = { version = "0.26", features = ["tokio-comp", "connection-manager"] }
+
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+
+# HTTP client (for testing)
+reqwest = { version = "0.11", features = ["json"] }
+
+# Metrics (already included in tower-http above)
+
+[features]
+default = ["kafka"]
+kafka = ["rdkafka"]
+
+[dev-dependencies]
+# Testing
+mockall = "0.12"
+tokio-test = "0.4"
+
+# SQLx CLI for migrations (optional, for development)
+# sqlx-cli = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres"] }
+

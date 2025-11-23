@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: library-service-config
+  namespace: library-service
+data:
+  SERVER_ADDRESS: "0.0.0.0:3000"
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_TOPIC: "book-events"
+  KAFKA_GROUP_ID: "library-service"
+  DATABASE_URL: "postgresql://library_user:library_pass@postgres-service:5432/library_db"
+
