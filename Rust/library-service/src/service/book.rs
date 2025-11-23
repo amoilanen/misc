@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 pub struct BookService {
     db: Database,
+    #[allow(dead_code)]
     cache: Option<Cache>,
 }
 
@@ -73,9 +74,8 @@ impl BookService {
         let repo = BookRepository::new(self.db.pool());
         
         // Check if book already exists
-        if let Some(_) = repo.find_by_isbn(&isbn).await? {
+        if let Some(book) = repo.find_by_isbn(&isbn).await? {
             // Book already exists, update it
-            let book = repo.find_by_isbn(&isbn).await?.unwrap();
             let update = UpdateBook {
                 title: Some(title),
                 author: Some(author),

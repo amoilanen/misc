@@ -1,8 +1,6 @@
 use redis::Client;
-use redis::aio::ConnectionManager;
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use tracing::{error, warn};
 use uuid::Uuid;
 use crate::error::{AppError, Result};

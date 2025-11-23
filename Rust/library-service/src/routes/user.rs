@@ -48,11 +48,10 @@ impl From<crate::dal::user::User> for UserResponse {
     }
 }
 
-pub fn routes(db: Database, cache: Option<Cache>) -> Router<(Database, Option<Cache>, crate::auth::middleware::AuthState)> {
+pub fn routes() -> Router<(Database, Option<Cache>, crate::auth::middleware::AuthState)> {
     Router::new()
         .route("/", post(create_user))
         .route("/:id", get(get_user))
-        .with_state((db, cache, crate::auth::middleware::AuthState { jwt_secret: String::new() }))
 }
 
 async fn create_user(

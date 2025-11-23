@@ -16,6 +16,7 @@ pub struct AuthState {
     pub jwt_secret: String,
 }
 
+#[allow(dead_code)]
 pub async fn require_auth(
     State(auth_state): State<AuthState>,
     TypedHeader(auth): TypedHeader<Authorization<axum_extra::headers::authorization::Bearer>>,
@@ -38,6 +39,7 @@ pub async fn require_auth(
     }
 }
 
+#[allow(dead_code)]
 pub async fn require_role(
     required_role: &'static str,
     State(auth_state): State<AuthState>,
@@ -67,11 +69,13 @@ pub async fn require_role(
 }
 
 // Helper to extract user ID from request extensions
+#[allow(dead_code)]
 pub fn get_user_id(request: &Request) -> Option<Uuid> {
     request.extensions().get::<Uuid>().copied()
 }
 
 // Helper to extract claims from request extensions
+#[allow(dead_code)]
 pub fn get_claims(request: &Request) -> Option<Claims> {
     request.extensions().get::<Claims>().cloned()
 }

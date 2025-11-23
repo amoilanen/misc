@@ -6,14 +6,11 @@ pub mod auth_route;
 use axum::{
     Router,
     routing::{get, post},
-    middleware,
 };
 use tower_http::{
     cors::CorsLayer,
     trace::TraceLayer,
 };
-use tracing::Span;
-use std::time::Duration;
 
 use crate::dal::Database;
 use crate::cache::Cache;
@@ -28,9 +25,9 @@ pub fn create_router(db: Database, cache: Option<Cache>, auth_config: AuthConfig
     Router::new()
         .route("/health", get(health_check))
         .route("/api/v1/auth/login", post(auth_route::login))
-        .merge(book::routes(db.clone(), cache.clone()).with_state((db.clone(), cache.clone(), auth_state.clone())))
-        .merge(user::routes(db.clone(), cache.clone()).with_state((db.clone(), cache.clone(), auth_state.clone())))
-        .merge(loan::routes(db.clone(), cache.clone()).with_state((db.clone(), cache.clone(), auth_state.clone())))
+        .nest("/api/v1/books", book::routes())
+        .nest("/api/v1/users", user::routes())
+        .nest("/api/v1/loans", loan::routes())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|_request: &axum::http::Request<_>| {

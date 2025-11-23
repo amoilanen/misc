@@ -40,6 +40,10 @@ The service follows a 3-layer architecture:
 
 - Rust 1.91.1+ (or latest stable)
 - Docker and Docker Compose
+- **cmake** (required for Kafka integration)
+  - Ubuntu/Debian: `sudo apt-get install cmake`
+  - Fedora/RHEL: `sudo dnf install cmake`
+  - macOS: `brew install cmake`
 - PostgreSQL client (optional, for direct database access)
 - Redis client (optional, for cache inspection)
 
@@ -72,6 +76,18 @@ The service follows a 3-layer architecture:
 4. **Run the service**:
    ```bash
    cargo run
+   ```
+   
+   **Note**: Kafka integration requires `cmake` to be installed. Install it with:
+   ```bash
+   # On Ubuntu/Debian
+   sudo apt-get install cmake
+   
+   # On Fedora/RHEL
+   sudo dnf install cmake
+   
+   # On macOS
+   brew install cmake
    ```
 
 5. **Test the API**:
@@ -237,6 +253,8 @@ The service subscribes to Kafka topic `book-events` (configurable) and handles t
 ```bash
 cargo test
 ```
+
+**Note**: Kafka integration requires `cmake` to be installed (see Prerequisites above).
 
 ### Integration Tests
 Integration tests require running dependencies. Start dependencies first:

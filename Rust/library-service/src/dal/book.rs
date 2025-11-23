@@ -85,19 +85,19 @@ impl<'a> BookRepository<'a> {
         let mut conditions = Vec::new();
         let mut bind_index = 1;
 
-        if let Some(ref author) = params.author {
+        if let Some(ref _author) = params.author {
             conditions.push(format!("author ILIKE ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(ref genre) = params.genre {
+        if let Some(ref _genre) = params.genre {
             conditions.push(format!("genre ILIKE ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(ref title) = params.title {
+        if let Some(ref _title) = params.title {
             conditions.push(format!("title ILIKE ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(ref isbn) = params.isbn {
+        if let Some(ref _isbn) = params.isbn {
             conditions.push(format!("isbn = ${}", bind_index));
             bind_index += 1;
         }
@@ -142,27 +142,27 @@ impl<'a> BookRepository<'a> {
         let mut updates = Vec::new();
         let mut bind_index = 1;
 
-        if let Some(ref title) = update.title {
+        if let Some(ref _title) = update.title {
             updates.push(format!("title = ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(ref author) = update.author {
+        if let Some(ref _author) = update.author {
             updates.push(format!("author = ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(ref genre) = update.genre {
+        if let Some(ref _genre) = update.genre {
             updates.push(format!("genre = ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(published_year) = update.published_year {
+        if let Some(_published_year) = update.published_year {
             updates.push(format!("published_year = ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(total_copies) = update.total_copies {
+        if let Some(_total_copies) = update.total_copies {
             updates.push(format!("total_copies = ${}", bind_index));
             bind_index += 1;
         }
-        if let Some(available_copies) = update.available_copies {
+        if let Some(_available_copies) = update.available_copies {
             updates.push(format!("available_copies = ${}", bind_index));
             bind_index += 1;
         }

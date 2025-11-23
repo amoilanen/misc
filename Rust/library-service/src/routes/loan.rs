@@ -55,12 +55,11 @@ pub struct UserLoansQuery {
     pub user_id: Uuid,
 }
 
-pub fn routes(db: Database, cache: Option<Cache>) -> Router<(Database, Option<Cache>, crate::auth::middleware::AuthState)> {
+pub fn routes() -> Router<(Database, Option<Cache>, crate::auth::middleware::AuthState)> {
     Router::new()
         .route("/", post(create_loan))
         .route("/:id/return", post(return_book))
         .route("/user", get(get_user_loans))
-        .with_state((db, cache, crate::auth::middleware::AuthState { jwt_secret: String::new() }))
 }
 
 async fn create_loan(

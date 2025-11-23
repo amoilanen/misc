@@ -89,14 +89,13 @@ impl From<crate::dal::book::Book> for BookResponse {
     }
 }
 
-pub fn routes(db: Database, cache: Option<Cache>) -> Router<(Database, Option<Cache>, crate::auth::middleware::AuthState)> {
+pub fn routes() -> Router<(Database, Option<Cache>, crate::auth::middleware::AuthState)> {
     Router::new()
         .route("/", post(create_book))
         .route("/search", get(search_books))
         .route("/:id", get(get_book))
         .route("/:id", axum::routing::put(update_book))
         .route("/:id", delete(delete_book))
-        .with_state((db, cache, crate::auth::middleware::AuthState { jwt_secret: String::new() }))
 }
 
 async fn create_book(
