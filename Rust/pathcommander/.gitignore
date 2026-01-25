@@ -1,0 +1,8 @@
+node_modules/
+build/
+.svelte-kit/
+dist/
+src-tauri/target/
+*.swp
+*.swo
+.DS_Store
