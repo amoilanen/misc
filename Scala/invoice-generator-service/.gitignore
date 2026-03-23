@@ -1,0 +1,29 @@
+# SBT
+target/
+project/target/
+project/project/
+
+# IDE
+.idea/
+.vscode/
+.bsp/
+.metals/
+.bloop/
+
+# Build artifacts
+dist/
+build/
+*.log
+*.class
+*.jar
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+
+# Node (in case of any tooling)
+node_modules/
+.cache/

@@ -67,7 +67,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     ports:
-      - "8080:8080"
+      - "8082:8080"
 
   fake-gcs-server:
     image: fsouza/fake-gcs-server:latest
@@ -81,6 +81,15 @@ services:
       timeout: 5s
       retries: 5
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: invoice-generator-jaeger
+    ports:
+      - "4317:4317"    # OTLP gRPC
+      - "16686:16686"  # Jaeger UI
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
   adminer:
     image: adminer:latest
     container_name: invoice-generator-adminer
@@ -93,4 +102,4 @@ services:
       ADMINER_DEFAULT_SERVER: postgres
 
 volumes:
-  postgres_data: 
+  postgres_data:

@@ -24,4 +24,4 @@
   <logger name="org.flywaydb" level="INFO" />
   <logger name="com.zaxxer.hikari" level="WARN" />
   <logger name="org.apache.kafka" level="WARN" />
-</configuration> 
+</configuration>

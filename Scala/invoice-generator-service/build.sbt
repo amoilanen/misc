@@ -6,11 +6,14 @@ val doobieVersion = "1.0.0-RC5"
 val flywayVersion = "10.8.1"
 val testcontainersVersion = "0.43.0"
 val zioTestVersion = "2.1.3"
+val zioOpenTelemetryVersion = "3.1.15"
+val openTelemetryVersion = "1.46.0"
 
 // Assembly plugin for creating fat JAR
 assembly / assemblyMergeStrategy := {
-  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-  case x => MergeStrategy.first
+  case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
+  case PathList("META-INF", xs @ _*)             => MergeStrategy.discard
+  case x                                          => MergeStrategy.first
 }
 
 lazy val root = project
@@ -36,32 +39,38 @@ lazy val root = project
       "dev.zio" %% "zio-config-magnolia" % "4.0.0",
       "dev.zio" %% "zio-config-typesafe" % "4.0.0",
       "dev.zio" %% "zio-interop-cats" % "23.1.0.5",
-      
+
       // HTTP
       "dev.zio" %% "zio-http" % zioHttpVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-zio" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-json-zio" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-      
+
       // Database
       "org.tpolecat" %% "doobie-core" % doobieVersion,
       "org.tpolecat" %% "doobie-postgres" % doobieVersion,
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
       "org.flywaydb" % "flyway-core" % flywayVersion,
-      
+
       // JSON
       "dev.zio" %% "zio-json" % "0.6.2",
-      
+
       // PDF Generation
       "com.itextpdf" % "itext7-core" % "8.0.4",
-      
+
       // GCP Storage
       "com.google.cloud" % "google-cloud-storage" % "2.38.0",
-      
+
+      // OpenTelemetry
+      "dev.zio" %% "zio-opentelemetry" % zioOpenTelemetryVersion,
+      "io.opentelemetry" % "opentelemetry-sdk" % openTelemetryVersion,
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % openTelemetryVersion,
+      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.29.0-alpha",
+
       // Logging
       "ch.qos.logback" % "logback-classic" % "1.5.3",
-      
+
       // Testing
       "dev.zio" %% "zio-test" % zioTestVersion % Test,
       "dev.zio" %% "zio-test-sbt" % zioTestVersion % Test,
@@ -73,11 +82,11 @@ lazy val root = project
     ),
 
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
-    
+
     // Assembly settings
     assembly / mainClass := Some("Main"),
     assembly / assemblyJarName := s"${name.value}-assembly-${version.value}.jar"
-)
+  )
 
 // Force stable zio-schema versions to avoid SNAPSHOT dependency issues
 dependencyOverrides ++= Seq(

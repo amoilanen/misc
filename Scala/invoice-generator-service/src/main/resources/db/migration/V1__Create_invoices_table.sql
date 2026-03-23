@@ -1,6 +1,6 @@
 CREATE TABLE invoices (
-    id UUID PRIMARY KEY,
-    event_id UUID NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
     company_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     customer_name VARCHAR(500) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE invoices (
     currency VARCHAR(3) NOT NULL,
     issued_at TIMESTAMP NOT NULL,
     due_date TIMESTAMP NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
     pdf_url VARCHAR(1000),
     metadata TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -26,4 +26,4 @@ CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_invoices_event_id ON invoices(event_id);
 
 -- Composite index for date range queries
-CREATE INDEX idx_invoices_company_date ON invoices(company_id, issued_at); 
+CREATE INDEX idx_invoices_company_date ON invoices(company_id, issued_at);

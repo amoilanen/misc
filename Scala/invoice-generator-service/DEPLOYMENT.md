@@ -1,339 +1,187 @@
-# Deployment Guide - Invoice Generator Service
+# Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Invoice Generator Service to Google Cloud Platform (GCP).
+Step-by-step instructions for deploying the Invoice Generator Service to Kubernetes.
 
 ## Prerequisites
 
-- Google Cloud SDK installed and configured
-- Docker installed
-- kubectl installed
-- Access to a GCP project with billing enabled
+- Kubernetes cluster (1.24+)
+- `kubectl` configured with cluster access
+- Docker (or compatible) for building images
+- Container registry accessible from the cluster
+- PostgreSQL database accessible from the cluster
+- Kafka cluster accessible from the cluster
+- GCS bucket (or compatible object storage) for PDF storage
 
-## Step 1: GCP Project Setup
+## 1. Build the Docker Image
 
-### 1.1 Create or Select a Project
 ```bash
-# List existing projects
-gcloud projects list
+# Build the image
+docker build -t invoice-generator-service:latest .
 
-# Create a new project (if needed)
-gcloud projects create YOUR_PROJECT_ID --name="Invoice Generator Service"
+# Tag for your registry
+docker tag invoice-generator-service:latest <registry>/invoice-generator-service:<version>
 
-# Set the active project
-gcloud config set project YOUR_PROJECT_ID
+# Push to registry
+docker push <registry>/invoice-generator-service:<version>
 ```
 
-### 1.2 Enable Required APIs
+The Dockerfile uses a multi-stage build:
+1. **Builder stage**: Compiles the Scala project into a fat JAR via `sbt assembly`
+2. **Runtime stage**: Runs on `eclipse-temurin:17-jre` (minimal JRE image)
+
+## 2. Configure Secrets
+
+Create a Kubernetes Secret with database credentials. Do **not** commit real credentials to version control.
+
 ```bash
-# Enable Container Registry API
-gcloud services enable containerregistry.googleapis.com
-
-# Enable Kubernetes Engine API
-gcloud services enable container.googleapis.com
-
-# Enable Cloud Storage API
-gcloud services enable storage.googleapis.com
-
-# Enable Cloud Build API (for building Docker images)
-gcloud services enable cloudbuild.googleapis.com
-```
-
-### 1.3 Create Service Account
-```bash
-# Create service account for the application
-gcloud iam service-accounts create invoice-generator-sa \
-  --display-name="Invoice Generator Service Account"
-
-# Grant Storage Admin role
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-  --member="serviceAccount:invoice-generator-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-
-# Create and download service account key
-gcloud iam service-accounts keys create key.json \
-  --iam-account=invoice-generator-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com
-```
-
-## Step 2: Database Setup
-
-### 2.1 Create Cloud SQL Instance
-```bash
-# Create PostgreSQL instance
-gcloud sql instances create invoice-generator-db \
-  --database-version=POSTGRES_15 \
-  --tier=db-f1-micro \
-  --region=us-central1 \
-  --root-password=YOUR_ROOT_PASSWORD
-
-# Create database
-gcloud sql databases create invoice_generator \
-  --instance=invoice-generator-db
-
-# Create user
-gcloud sql users create invoice_user \
-  --instance=invoice-generator-db \
-  --password=YOUR_DB_PASSWORD
-```
-
-### 2.2 Get Connection Information
-```bash
-# Get connection name
-gcloud sql instances describe invoice-generator-db \
-  --format="value(connectionName)"
-
-# Get public IP (for testing)
-gcloud sql instances describe invoice-generator-db \
-  --format="value(ipAddresses[0].ipAddress)"
-```
-
-## Step 3: Kafka Setup
-
-### 3.1 Deploy Kafka to GKE (Option 1)
-```bash
-# Create Kafka namespace
-kubectl create namespace kafka
-
-# Install Kafka using Helm
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install kafka bitnami/kafka \
-  --namespace kafka \
-  --set replicaCount=3 \
-  --set zookeeper.replicaCount=3
-```
-
-### 3.2 Use Managed Kafka (Option 2 - Recommended)
-Consider using Confluent Cloud or other managed Kafka services for production.
-
-## Step 4: Build and Push Docker Image
-
-### 4.1 Configure Docker for GCR
-```bash
-# Configure Docker to use gcloud as a credential helper
-gcloud auth configure-docker
-```
-
-### 4.2 Build and Push Image
-```bash
-# Build the Docker image
-docker build -t gcr.io/YOUR_PROJECT_ID/invoice-generator-service:latest .
-
-# Push to Google Container Registry
-docker push gcr.io/YOUR_PROJECT_ID/invoice-generator-service:latest
-```
-
-## Step 5: Create GKE Cluster
-
-### 5.1 Create Cluster
-```bash
-# Create GKE cluster
-gcloud container clusters create invoice-generator-cluster \
-  --zone=us-central1-a \
-  --num-nodes=3 \
-  --machine-type=e2-standard-2 \
-  --enable-autoscaling \
-  --min-nodes=1 \
-  --max-nodes=10 \
-  --enable-autorepair \
-  --enable-autoupgrade
-
-# Get credentials
-gcloud container clusters get-credentials invoice-generator-cluster \
-  --zone=us-central1-a
-```
-
-### 5.2 Verify Cluster
-```bash
-# Check cluster status
-kubectl cluster-info
-
-# Check nodes
-kubectl get nodes
-```
-
-## Step 6: Deploy Application
-
-### 6.1 Create Kubernetes Secrets
-```bash
-# Create namespace
-kubectl create namespace invoice-generator
-
-# Create database secret
 kubectl create secret generic invoice-generator-secrets \
-  --namespace=invoice-generator \
-  --from-literal=database-url="jdbc:postgresql:///invoice_generator?cloudSqlInstance=YOUR_PROJECT_ID:us-central1:invoice-generator-db&socketFactory=com.google.cloud.sql.postgres.SocketFactory" \
-  --from-literal=database-username="invoice_user" \
-  --from-literal=database-password="YOUR_DB_PASSWORD"
-
-# Create GCP service account key secret
-kubectl create secret generic google-cloud-key \
-  --namespace=invoice-generator \
-  --from-file=key.json=./key.json
+  --from-literal=APP_DATABASE_URL="jdbc:postgresql://<db-host>:5432/invoice_generator" \
+  --from-literal=APP_DATABASE_USERNAME="<username>" \
+  --from-literal=APP_DATABASE_PASSWORD="<password>"
 ```
 
-### 6.2 Create ConfigMap
+Alternatively, apply the template from `k8s/config.yaml` after editing the placeholder values:
+
 ```bash
-# Create config map
-kubectl create configmap invoice-generator-config \
-  --namespace=invoice-generator \
-  --from-literal=kafka-bootstrap-servers="kafka.kafka.svc.cluster.local:9092" \
-  --from-literal=kafka-topic="invoice-events" \
-  --from-literal=gcp-project-id="YOUR_PROJECT_ID" \
-  --from-literal=gcp-bucket-name="invoice-pdfs"
+kubectl apply -f k8s/config.yaml
 ```
 
-### 6.3 Deploy Application
+## 3. Configure the ConfigMap
+
+Edit `k8s/config.yaml` to match your environment:
+
+```yaml
+data:
+  APP_KAFKA_BOOTSTRAP_SERVERS: "kafka-broker:9092"    # Your Kafka bootstrap servers
+  APP_GCP_PROJECT_ID: "your-gcp-project"              # Your GCP project
+  APP_GCP_BUCKET_NAME: "your-invoice-bucket"          # Your GCS bucket
+  APP_TELEMETRY_ENABLED: "true"                       # Enable if Jaeger is deployed
+  APP_TELEMETRY_ENDPOINT: "http://jaeger:4317"        # Your Jaeger OTLP endpoint
+```
+
+For production, remove `APP_GCP_ENDPOINT` (the fake-gcs-server endpoint) so the service connects to real GCS.
+
+Apply the ConfigMap:
+
 ```bash
-# Apply deployment
-kubectl apply -f k8s/deployment.yaml -n invoice-generator
-
-# Check deployment status
-kubectl get pods -n invoice-generator
-kubectl get services -n invoice-generator
+kubectl apply -f k8s/config.yaml
 ```
 
-## Step 7: Configure Ingress
+## 4. Update the Deployment Image
 
-### 7.1 Reserve Static IP
+Edit `k8s/deployment.yaml` to reference your container registry:
+
+```yaml
+containers:
+  - name: invoice-generator-service
+    image: <registry>/invoice-generator-service:<version>
+```
+
+## 5. Deploy
+
 ```bash
-# Reserve static IP
-gcloud compute addresses create invoice-generator-ip \
-  --region=us-central1
+# Apply all manifests
+kubectl apply -f k8s/
 
-# Get the IP address
-gcloud compute addresses describe invoice-generator-ip \
-  --region=us-central1 \
-  --format="value(address)"
+# Verify the deployment
+kubectl rollout status deployment/invoice-generator-service
+
+# Check pods are running
+kubectl get pods -l app=invoice-generator-service
 ```
 
-### 7.2 Update Ingress Configuration
-Update the `k8s/deployment.yaml` file with your domain name and apply:
+## 6. Verify the Deployment
+
+### Health check
+
 ```bash
-kubectl apply -f k8s/deployment.yaml -n invoice-generator
+# Port-forward to test locally
+kubectl port-forward svc/invoice-generator-service 8080:80
+
+# Check health
+curl http://localhost:8080/api/v1/health
 ```
 
-### 7.3 Configure DNS
-Point your domain to the reserved static IP address.
+Expected response:
+```json
+{"status": "UP", "message": "Invoice Generator Service is running"}
+```
 
-## Step 8: Monitoring and Logging
+### Check logs
 
-### 8.1 Enable Cloud Monitoring
 ```bash
-# Enable monitoring
-gcloud services enable monitoring.googleapis.com
-
-# Enable logging
-gcloud services enable logging.googleapis.com
+kubectl logs -l app=invoice-generator-service -f
 ```
 
-### 8.2 Deploy Monitoring Stack
+On startup, you should see:
+- `Starting Invoice Generator Service`
+- Flyway migration output
+- `Starting HTTP server on 0.0.0.0:8080`
+- `Starting Kafka consumer for topic: invoice-events`
+
+### Swagger UI
+
+Port-forward and open `http://localhost:8080/docs` to browse the API documentation.
+
+## 7. Viewing Traces (Optional)
+
+If telemetry is enabled and Jaeger is deployed:
+
 ```bash
-# Install Prometheus Operator
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm install prometheus prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
-  --create-namespace
-
-# Install Grafana
-helm install grafana grafana/grafana \
-  --namespace monitoring \
-  --set adminPassword=YOUR_GRAFANA_PASSWORD
+kubectl port-forward svc/jaeger 16686:16686
 ```
 
-## Step 9: Testing
+Open `http://localhost:16686` and select `invoice-generator-service` from the service dropdown to view traces for invoice processing workflows.
 
-### 9.1 Health Check
+## Resource Configuration
+
+The default resource configuration in `k8s/deployment.yaml`:
+
+| Resource | Request | Limit |
+|---|---|---|
+| Memory | 512Mi | 1Gi |
+| CPU | 250m | 500m |
+
+Adjust based on your workload. The service runs on the JVM, so memory limits should account for heap + metaspace overhead.
+
+## Scaling
+
+The deployment runs 2 replicas by default. Kafka consumer group rebalancing distributes partitions across replicas automatically.
+
 ```bash
-# Test health endpoint
-curl https://your-domain.com/api/v1/health
+# Scale replicas
+kubectl scale deployment/invoice-generator-service --replicas=3
 ```
 
-### 9.2 Send Test Event
+For autoscaling, configure a HorizontalPodAutoscaler based on CPU or custom metrics.
+
+## Database Migrations
+
+Flyway migrations run automatically on application startup. The migration file (`V1__Create_invoices_table.sql`) creates the `invoices` table with required indexes. Subsequent schema changes should follow the Flyway naming convention (`V2__description.sql`, etc.) in `src/main/resources/db/migration/`.
+
+## GCS Bucket Setup
+
+Create the GCS bucket before deployment:
+
 ```bash
-# Create test topic
-kubectl exec -it kafka-0 -n kafka -- kafka-topics.sh \
-  --create \
-  --topic invoice-events \
-  --bootstrap-server localhost:9092 \
-  --partitions 3 \
-  --replication-factor 1
-
-# Send test message
-kubectl exec -it kafka-0 -n kafka -- kafka-console-producer.sh \
-  --topic invoice-events \
-  --bootstrap-server localhost:9092
+gsutil mb -p <project-id> -l <region> gs://<bucket-name>/
 ```
 
-## Step 10: Production Considerations
-
-### 10.1 Security
-- Use Workload Identity instead of service account keys
-- Enable network policies
-- Use private GKE cluster
-- Configure VPC firewall rules
-
-### 10.2 Scaling
-- Configure Horizontal Pod Autoscaler
-- Set up cluster autoscaling
-- Monitor resource usage
-
-### 10.3 Backup
-- Set up automated database backups
-- Configure disaster recovery procedures
-- Test restore procedures
+For non-GCP environments, configure `APP_GCP_ENDPOINT` to point to an S3-compatible storage with a GCS adapter.
 
 ## Troubleshooting
 
-### Common Issues
+**Pod fails to start / CrashLoopBackOff:**
+- Check logs: `kubectl logs <pod-name>`
+- Verify database connectivity and credentials
+- Ensure Flyway migrations can reach the database
 
-1. **Database Connection Issues**
-   ```bash
-   # Check database connectivity
-   kubectl exec -it deployment/invoice-generator-service -n invoice-generator -- \
-     nc -zv YOUR_DB_HOST 5432
-   ```
+**No events being processed:**
+- Verify Kafka connectivity: check `APP_KAFKA_BOOTSTRAP_SERVERS`
+- Ensure the `invoice-events` topic exists
+- Check consumer group lag via Kafka monitoring tools
 
-2. **Kafka Connection Issues**
-   ```bash
-   # Check Kafka connectivity
-   kubectl exec -it deployment/invoice-generator-service -n invoice-generator -- \
-     nc -zv kafka.kafka.svc.cluster.local 9092
-   ```
-
-3. **GCP Storage Issues**
-   ```bash
-   # Check service account permissions
-   gcloud projects get-iam-policy YOUR_PROJECT_ID \
-     --flatten="bindings[].members" \
-     --filter="bindings.members:invoice-generator-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com"
-   ```
-
-### Useful Commands
-
-```bash
-# View logs
-kubectl logs -f deployment/invoice-generator-service -n invoice-generator
-
-# Port forward for local testing
-kubectl port-forward svc/invoice-generator-service 8080:8080 -n invoice-generator
-
-# Access shell
-kubectl exec -it deployment/invoice-generator-service -n invoice-generator -- /bin/bash
-
-# Check events
-kubectl get events -n invoice-generator --sort-by='.lastTimestamp'
-```
-
-## Cost Optimization
-
-1. **Use preemptible nodes for development**
-2. **Set up resource quotas**
-3. **Monitor and optimize resource requests/limits**
-4. **Use committed use discounts for production workloads**
-
-## Support
-
-For issues and questions:
-- Check the application logs
-- Review GCP Cloud Logging
-- Consult the troubleshooting section
-- Create an issue in the repository 
+**PDF generation succeeds but download fails:**
+- Verify GCS bucket exists and service has write access
+- Check `APP_GCP_BUCKET_NAME` and `APP_GCP_PROJECT_ID`
+- For non-GCP setups, ensure `APP_GCP_ENDPOINT` points to the correct storage endpoint

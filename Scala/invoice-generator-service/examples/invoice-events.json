@@ -1,0 +1,195 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "companyId": "acme-corp",
+    "customerId": "customer-001",
+    "customerName": "John Smith",
+    "customerEmail": "john.smith@example.com",
+    "customerAddress": {
+      "street": "123 Main Street",
+      "city": "New York",
+      "state": "NY",
+      "zipCode": "10001",
+      "country": "USA"
+    },
+    "invoiceType": "B2C",
+    "items": [
+      {
+        "description": "Premium Software License",
+        "quantity": 1,
+        "unitPrice": 299.99,
+        "totalPrice": 299.99
+      },
+      {
+        "description": "Technical Support (Annual)",
+        "quantity": 1,
+        "unitPrice": 199.99,
+        "totalPrice": 199.99
+      }
+    ],
+    "totalAmount": 499.98,
+    "currency": "USD",
+    "issuedAt": "2024-01-15T10:30:00",
+    "dueDate": "2024-02-15T10:30:00",
+    "metadata": {
+      "orderId": "ORD-2024-001",
+      "salesRep": "Alice Johnson",
+      "paymentTerms": "Net 30"
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "companyId": "tech-startup",
+    "customerId": "enterprise-001",
+    "customerName": "Enterprise Solutions Inc.",
+    "customerEmail": "accounts@enterprisesolutions.com",
+    "customerAddress": {
+      "street": "456 Business Avenue",
+      "city": "San Francisco",
+      "state": "CA",
+      "zipCode": "94105",
+      "country": "USA"
+    },
+    "invoiceType": "B2B",
+    "items": [
+      {
+        "description": "Enterprise Software License (100 users)",
+        "quantity": 100,
+        "unitPrice": 50.00,
+        "totalPrice": 5000.00
+      },
+      {
+        "description": "Custom Integration Services",
+        "quantity": 40,
+        "unitPrice": 150.00,
+        "totalPrice": 6000.00
+      },
+      {
+        "description": "Priority Support Package",
+        "quantity": 1,
+        "unitPrice": 2500.00,
+        "totalPrice": 2500.00
+      }
+    ],
+    "totalAmount": 13500.00,
+    "currency": "USD",
+    "issuedAt": "2024-01-16T14:15:00",
+    "dueDate": "2024-02-16T14:15:00",
+    "metadata": {
+      "orderId": "ENT-2024-001",
+      "salesRep": "Bob Wilson",
+      "paymentTerms": "Net 30",
+      "contractNumber": "CTR-2024-001"
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "companyId": "acme-corp",
+    "customerId": "customer-002",
+    "customerName": "Sarah Johnson",
+    "customerEmail": "sarah.johnson@email.com",
+    "customerAddress": {
+      "street": "789 Oak Lane",
+      "city": "Chicago",
+      "state": "IL",
+      "zipCode": "60601",
+      "country": "USA"
+    },
+    "invoiceType": "B2C",
+    "items": [
+      {
+        "description": "Basic Software License",
+        "quantity": 1,
+        "unitPrice": 99.99,
+        "totalPrice": 99.99
+      }
+    ],
+    "totalAmount": 99.99,
+    "currency": "USD",
+    "issuedAt": "2024-01-17T09:45:00",
+    "dueDate": "2024-02-17T09:45:00",
+    "metadata": {
+      "orderId": "ORD-2024-002",
+      "salesRep": "Charlie Brown",
+      "paymentTerms": "Immediate"
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440004",
+    "companyId": "global-consulting",
+    "customerId": "client-001",
+    "customerName": "Global Manufacturing Ltd.",
+    "customerEmail": "finance@globalmanufacturing.com",
+    "customerAddress": {
+      "street": "10 Industrial Park Road",
+      "city": "Toronto",
+      "state": "ON",
+      "zipCode": "M5V 3A8",
+      "country": "Canada"
+    },
+    "invoiceType": "B2B",
+    "items": [
+      {
+        "description": "Consulting Services - Process Optimization",
+        "quantity": 80,
+        "unitPrice": 200.00,
+        "totalPrice": 16000.00
+      },
+      {
+        "description": "Training Workshop (2 days)",
+        "quantity": 1,
+        "unitPrice": 5000.00,
+        "totalPrice": 5000.00
+      }
+    ],
+    "totalAmount": 21000.00,
+    "currency": "CAD",
+    "issuedAt": "2024-01-18T11:20:00",
+    "dueDate": "2024-02-18T11:20:00",
+    "metadata": {
+      "orderId": "CONS-2024-001",
+      "consultant": "Dr. Maria Rodriguez",
+      "paymentTerms": "Net 45",
+      "projectCode": "PROJ-OPT-2024"
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440005",
+    "companyId": "tech-startup",
+    "customerId": "startup-001",
+    "customerName": "Innovation Labs",
+    "customerEmail": "billing@innovationlabs.io",
+    "customerAddress": {
+      "street": "321 Innovation Drive",
+      "city": "Austin",
+      "state": "TX",
+      "zipCode": "78701",
+      "country": "USA"
+    },
+    "invoiceType": "B2B",
+    "items": [
+      {
+        "description": "Startup Software Package (10 users)",
+        "quantity": 10,
+        "unitPrice": 25.00,
+        "totalPrice": 250.00
+      },
+      {
+        "description": "Setup and Configuration",
+        "quantity": 1,
+        "unitPrice": 500.00,
+        "totalPrice": 500.00
+      }
+    ],
+    "totalAmount": 750.00,
+    "currency": "USD",
+    "issuedAt": "2024-01-19T16:30:00",
+    "dueDate": "2024-02-19T16:30:00",
+    "metadata": {
+      "orderId": "STARTUP-2024-001",
+      "salesRep": "David Chen",
+      "paymentTerms": "Net 15",
+      "startupDiscount": "20%"
+    }
+  }
+] 

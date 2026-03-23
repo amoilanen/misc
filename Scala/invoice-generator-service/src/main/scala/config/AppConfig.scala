@@ -8,7 +8,8 @@ case class AppConfig(
   database: DatabaseConfig,
   kafka: KafkaConfig,
   gcp: GcpConfig,
-  server: ServerConfig
+  server: ServerConfig,
+  telemetry: TelemetryConfig
 )
 
 case class DatabaseConfig(
@@ -38,7 +39,13 @@ case class ServerConfig(
   port: Int = 8080
 )
 
+case class TelemetryConfig(
+  enabled: Boolean = false,
+  endpoint: String = "http://localhost:4317",
+  serviceName: String = "invoice-generator-service"
+)
+
 object AppConfig:
   val live: Config[AppConfig] = deriveConfig[AppConfig].nested("app")
-  
-  def load: Config[AppConfig] = live 
+
+  def load: Config[AppConfig] = live

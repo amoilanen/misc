@@ -7,7 +7,6 @@ import com.itextpdf.layout.*
 import com.itextpdf.layout.element.*
 import com.itextpdf.layout.properties.*
 import com.itextpdf.kernel.colors.ColorConstants
-import com.itextpdf.kernel.font.PdfFontFactory
 import java.io.ByteArrayOutputStream
 import java.time.format.DateTimeFormatter
 
@@ -20,12 +19,12 @@ object PdfGenerator:
 
 class ITextPdfGenerator extends PdfGenerator:
   def generateInvoicePdf(invoice: Invoice): Task[Array[Byte]] =
-    ZIO.attempt:
+    ZIO.attemptBlocking:
       val outputStream = ByteArrayOutputStream()
       val writer = PdfWriter(outputStream)
       val pdf = PdfDocument(writer)
       val document = Document(pdf)
-      
+
       try
         addHeader(document, invoice)
         addCustomerInfo(document, invoice)
@@ -33,10 +32,9 @@ class ITextPdfGenerator extends PdfGenerator:
         addItemsTable(document, invoice)
         addTotal(document, invoice)
         addFooter(document, invoice)
-        document.close()
-        outputStream.toByteArray
       finally
         document.close()
+      outputStream.toByteArray
 
   private def addHeader(document: Document, invoice: Invoice): Unit =
     val header = Paragraph("INVOICE")
@@ -50,7 +48,7 @@ class ITextPdfGenerator extends PdfGenerator:
     val customerInfo = Table(2)
       .setWidth(UnitValue.createPercentValue(100))
       .setMarginBottom(20)
-    
+
     customerInfo.addCell(createCell("Bill To:", true))
     customerInfo.addCell(createCell(invoice.customerName, false))
     customerInfo.addCell(createCell("", false))
@@ -61,16 +59,16 @@ class ITextPdfGenerator extends PdfGenerator:
     customerInfo.addCell(createCell(invoice.customerAddress.country, false))
     customerInfo.addCell(createCell("", false))
     customerInfo.addCell(createCell(invoice.customerEmail, false))
-    
+
     document.add(customerInfo)
 
   private def addInvoiceDetails(document: Document, invoice: Invoice): Unit =
     val details = Table(2)
       .setWidth(UnitValue.createPercentValue(100))
       .setMarginBottom(20)
-    
+
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    
+
     details.addCell(createCell("Invoice Number:", true))
     details.addCell(createCell(invoice.id.toString, false))
     details.addCell(createCell("Company ID:", true))
@@ -81,27 +79,27 @@ class ITextPdfGenerator extends PdfGenerator:
     details.addCell(createCell(invoice.issuedAt.format(formatter), false))
     details.addCell(createCell("Due Date:", true))
     details.addCell(createCell(invoice.dueDate.format(formatter), false))
-    
+
     document.add(details)
 
   private def addItemsTable(document: Document, invoice: Invoice): Unit =
     val table = Table(4)
       .setWidth(UnitValue.createPercentValue(100))
       .setMarginBottom(20)
-    
+
     // Header
     table.addHeaderCell(createHeaderCell("Description"))
     table.addHeaderCell(createHeaderCell("Quantity"))
     table.addHeaderCell(createHeaderCell("Unit Price"))
     table.addHeaderCell(createHeaderCell("Total"))
-    
+
     // Items
     invoice.items.foreach: item =>
       table.addCell(createCell(item.description, false))
       table.addCell(createCell(item.quantity.toString, false))
       table.addCell(createCell(f"$$${item.unitPrice}%.2f", false))
       table.addCell(createCell(f"$$${item.totalPrice}%.2f", false))
-    
+
     document.add(table)
 
   private def addTotal(document: Document, invoice: Invoice): Unit =
@@ -109,10 +107,10 @@ class ITextPdfGenerator extends PdfGenerator:
       .setWidth(UnitValue.createPercentValue(50))
       .setHorizontalAlignment(HorizontalAlignment.RIGHT)
       .setMarginBottom(20)
-    
+
     totalTable.addCell(createCell("Total Amount:", true))
     totalTable.addCell(createCell(f"$$${invoice.totalAmount}%.2f ${invoice.currency}", false))
-    
+
     document.add(totalTable)
 
   private def addFooter(document: Document, invoice: Invoice): Unit =
@@ -131,4 +129,4 @@ class ITextPdfGenerator extends PdfGenerator:
     Cell()
       .add(Paragraph(text))
       .setBold()
-      .setBackgroundColor(ColorConstants.LIGHT_GRAY) 
+      .setBackgroundColor(ColorConstants.LIGHT_GRAY)

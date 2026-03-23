@@ -1,9 +1,0 @@
-- Review the code
-  -- Introduce InvoiceService, avoid calling repositories directly
-  -- Split InvoiceApi into InvoiceEndpoints, InvoiceServer
-- Run the service locally, feed some events, observe their handling
-- Run tests locally
-- The API should also have endpoints to fetch the invoice's PDF when given the invoice id
-- Add the missing tests (i.e. for Repository)
-- Deploy the service to GCP, feed some events, observe their handling
-- Add OpenTelemetry and tracing, update the development instructions correspondingly
