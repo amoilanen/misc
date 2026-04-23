@@ -1,220 +1,143 @@
 #!/usr/bin/env python3
 """
-GitHub Repository Checkout Script
-
-Clones all repositories (public and private) from a GitHub account using SSH.
+Fetch all GitHub repositories (public and private) for an account and clone
+them using ssh://git@github.com/... remotes.
 """
+
+import os
+import subprocess
+import sys
 
 import click
 import requests
-import subprocess
-import os
-from pathlib import Path
 
 
-def get_authenticated_user(token):
-    """Get the authenticated user's information."""
-    headers = {
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github.v3+json'
+API_ROOT = "https://api.github.com"
+PER_PAGE = 100
+
+
+def api_headers(token):
+    return {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "checkout-github-repos",
     }
-    response = requests.get('https://api.github.com/user', headers=headers)
-    response.raise_for_status()
-    return response.json()
 
 
-def get_all_repos(username, token):
-    """Fetch all repositories for the given username using the access token."""
-    headers = {
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
+def fetch_all_repos(username, token):
+    """Fetch every repo the token can see for `username`.
+
+    When the token belongs to `username`, use /user/repos so private repos
+    are included. Otherwise fall back to the public /users/<name>/repos.
+    """
+    headers = api_headers(token)
+    me = requests.get(f"{API_ROOT}/user", headers=headers)
+    me.raise_for_status()
+    is_self = me.json().get("login", "").lower() == username.lower()
 
     repos = []
     page = 1
-    per_page = 100
-
     while True:
-        # Use /user/repos to get all repos the authenticated user has access to
-        # This includes private repos if the token has the right scope
-        if username:
-            url = f'https://api.github.com/users/{username}/repos'
+        if is_self:
+            url = f"{API_ROOT}/user/repos"
+            params = {
+                "per_page": PER_PAGE,
+                "page": page,
+                "affiliation": "owner",
+                "visibility": "all",
+            }
         else:
-            url = 'https://api.github.com/user/repos'
+            url = f"{API_ROOT}/users/{username}/repos"
+            params = {"per_page": PER_PAGE, "page": page, "type": "all"}
 
-        params = {
-            'page': page,
-            'per_page': per_page,
-            'type': 'all',  # Get all repos (public, private, forks)
-            'sort': 'updated',
-            'direction': 'desc'
-        }
-
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-
-        data = response.json()
-        if not data:
+        resp = requests.get(url, headers=headers, params=params)
+        resp.raise_for_status()
+        batch = resp.json()
+        if not batch:
             break
-
-        repos.extend(data)
+        repos.extend(batch)
+        if len(batch) < PER_PAGE:
+            break
         page += 1
 
-    return repos
+    return [r for r in repos if r["owner"]["login"].lower() == username.lower()]
 
 
-def clone_repo(repo_data, output_dir, dry_run=False):
-    """Clone a repository using SSH URL."""
-    repo_name = repo_data['name']
-    ssh_url = repo_data['ssh_url']
-    full_name = repo_data['full_name']
-    is_private = repo_data['private']
+def ssh_remote(repo):
+    """Convert GitHub's git@host:owner/name.git into ssh://git@host/owner/name.git."""
+    scp = repo["ssh_url"]
+    host, path = scp.split("@", 1)[1].split(":", 1)
+    return f"ssh://git@{host}/{path}"
 
-    privacy_marker = "[PRIVATE]" if is_private else "[PUBLIC]"
 
-    target_path = os.path.join(output_dir, repo_name)
+def clone(repo, target_dir):
+    name = repo["name"]
+    remote = ssh_remote(repo)
+    dest = os.path.join(target_dir, name)
+    tag = "[private]" if repo.get("private") else "[public]"
 
-    if os.path.exists(target_path):
-        click.echo(f"  ⏭️  {privacy_marker} {full_name} - already exists, skipping")
-        return False
+    if os.path.exists(dest):
+        click.echo(f"  skip  {tag} {name} (already exists)")
+        return "skipped"
 
-    if dry_run:
-        click.echo(f"  [DRY RUN] Would clone {privacy_marker} {full_name}")
-        click.echo(f"            {ssh_url} -> {target_path}")
-        return True
-
-    click.echo(f"  📦 Cloning {privacy_marker} {full_name}...")
-
-    try:
-        # Set SSH options to automatically accept host keys
-        env = os.environ.copy()
-        env['GIT_SSH_COMMAND'] = 'ssh -o StrictHostKeyChecking=accept-new'
-
-        subprocess.run(
-            ['git', 'clone', ssh_url, target_path],
-            check=True,
-            capture_output=True,
-            text=True,
-            env=env
-        )
-        click.echo(f"  ✓ Successfully cloned {repo_name}")
-        return True
-    except subprocess.CalledProcessError as e:
-        click.echo(f"  ✗ Failed to clone {repo_name}: {e.stderr}", err=True)
-        return False
+    click.echo(f"  clone {tag} {name} <- {remote}")
+    env = os.environ.copy()
+    env.setdefault("GIT_SSH_COMMAND", "ssh -o StrictHostKeyChecking=accept-new")
+    result = subprocess.run(
+        ["git", "clone", remote, dest],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        click.echo(f"  FAIL  {name}: {result.stderr.strip()}", err=True)
+        return "failed"
+    return "cloned"
 
 
 @click.command()
 @click.option(
-    '--token',
-    '-t',
-    envvar='GITHUB_TOKEN',
+    "--username",
+    "-u",
     required=True,
-    help='GitHub personal access token (can also use GITHUB_TOKEN env var)'
+    help="GitHub username whose repositories should be cloned.",
 )
 @click.option(
-    '--username',
-    '-u',
-    help='GitHub username (if not provided, uses authenticated user)'
+    "--token",
+    "-t",
+    required=True,
+    envvar="GITHUB_TOKEN",
+    help="GitHub personal access token (or set GITHUB_TOKEN).",
 )
 @click.option(
-    '--output-dir',
-    '-o',
-    default='.',
-    type=click.Path(),
-    help='Directory to clone repositories into (default: current directory)'
+    "--output-dir",
+    "-o",
+    default=".",
+    type=click.Path(file_okay=False),
+    help="Directory to clone repositories into (default: current directory).",
 )
-@click.option(
-    '--dry-run',
-    '-n',
-    is_flag=True,
-    help='Show what would be cloned without actually cloning'
-)
-def main(token, username, output_dir, dry_run):
-    """
-    Clone all GitHub repositories for a given account.
-
-    This script will clone all repositories (public and private) that the
-    authenticated user has access to using SSH URLs.
-
-    Examples:
-
-        # Clone all repos for the authenticated user
-        ./checkout_github_repos.py --token ghp_xxxxx
-
-        # Clone all repos for a specific user
-        ./checkout_github_repos.py --token ghp_xxxxx --username octocat
-
-        # Use environment variable for token
-        export GITHUB_TOKEN=ghp_xxxxx
-        ./checkout_github_repos.py --username octocat
-
-        # Dry run to see what would be cloned
-        ./checkout_github_repos.py --token ghp_xxxxx --dry-run
-    """
-
-    click.echo("🚀 GitHub Repository Checkout Tool\n")
-
-    # Create output directory if it doesn't exist
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+def main(username, token, output_dir):
+    """Clone every repo (public and private) owned by USERNAME via ssh://git@ remotes."""
+    os.makedirs(output_dir, exist_ok=True)
 
     try:
-        # If no username provided, get the authenticated user
-        if not username:
-            click.echo("Fetching authenticated user information...")
-            user_info = get_authenticated_user(token)
-            username = user_info['login']
-            click.echo(f"Authenticated as: {username}\n")
+        repos = fetch_all_repos(username, token)
+    except requests.HTTPError as e:
+        click.echo(f"GitHub API error: {e} — {e.response.text}", err=True)
+        sys.exit(1)
 
-        # Fetch all repositories
-        click.echo(f"Fetching repositories for {username}...")
-        repos = get_all_repos(username, token)
+    click.echo(f"Found {len(repos)} repositories for {username}")
+    tally = {"cloned": 0, "skipped": 0, "failed": 0}
+    for repo in repos:
+        tally[clone(repo, output_dir)] += 1
 
-        if not repos:
-            click.echo("No repositories found.")
-            return
-
-        click.echo(f"Found {len(repos)} repositories\n")
-
-        if dry_run:
-            click.echo("=== DRY RUN MODE ===\n")
-
-        # Clone each repository
-        cloned = 0
-        skipped = 0
-        failed = 0
-
-        for repo in repos:
-            result = clone_repo(repo, output_dir, dry_run)
-            if result:
-                cloned += 1
-            elif result is False and not os.path.exists(os.path.join(output_dir, repo['name'])):
-                failed += 1
-            else:
-                skipped += 1
-
-        # Summary
-        click.echo(f"\n{'='*50}")
-        click.echo(f"Summary:")
-        if dry_run:
-            click.echo(f"  Would clone: {cloned}")
-        else:
-            click.echo(f"  Successfully cloned: {cloned}")
-            click.echo(f"  Failed: {failed}")
-        click.echo(f"  Skipped (already exist): {skipped}")
-        click.echo(f"  Total repositories: {len(repos)}")
-
-    except requests.exceptions.HTTPError as e:
-        click.echo(f"\n✗ GitHub API Error: {e}", err=True)
-        if e.response.status_code == 401:
-            click.echo("  Check that your access token is valid and has the required scopes.", err=True)
-        elif e.response.status_code == 404:
-            click.echo(f"  User '{username}' not found.", err=True)
-        raise click.Abort()
-    except Exception as e:
-        click.echo(f"\n✗ Error: {e}", err=True)
-        raise click.Abort()
+    click.echo(
+        f"Done. cloned={tally['cloned']} "
+        f"skipped={tally['skipped']} failed={tally['failed']}"
+    )
+    sys.exit(0 if tally["failed"] == 0 else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
